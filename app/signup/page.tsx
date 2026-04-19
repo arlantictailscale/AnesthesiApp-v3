@@ -18,7 +18,7 @@ export default function SignUpPage() {
   const [confirm, setConfirm] = useState("")
   const [loading, setLoading] = useState(false)
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (password.length < 6) {
       toast.error("Password must be at least 6 characters.")
@@ -29,14 +29,20 @@ export default function SignUpPage() {
       return
     }
     setLoading(true)
-    const { error } = signUp(email, password)
+    const { error, needsEmailConfirmation } = await signUp(email, password)
     setLoading(false)
     if (error) {
       toast.error(error)
       return
     }
+    if (needsEmailConfirmation) {
+      toast.success("Check your email to confirm your account")
+      router.push(`/signup/success?email=${encodeURIComponent(email)}`)
+      return
+    }
     toast.success("Account created")
     router.push("/dashboard")
+    router.refresh()
   }
 
   return (

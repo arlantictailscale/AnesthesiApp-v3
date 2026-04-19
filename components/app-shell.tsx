@@ -23,13 +23,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
-    const s = getSession()
-    if (!s) {
-      router.replace("/login")
-      return
+    let active = true
+    getSession().then((s) => {
+      if (!active) return
+      if (!s) {
+        router.replace("/login")
+        return
+      }
+      setEmail(s.email)
+      setReady(true)
+    })
+    return () => {
+      active = false
     }
-    setEmail(s.email)
-    setReady(true)
   }, [router])
 
   if (!ready) {
@@ -40,9 +46,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     )
   }
 
-  function handleSignOut() {
-    signOut()
+  async function handleSignOut() {
+    await signOut()
     router.replace("/login")
+    router.refresh()
   }
 
   const isCases = pathname === "/dashboard"

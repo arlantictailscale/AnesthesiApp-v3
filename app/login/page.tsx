@@ -17,10 +17,10 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
-    const { error } = signIn(email, password)
+    const { error } = await signIn(email, password)
     setLoading(false)
     if (error) {
       toast.error(error)
@@ -28,6 +28,7 @@ export default function LoginPage() {
     }
     toast.success("Welcome back")
     router.push("/dashboard")
+    router.refresh()
   }
 
   return (

@@ -225,7 +225,7 @@ export function CaseWizard() {
       toast.error("Some fields are invalid. Please review all steps.")
       return
     }
-    const session = getSession()
+    const session = await getSession()
     if (!session) {
       toast.error("You must be signed in.")
       router.replace("/login")
@@ -233,10 +233,12 @@ export function CaseWizard() {
     }
     setSubmitting(true)
     try {
-      const rec = createCase(session.userId, parsed.data)
+      const rec = await createCase(session.userId, parsed.data)
       clearDraft()
       toast.success("Case saved")
       router.replace(`/cases/${rec.id}`)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save case")
     } finally {
       setSubmitting(false)
     }

@@ -1,113 +1,128 @@
-// Temporary client-side persistence layer.
-// Replace with Supabase queries when the integration is connected.
 "use client"
 
+import { createClient } from "@/lib/supabase/client"
 import type { CaseData, StoredCase } from "./schema"
 
-const USERS_KEY = "anesthcase:users"
-const SESSION_KEY = "anesthcase:session"
-const CASES_KEY = "anesthcase:cases"
-const DRAFT_KEY = "anesthcase:draft"
+const DRAFT_KEY = "anesthesiapp:draft"
 
-type User = { id: string; email: string; password: string; created_at: string }
-
-function safeParse<T>(raw: string | null, fallback: T): T {
-  if (!raw) return fallback
-  try {
-    return JSON.parse(raw) as T
-  } catch {
-    return fallback
-  }
-}
-
-function uid() {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return crypto.randomUUID()
-  }
-  return Math.random().toString(36).slice(2) + Date.now().toString(36)
-}
+export type Session = { userId: string; email: string }
 
 // --- Auth ---
-export function signUp(email: string, password: string): { error?: string } {
-  if (typeof window === "undefined") return { error: "No window" }
-  const users = safeParse<User[]>(localStorage.getItem(USERS_KEY), [])
-  if (users.find((u) => u.email.toLowerCase() === email.toLowerCase())) {
-    return { error: "An account with that email already exists." }
-  }
-  const user: User = {
-    id: uid(),
+
+export async function signUp(
+  email: string,
+  password: string,
+): Promise<{ error?: string; needsEmailConfirmation?: boolean }> {
+  const supabase = createClient()
+  const redirectTo =
+    (typeof window !== "undefined"
+      ? process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ??
+        `${window.location.origin}/auth/callback`
+      : undefined)
+
+  const { data, error } = await supabase.auth.signUp({
     email,
-    password, // NOTE: mock only — real auth should hash via Supabase
-    created_at: new Date().toISOString(),
-  }
-  users.push(user)
-  localStorage.setItem(USERS_KEY, JSON.stringify(users))
-  localStorage.setItem(SESSION_KEY, JSON.stringify({ userId: user.id, email: user.email }))
+    password,
+    options: {
+      emailRedirectTo: redirectTo,
+    },
+  })
+
+  if (error) return { error: error.message }
+
+  // If email confirmation is required, there's a user but no session yet.
+  const needsEmailConfirmation = !data.session && !!data.user
+  return { needsEmailConfirmation }
+}
+
+export async function signIn(
+  email: string,
+  password: string,
+): Promise<{ error?: string }> {
+  const supabase = createClient()
+  const { error } = await supabase.auth.signInWithPassword({ email, password })
+  if (error) return { error: error.message }
   return {}
 }
 
-export function signIn(email: string, password: string): { error?: string } {
-  if (typeof window === "undefined") return { error: "No window" }
-  const users = safeParse<User[]>(localStorage.getItem(USERS_KEY), [])
-  const user = users.find((u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password)
-  if (!user) return { error: "Invalid email or password." }
-  localStorage.setItem(SESSION_KEY, JSON.stringify({ userId: user.id, email: user.email }))
-  return {}
+export async function signOut(): Promise<void> {
+  const supabase = createClient()
+  await supabase.auth.signOut()
 }
 
-export function signOut() {
-  if (typeof window === "undefined") return
-  localStorage.removeItem(SESSION_KEY)
-}
-
-export function getSession(): { userId: string; email: string } | null {
-  if (typeof window === "undefined") return null
-  return safeParse<{ userId: string; email: string } | null>(localStorage.getItem(SESSION_KEY), null)
+export async function getSession(): Promise<Session | null> {
+  const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return null
+  return { userId: user.id, email: user.email ?? "" }
 }
 
 // --- Cases ---
-export function listCases(userId: string): StoredCase[] {
-  if (typeof window === "undefined") return []
-  const all = safeParse<StoredCase[]>(localStorage.getItem(CASES_KEY), [])
-  return all
-    .filter((c) => c.user_id === userId)
-    .sort((a, b) => (a.created_at < b.created_at ? 1 : -1))
+
+export async function listCases(): Promise<StoredCase[]> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from("anesthesia_cases")
+    .select("*")
+    .order("created_at", { ascending: false })
+  if (error) throw new Error(error.message)
+  return (data ?? []) as StoredCase[]
 }
 
-export function getCase(id: string): StoredCase | null {
-  if (typeof window === "undefined") return null
-  const all = safeParse<StoredCase[]>(localStorage.getItem(CASES_KEY), [])
-  return all.find((c) => c.id === id) ?? null
+export async function getCase(id: string): Promise<StoredCase | null> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from("anesthesia_cases")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle()
+  if (error) throw new Error(error.message)
+  return (data ?? null) as StoredCase | null
 }
 
-export function createCase(userId: string, data: CaseData): StoredCase {
-  const all = safeParse<StoredCase[]>(localStorage.getItem(CASES_KEY), [])
-  const record: StoredCase = {
-    ...data,
-    id: uid(),
-    user_id: userId,
-    created_at: new Date().toISOString(),
-  }
-  all.push(record)
-  localStorage.setItem(CASES_KEY, JSON.stringify(all))
-  return record
+export async function createCase(
+  userId: string,
+  data: CaseData,
+): Promise<StoredCase> {
+  const supabase = createClient()
+  const payload = { ...data, user_id: userId }
+  const { data: inserted, error } = await supabase
+    .from("anesthesia_cases")
+    .insert(payload)
+    .select("*")
+    .single()
+  if (error) throw new Error(error.message)
+  return inserted as StoredCase
 }
 
-export function deleteCase(id: string) {
-  if (typeof window === "undefined") return
-  const all = safeParse<StoredCase[]>(localStorage.getItem(CASES_KEY), [])
-  localStorage.setItem(CASES_KEY, JSON.stringify(all.filter((c) => c.id !== id)))
+export async function deleteCase(id: string): Promise<void> {
+  const supabase = createClient()
+  const { error } = await supabase.from("anesthesia_cases").delete().eq("id", id)
+  if (error) throw new Error(error.message)
 }
 
-// --- Draft (wizard autosave) ---
+// --- Draft (wizard autosave, local only) ---
+
 export function saveDraft(data: Partial<CaseData>) {
   if (typeof window === "undefined") return
-  localStorage.setItem(DRAFT_KEY, JSON.stringify(data))
+  try {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(data))
+  } catch {
+    // ignore
+  }
 }
 
 export function loadDraft(): Partial<CaseData> | null {
   if (typeof window === "undefined") return null
-  return safeParse<Partial<CaseData> | null>(localStorage.getItem(DRAFT_KEY), null)
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY)
+    if (!raw) return null
+    return JSON.parse(raw) as Partial<CaseData>
+  } catch {
+    return null
+  }
 }
 
 export function clearDraft() {

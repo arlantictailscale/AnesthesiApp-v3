@@ -33,7 +33,17 @@ export default function CaseDetailPage() {
 
   useEffect(() => {
     if (!params?.id) return
-    setC(getCase(params.id))
+    let active = true
+    getCase(params.id)
+      .then((row) => {
+        if (active) setC(row)
+      })
+      .catch(() => {
+        if (active) setC(null)
+      })
+    return () => {
+      active = false
+    }
   }, [params?.id])
 
   if (c === undefined) {

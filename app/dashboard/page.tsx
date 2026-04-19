@@ -7,28 +7,36 @@ import { AppShell } from "@/components/app-shell"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Empty, EmptyHeader, EmptyTitle, EmptyDescription, EmptyContent } from "@/components/ui/empty"
-import { deleteCase, getSession, listCases } from "@/lib/storage"
+import { deleteCase, listCases } from "@/lib/storage"
 import type { StoredCase } from "@/lib/schema"
 import { ClipboardList, Plus, Trash2, Calendar, User as UserIcon, MapPin } from "lucide-react"
 
 export default function DashboardPage() {
   const [cases, setCases] = useState<StoredCase[] | null>(null)
 
-  function load() {
-    const s = getSession()
-    if (!s) return
-    setCases(listCases(s.userId))
+  async function load() {
+    try {
+      const rows = await listCases()
+      setCases(rows)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to load cases")
+      setCases([])
+    }
   }
 
   useEffect(() => {
     load()
   }, [])
 
-  function handleDelete(id: string) {
+  async function handleDelete(id: string) {
     if (!confirm("Delete this case? This cannot be undone.")) return
-    deleteCase(id)
-    toast.success("Case deleted")
-    load()
+    try {
+      await deleteCase(id)
+      toast.success("Case deleted")
+      await load()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete case")
+    }
   }
 
   return (
