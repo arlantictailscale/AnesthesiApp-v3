@@ -28,7 +28,14 @@ export async function signUp(
     },
   })
 
-  if (error) return { error: error.message }
+  if (error) {
+    console.error("[v0] supabase.auth.signUp error:", {
+      message: error.message,
+      status: error.status,
+      code: (error as { code?: string }).code,
+    })
+    return { error: error.message }
+  }
 
   // If email confirmation is required, there's a user but no session yet.
   const needsEmailConfirmation = !data.session && !!data.user
@@ -41,7 +48,14 @@ export async function signIn(
 ): Promise<{ error?: string }> {
   const supabase = createClient()
   const { error } = await supabase.auth.signInWithPassword({ email, password })
-  if (error) return { error: error.message }
+  if (error) {
+    console.error("[v0] supabase.auth.signInWithPassword error:", {
+      message: error.message,
+      status: error.status,
+      code: (error as { code?: string }).code,
+    })
+    return { error: error.message }
+  }
   return {}
 }
 
