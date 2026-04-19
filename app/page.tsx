@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { Logo } from "@/components/logo"
 import {
   Activity,
   ClipboardList,
@@ -9,7 +10,6 @@ import {
   Database,
   LineChart,
   ArrowRight,
-  Stethoscope,
 } from "lucide-react"
 
 export default function LandingPage() {
@@ -18,12 +18,8 @@ export default function LandingPage() {
       {/* Header */}
       <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 md:px-6">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
-              <Stethoscope className="h-4 w-4" />
-            </div>
-            <span className="font-semibold tracking-tight">AnesthCase</span>
-          </Link>
+          <Logo height={32} priority />
+
           <nav className="hidden items-center gap-6 text-sm text-muted-foreground md:flex">
             <a href="#features" className="hover:text-foreground">
               Features
@@ -58,7 +54,8 @@ export default function LandingPage() {
               Built for anesthesiologists & research teams
             </div>
             <h1 className="text-balance text-4xl font-semibold tracking-tight md:text-6xl">
-              Log every anesthesia case. <span className="text-primary">Power your research.</span>
+              Log every anesthesia case.{" "}
+              <span className="text-[color:var(--brand-crimson)]">Power your research.</span>
             </h1>
             <p className="text-pretty text-lg leading-relaxed text-muted-foreground">
               A mobile-first case logger purpose-built for clinical documentation — structured
@@ -240,13 +237,11 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="border-t border-border">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 py-8 text-sm text-muted-foreground md:flex-row md:px-6">
-          <div className="flex items-center gap-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
-              <Stethoscope className="h-3 w-3" />
-            </div>
-            <span>AnesthCase · for medical research</span>
+          <div className="flex items-center gap-3">
+            <Logo height={24} href={null} />
+            <span>· for medical research</span>
           </div>
-          <p>© {new Date().getFullYear()} AnesthCase. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} AnesthesiApp. All rights reserved.</p>
         </div>
       </footer>
     </div>

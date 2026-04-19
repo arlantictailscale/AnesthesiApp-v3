@@ -13,7 +13,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { getSession, signOut } from "@/lib/storage"
-import { LogOut, Plus, Stethoscope, User } from "lucide-react"
+import { LogOut, Plus, User } from "lucide-react"
+import { Logo } from "@/components/logo"
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter()
@@ -51,12 +52,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-screen flex-col bg-muted/20">
       <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between gap-3 px-4 md:px-6">
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
-              <Stethoscope className="h-4 w-4" />
-            </div>
-            <span className="hidden font-semibold tracking-tight sm:inline">AnesthCase</span>
-          </Link>
+          <Logo href="/dashboard" height={30} />
+
 
           <nav className="flex items-center gap-1">
             <Button

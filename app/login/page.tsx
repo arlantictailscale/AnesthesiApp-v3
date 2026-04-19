@@ -9,7 +9,7 @@ import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { signIn } from "@/lib/storage"
-import { Stethoscope } from "lucide-react"
+import { Logo } from "@/components/logo"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -34,12 +34,8 @@ export default function LoginPage() {
     <div className="flex min-h-screen flex-col bg-muted/30">
       <header className="border-b border-border bg-background">
         <div className="mx-auto flex h-16 max-w-6xl items-center px-4 md:px-6">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
-              <Stethoscope className="h-4 w-4" />
-            </div>
-            <span className="font-semibold tracking-tight">AnesthCase</span>
-          </Link>
+          <Logo height={32} />
+
         </div>
       </header>
 
