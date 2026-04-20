@@ -1,0 +1,177 @@
+import { NextResponse } from "next/server"
+import { AI_MODELS, DEFAULT_AI_MODEL, type AiModelId } from "@/lib/ai-models"
+
+export const runtime = "nodejs"
+export const maxDuration = 60
+
+const FIELD_SCHEMA_DOC = `
+Return ONLY a single JSON object (no markdown, no prose) with EXACTLY these keys.
+Any field the source text does not mention should be an empty string "" (or \`false\` for the investigation "enabled" booleans).
+Numeric fields (age, weight_kg, height_cm) should be JSON numbers when known, otherwise null.
+
+{
+  "procedure_date": "YYYY-MM-DD",
+  "patient_name": "string",
+  "sex": "Male" | "Female" | "",
+  "age": number | null,
+  "medical_record_number": "string",
+  "room": "string",
+  "weight_kg": number | null,
+  "height_cm": number | null,
+
+  "diagnosis": "string",
+  "procedure_intervention": "string",
+  "allergy": "string",
+  "medication": "string",
+  "past_illness": "string",
+  "last_meal": "string",
+  "event": "string",
+
+  "b1_breathing": "string (B1 - airway/breathing findings)",
+  "b2_blood": "string (B2 - circulation/blood findings)",
+  "b3_brain": "string (B3 - neurological findings)",
+  "b4_bladder": "string (B4 - renal/urinary findings)",
+  "b5_bowel": "string (B5 - GI/abdominal findings)",
+  "b6_body_temp": "string (B6 - body temperature / skin)",
+  "others": "string",
+
+  "inv_laboratory": { "enabled": boolean, "result": "string" },
+  "inv_xray":       { "enabled": boolean, "result": "string" },
+  "inv_ecg":        { "enabled": boolean, "result": "string" },
+  "inv_ct":         { "enabled": boolean, "result": "string" },
+  "inv_mri":        { "enabled": boolean, "result": "string" },
+  "inv_other_label": "string",
+  "inv_other_result": "string",
+  "assessment": "string",
+  "planning": "string",
+
+  "anesthesia_management": "string (e.g., GA, regional, MAC)",
+  "regimen_pre_induction": "string",
+  "regimen_induction": "string",
+  "regimen_maintenance": "string",
+  "analgesia_pre_op": "string",
+  "analgesia_intra_op": "string",
+  "analgesia_post_op": "string",
+
+  "post_induction_side_effects": "string",
+  "ventilator_settings": "string",
+  "hemodynamics_intra": "string",
+  "duration_surgery": "string",
+  "bleeding": "string",
+  "transfusion": "string",
+  "urine_output": "string",
+  "fluid_balance": "string",
+
+  "post_op_room": "Low Care" | "High Care" | "ICU" | "",
+  "hemodynamics_post": "string",
+  "lab_results_post": "string"
+}
+`.trim()
+
+const SYSTEM_PROMPT = `You are a clinical documentation assistant for AnesthesiApp, an anesthesia case logging tool.
+Your job: read the provided free-text case description (or rough notes) and extract structured values into the exact JSON schema requested.
+Rules:
+- Output ONLY the JSON object. No markdown fences, no explanation.
+- Use empty strings for unknown text fields, null for unknown numbers, false for unknown investigation "enabled" flags.
+- For investigations: set "enabled": true ONLY if the note mentions that study was obtained; copy the finding into "result".
+- Do not invent clinical details; only use what is supported by the input.
+- Keep values concise and clinically phrased (e.g., "ASA II", "GCS 15", "BP 120/80, HR 82, SpO2 99% RA").
+- Dates must be ISO YYYY-MM-DD. If only a relative date is given (e.g., "today"), leave it empty.
+
+${FIELD_SCHEMA_DOC}`
+
+function isAllowedModel(id: string): id is AiModelId {
+  return AI_MODELS.some((m) => m.id === id)
+}
+
+function extractJson(text: string): unknown {
+  const trimmed = text.trim()
+  // Strip ```json fences if the model added them despite instructions.
+  const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i)
+  const body = fenced ? fenced[1] : trimmed
+  const firstBrace = body.indexOf("{")
+  const lastBrace = body.lastIndexOf("}")
+  if (firstBrace === -1 || lastBrace === -1) {
+    throw new Error("Model did not return JSON")
+  }
+  return JSON.parse(body.slice(firstBrace, lastBrace + 1))
+}
+
+export async function POST(req: Request) {
+  const apiKey = process.env.OPENROUTER_API_KEY
+  if (!apiKey) {
+    return NextResponse.json({ error: "OPENROUTER_API_KEY is not configured" }, { status: 500 })
+  }
+
+  let body: { description?: string; model?: string }
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 })
+  }
+
+  const description = (body.description ?? "").trim()
+  if (!description) {
+    return NextResponse.json({ error: "Description is required" }, { status: 400 })
+  }
+
+  const requestedModel = body.model ?? DEFAULT_AI_MODEL
+  const model: AiModelId = isAllowedModel(requestedModel) ? requestedModel : DEFAULT_AI_MODEL
+
+  const origin = req.headers.get("origin") ?? "https://anesthesiapp.local"
+
+  let res: Response
+  try {
+    res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": origin,
+        "X-Title": "AnesthesiApp",
+      },
+      body: JSON.stringify({
+        model,
+        temperature: 0.2,
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: description },
+        ],
+      }),
+    })
+  } catch (err) {
+    console.error("[v0] OpenRouter fetch failed:", err)
+    return NextResponse.json({ error: "Failed to reach OpenRouter" }, { status: 502 })
+  }
+
+  if (!res.ok) {
+    const errText = await res.text()
+    console.error("[v0] OpenRouter error:", res.status, errText)
+    return NextResponse.json(
+      { error: `OpenRouter ${res.status}: ${errText.slice(0, 300)}` },
+      { status: 502 },
+    )
+  }
+
+  const payload = (await res.json()) as {
+    choices?: { message?: { content?: string } }[]
+  }
+  const content = payload.choices?.[0]?.message?.content ?? ""
+  if (!content) {
+    return NextResponse.json({ error: "Empty response from model" }, { status: 502 })
+  }
+
+  let parsed: unknown
+  try {
+    parsed = extractJson(content)
+  } catch (err) {
+    console.error("[v0] Failed to parse model JSON:", content)
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Failed to parse JSON" },
+      { status: 502 },
+    )
+  }
+
+  return NextResponse.json({ data: parsed, model })
+}

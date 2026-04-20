@@ -27,6 +27,7 @@ import {
   saveDraft,
 } from "@/lib/storage"
 import { Stepper } from "./stepper"
+import { AiPopulateDialog } from "./ai-populate-dialog"
 import { Step1 } from "./steps/step-1"
 import { Step2 } from "./steps/step-2"
 import { Step3 } from "./steps/step-3"
@@ -249,6 +250,16 @@ export function CaseWizard() {
   return (
     <FormProvider {...methods}>
       <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-xl font-semibold tracking-tight">New case</h1>
+            <p className="text-sm text-muted-foreground">
+              Fill the 7 steps manually, or let AI pre-fill from a free-text description.
+            </p>
+          </div>
+          <AiPopulateDialog />
+        </div>
+
         <Card className="p-4 md:p-6">
           <Stepper current={step} />
         </Card>
