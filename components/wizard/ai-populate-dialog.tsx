@@ -185,8 +185,8 @@ export function AiPopulateDialog() {
           AI populate
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[92vh] flex-col gap-0 p-0 sm:max-w-lg">
+        <DialogHeader className="border-b px-6 py-4">
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-[color:var(--brand-crimson)]" />
             Auto-populate case with AI
@@ -197,7 +197,7 @@ export function AiPopulateDialog() {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col gap-4">
+        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-6 py-4">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="ai-model">Model</Label>
             <Select value={model} onValueChange={(v) => setModel(v as AiModelId)}>
@@ -217,7 +217,7 @@ export function AiPopulateDialog() {
             </Select>
           </div>
 
-          <div className="flex flex-col gap-1.5">
+          <div className="flex min-h-0 flex-1 flex-col gap-1.5">
             <Label htmlFor="ai-description">Case description</Label>
             <Textarea
               id="ai-description"
@@ -226,7 +226,7 @@ export function AiPopulateDialog() {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               disabled={loading}
-              className="min-h-40 resize-y font-mono text-sm"
+              className="max-h-[50vh] min-h-40 resize-y font-mono text-sm"
             />
             <p className="text-xs text-muted-foreground">
               Only fields the model can extract will be filled; existing values stay untouched if
@@ -235,7 +235,7 @@ export function AiPopulateDialog() {
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="border-t bg-background px-6 py-4">
           <Button
             type="button"
             variant="ghost"
