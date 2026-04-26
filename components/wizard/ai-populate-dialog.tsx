@@ -80,7 +80,11 @@ const STRING_KEYS: (keyof CaseData)[] = [
   "lab_results_post",
 ]
 
-export function AiPopulateDialog() {
+export function AiPopulateDialog({
+  onPopulated,
+}: {
+  onPopulated?: (count: number) => void
+}) {
   const form = useFormContext<CaseData>()
   const [open, setOpen] = useState(false)
   const [description, setDescription] = useState("")
@@ -168,6 +172,7 @@ export function AiPopulateDialog() {
       }
       const applied = applyToForm(json.data)
       toast.success(`AI populated ${applied} field${applied === 1 ? "" : "s"}`)
+      onPopulated?.(applied)
       setOpen(false)
     } catch (err) {
       console.error("[v0] AI populate error:", err)

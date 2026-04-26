@@ -157,6 +157,7 @@ export function CaseWizard() {
   const router = useRouter()
   const [step, setStep] = useState(0)
   const [submitting, setSubmitting] = useState(false)
+  const [aiPopulated, setAiPopulated] = useState(false)
 
   const methods = useForm<CaseData>({
     resolver: zodResolver(caseSchema) as never,
@@ -257,7 +258,11 @@ export function CaseWizard() {
               Fill the 7 steps manually, or let AI pre-fill from a free-text description.
             </p>
           </div>
-          <AiPopulateDialog />
+          <AiPopulateDialog
+            onPopulated={(count) => {
+              if (count > 0) setAiPopulated(true)
+            }}
+          />
         </div>
 
         <Card className="p-4 md:p-6">
@@ -289,7 +294,12 @@ export function CaseWizard() {
               <Button type="button" variant="outline" onClick={handleSaveDraft} className="gap-1">
                 <Save className="h-4 w-4" /> Save draft
               </Button>
-              {isLastStep ? (
+              {!isLastStep && (
+                <Button type="button" variant="outline" onClick={goNext} className="gap-1">
+                  Next <ArrowRight className="h-4 w-4" />
+                </Button>
+              )}
+              {(isLastStep || aiPopulated) && (
                 <Button
                   type="button"
                   onClick={handleSubmitFinal}
@@ -298,10 +308,6 @@ export function CaseWizard() {
                 >
                   <Check className="h-4 w-4" />
                   {submitting ? "Saving…" : "Submit case"}
-                </Button>
-              ) : (
-                <Button type="button" onClick={goNext} className="gap-1">
-                  Next <ArrowRight className="h-4 w-4" />
                 </Button>
               )}
             </div>
