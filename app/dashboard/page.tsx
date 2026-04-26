@@ -95,16 +95,16 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="flex flex-col gap-1.5 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-3.5 w-3.5" />
-                    <span>{c.procedure_date}</span>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Calendar className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">{c.procedure_date}</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-3.5 w-3.5" />
+                  <div className="flex items-center gap-2 min-w-0">
+                    <MapPin className="h-3.5 w-3.5 shrink-0" />
                     <span className="truncate">Room {c.room}</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <UserIcon className="h-3.5 w-3.5" />
+                  <div className="flex items-center gap-2 min-w-0">
+                    <UserIcon className="h-3.5 w-3.5 shrink-0" />
                     <span className="truncate">{c.diagnosis}</span>
                   </div>
                 </div>
