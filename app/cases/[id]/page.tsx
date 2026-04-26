@@ -26,6 +26,11 @@ function val(v: unknown): React.ReactNode {
   return String(v)
 }
 
+function isLongValue(v: React.ReactNode): boolean {
+  if (typeof v === "string") return v.length > 60 || v.includes("\n")
+  return false
+}
+
 export default function CaseDetailPage() {
   const params = useParams<{ id: string }>()
   const router = useRouter()
@@ -188,12 +193,38 @@ export default function CaseDetailPage() {
                 <h2 className="font-semibold">{s.title}</h2>
               </div>
               <dl className="flex flex-col divide-y divide-border">
-                {s.rows.map(([k, v]) => (
-                  <div key={k} className="flex flex-col gap-0.5 py-2 first:pt-0 last:pb-0 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-                    <dt className="text-xs text-muted-foreground sm:min-w-32">{k}</dt>
-                    <dd className="text-sm text-foreground sm:text-right sm:max-w-[65%]">{v}</dd>
-                  </div>
-                ))}
+                {s.rows.map(([k, v]) => {
+                  const stacked = isLongValue(v)
+                  return (
+                    <div
+                      key={k}
+                      className={
+                        stacked
+                          ? "flex flex-col gap-1 py-3 first:pt-0 last:pb-0"
+                          : "flex flex-col gap-0.5 py-2 first:pt-0 last:pb-0 sm:flex-row sm:items-start sm:justify-between sm:gap-4"
+                      }
+                    >
+                      <dt
+                        className={
+                          stacked
+                            ? "text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                            : "text-xs text-muted-foreground sm:min-w-32"
+                        }
+                      >
+                        {k}
+                      </dt>
+                      <dd
+                        className={
+                          stacked
+                            ? "whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground"
+                            : "text-sm text-foreground sm:max-w-[60%] sm:text-right"
+                        }
+                      >
+                        {v}
+                      </dd>
+                    </div>
+                  )
+                })}
               </dl>
             </Card>
           ))}
