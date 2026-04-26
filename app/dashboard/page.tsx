@@ -49,7 +49,7 @@ export default function DashboardPage() {
               All anesthesia cases you&apos;ve logged.
             </p>
           </div>
-          <Button asChild className="gap-2">
+          <Button asChild className="w-full sm:w-auto gap-2">
             <Link href="/cases/new">
               <Plus className="h-4 w-4" />
               New case
@@ -79,9 +79,9 @@ export default function DashboardPage() {
             </EmptyContent>
           </Empty>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {cases.map((c) => (
-              <Card key={c.id} className="flex flex-col gap-3 p-5">
+              <Card key={c.id} className="flex min-w-0 flex-col gap-3 p-5">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <h3 className="truncate font-semibold">{c.patient_name}</h3>
