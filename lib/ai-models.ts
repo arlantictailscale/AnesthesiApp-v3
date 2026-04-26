@@ -1,21 +1,31 @@
 export const AI_MODELS = [
   {
-    id: "openrouter/elephant-alpha",
-    label: "Elephant Alpha",
-    description: "Default model for AnesthesiApp case population",
+    id: "inclusionai/ling-2.6-1t:free",
+    label: "Ling 2.6 1T (free)",
+    description: "InclusionAI Ling 2.6, 1T parameters — default for AnesthesiApp",
   },
   {
-    id: "google/gemma-4-31b-it:free",
-    label: "Gemma 4 31B (free)",
-    description: "Google Gemma 4, 31B instruct, free tier",
+    id: "inclusionai/ling-2.6-flash:free",
+    label: "Ling 2.6 Flash (free)",
+    description: "InclusionAI Ling 2.6 Flash, faster / smaller variant",
   },
   {
-    id: "google/gemma-4-26b-a4b-it:free",
-    label: "Gemma 4 26B A4B (free)",
-    description: "Google Gemma 4, 26B A4B instruct, free tier",
+    id: "tencent/hy3-preview:free",
+    label: "Tencent HY3 Preview (free)",
+    description: "Tencent HunYuan 3 preview, free tier",
+  },
+  {
+    id: "baidu/qianfan-ocr-fast:free",
+    label: "Qianfan OCR Fast (free)",
+    description: "Baidu Qianfan OCR Fast — best for scanned / OCR-style notes",
+  },
+  {
+    id: "openrouter/free",
+    label: "OpenRouter Auto (free)",
+    description: "OpenRouter auto-routes to a free model",
   },
 ] as const
 
 export type AiModelId = (typeof AI_MODELS)[number]["id"]
 
-export const DEFAULT_AI_MODEL: AiModelId = "openrouter/elephant-alpha"
+export const DEFAULT_AI_MODEL: AiModelId = "inclusionai/ling-2.6-1t:free"
