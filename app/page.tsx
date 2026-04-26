@@ -12,7 +12,13 @@ import {
   ArrowRight,
 } from "lucide-react"
 
-export default function LandingPage() {
+import { createClient } from "@/lib/supabase/server"
+
+export default async function LandingPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  const isLoggedIn = !!user
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -32,12 +38,20 @@ export default function LandingPage() {
             </a>
           </nav>
           <div className="flex items-center gap-2">
-            <Button asChild variant="ghost" size="sm">
-              <Link href="/login">Sign in</Link>
-            </Button>
-            <Button asChild size="sm">
-              <Link href="/signup">Get started</Link>
-            </Button>
+            {isLoggedIn ? (
+              <Button asChild size="sm">
+                <Link href="/dashboard">Go to Dashboard</Link>
+              </Button>
+            ) : (
+              <>
+                <Button asChild variant="ghost" size="sm">
+                  <Link href="/login">Sign in</Link>
+                </Button>
+                <Button asChild size="sm">
+                  <Link href="/signup">Get started</Link>
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -63,15 +77,26 @@ export default function LandingPage() {
               the bedside.
             </p>
             <div className="flex flex-col gap-3 sm:flex-row">
-              <Button asChild size="lg" className="gap-2">
-                <Link href="/signup">
-                  Start logging cases
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
-              <Button asChild size="lg" variant="outline">
-                <Link href="/login">I already have an account</Link>
-              </Button>
+              {isLoggedIn ? (
+                <Button asChild size="lg" className="gap-2">
+                  <Link href="/dashboard">
+                    Go to your cases
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+              ) : (
+                <>
+                  <Button asChild size="lg" className="gap-2">
+                    <Link href="/signup">
+                      Start logging cases
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                  <Button asChild size="lg" variant="outline">
+                    <Link href="/login">I already have an account</Link>
+                  </Button>
+                </>
+              )}
             </div>
             <dl className="mt-4 grid grid-cols-3 gap-4 border-t border-border pt-6">
               <div>
@@ -217,17 +242,25 @@ export default function LandingPage() {
                 </p>
               </div>
               <div className="flex flex-col gap-3 md:items-end">
-                <Button asChild size="lg" variant="secondary" className="w-full md:w-auto">
-                  <Link href="/signup">Create your account</Link>
-                </Button>
-                <Button
-                  asChild
-                  size="lg"
-                  variant="ghost"
-                  className="w-full text-primary-foreground hover:bg-primary-foreground/10 md:w-auto"
-                >
-                  <Link href="/login">Sign in</Link>
-                </Button>
+                {isLoggedIn ? (
+                  <Button asChild size="lg" variant="secondary" className="w-full md:w-auto">
+                    <Link href="/dashboard">Go to Dashboard</Link>
+                  </Button>
+                ) : (
+                  <>
+                    <Button asChild size="lg" variant="secondary" className="w-full md:w-auto">
+                      <Link href="/signup">Create your account</Link>
+                    </Button>
+                    <Button
+                      asChild
+                      size="lg"
+                      variant="ghost"
+                      className="w-full text-primary-foreground hover:bg-primary-foreground/10 md:w-auto"
+                    >
+                      <Link href="/login">Sign in</Link>
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           </Card>
