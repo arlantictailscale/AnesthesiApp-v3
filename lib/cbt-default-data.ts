@@ -572,7 +572,7 @@ while (questions.length < 100) {
 
   questions.push({
     id: `q${questionNum}`,
-    text,
+    text: text.replace(/^\[Soal\s*(?:No\.?)?\s*\d+\]\s*/i, ""),
     options,
     correctOption,
     category: currentCategory,

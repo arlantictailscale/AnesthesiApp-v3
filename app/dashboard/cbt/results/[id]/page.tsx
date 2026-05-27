@@ -351,7 +351,7 @@ export default function CBTResultsPage() {
                         </div>
                       </div>
                       <CardTitle className="text-sm font-semibold leading-relaxed mt-2 text-foreground select-none">
-                        {q.text}
+                        {q.text.replace(/^\[Soal\s*(?:No\.?)?\s*\d+\]\s*/i, "")}
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="pt-6 space-y-6">

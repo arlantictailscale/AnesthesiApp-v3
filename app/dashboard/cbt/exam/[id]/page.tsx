@@ -60,8 +60,8 @@ export default function CBTExamPage() {
           return
         }
         setPkg(p)
-        // Scaled time: 90 seconds per question
-        const seconds = p.questions.length * 90
+        // Scaled time: 60 seconds per question (100 minutes for 100 questions)
+        const seconds = p.questions.length * 60
         setTimeLeft(seconds)
         setTotalDuration(seconds)
       } catch (err) {
@@ -254,7 +254,7 @@ export default function CBTExamPage() {
             <CardContent className="flex-1 pt-6 flex flex-col gap-6">
               {/* Question Text */}
               <p className="text-base md:text-lg leading-relaxed font-medium text-foreground select-none">
-                {currentQuestion.text}
+                {currentQuestion.text.replace(/^\[Soal\s*(?:No\.?)?\s*\d+\]\s*/i, "")}
               </p>
 
               {/* Choices List */}
