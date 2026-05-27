@@ -221,7 +221,7 @@ export default function CBTExamPage() {
       })
 
       const score = Number(((correct / totalQuestions) * 100).toFixed(1))
-      const timeSpent = totalDuration - timeLeft
+      const time_spent = totalDuration - timeLeft
 
       const attempt = await saveAttempt({
         package_id: pkg.id,
