@@ -206,6 +206,7 @@ export default function CBTExamPage() {
   }
 
   async function submitExam(isForce = false) {
+    setExamFinished(true)
     setSubmitting(true)
     try {
       // Calculate scores
@@ -435,6 +436,7 @@ export default function CBTExamPage() {
                   className="w-full text-muted-foreground hover:text-foreground hover:bg-muted/50 gap-1.5"
                   onClick={() => {
                     if (confirm("Keluar dari ujian? Progress Anda saat ini akan dihapus.")) {
+                      setExamFinished(true)
                       if (typeof window !== "undefined") {
                         localStorage.removeItem(`anesthesiapp:cbt_progress_${packageId}`)
                       }
