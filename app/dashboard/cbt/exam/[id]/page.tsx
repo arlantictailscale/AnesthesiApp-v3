@@ -317,6 +317,17 @@ export default function CBTExamPage() {
                 {currentQuestion.text.replace(/^\[Soal\s*(?:No\.?)?\s*\d+\]\s*/i, "")}
               </p>
 
+              {currentQuestion.imageUrl && (
+                <div className="relative w-full max-h-[320px] rounded-lg overflow-hidden border border-border bg-muted flex items-center justify-center">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={currentQuestion.imageUrl}
+                    alt={`Gambar Soal #${activeIdx + 1}`}
+                    className="max-h-[320px] w-auto object-contain rounded-md"
+                  />
+                </div>
+              )}
+
               {/* Choices List */}
               <div className="flex flex-col gap-3">
                 {(["A", "B", "C", "D", "E"] as const).map((letter) => {

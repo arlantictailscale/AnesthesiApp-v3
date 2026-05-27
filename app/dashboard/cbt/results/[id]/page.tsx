@@ -363,6 +363,16 @@ export default function CBTResultsPage() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="pt-6 space-y-6">
+                      {q.imageUrl && (
+                        <div className="relative w-full max-h-[250px] rounded-lg overflow-hidden border border-border bg-muted flex items-center justify-center mb-4">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={q.imageUrl}
+                            alt={`Gambar Soal #${q.originalIdx + 1}`}
+                            className="max-h-[250px] w-auto object-contain rounded-md"
+                          />
+                        </div>
+                      )}
                       {/* Options with colored answers */}
                       <div className="flex flex-col gap-2.5 text-xs md:text-sm">
                         {(["A", "B", "C", "D", "E"] as const).map((letter) => {

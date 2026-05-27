@@ -21,6 +21,7 @@ export interface CBTQuestion {
     | "Anestesi Geriatrik"
     | "Anestesi Rawat Jalan & NORA"
   explanation: string
+  imageUrl?: string
 }
 
 export interface CBTPackage {

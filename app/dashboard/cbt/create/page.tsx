@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { createPackage, getPackage, updatePackage } from "@/lib/cbt-storage"
 import type { CBTQuestion } from "@/lib/cbt-default-data"
+import { createClient } from "@/lib/supabase/client"
 import {
   ChevronLeft,
   Plus,
@@ -22,6 +23,9 @@ import {
   Edit2,
   BookOpen,
   FileText,
+  Upload,
+  X,
+  ImageIcon,
 } from "lucide-react"
 import {
   Dialog,
@@ -91,6 +95,8 @@ function CBTCreatePageContent() {
   const [correctOption, setCorrectOption] = useState<"A" | "B" | "C" | "D" | "E">("A")
   const [category, setCategory] = useState<typeof CATEGORIES[number]>("Farmakologi & Fisiologi")
   const [explanation, setExplanation] = useState("")
+  const [qImageUrl, setQImageUrl] = useState("")
+  const [uploadingImage, setUploadingImage] = useState(false)
 
   const [saving, setSaving] = useState(false)
   const [loadingPackage, setLoadingPackage] = useState(!!editId)
@@ -140,6 +146,8 @@ function CBTCreatePageContent() {
     setCorrectOption("A")
     setCategory("Farmakologi & Fisiologi")
     setExplanation("")
+    setQImageUrl("")
+    setUploadingImage(false)
   }
 
   // Load a question into form for editing
@@ -155,6 +163,7 @@ function CBTCreatePageContent() {
     setCorrectOption(q.correctOption)
     setCategory(q.category as any)
     setExplanation(q.explanation)
+    setQImageUrl(q.imageUrl || "")
   }
 
   // Remove a question
@@ -196,6 +205,7 @@ function CBTCreatePageContent() {
       correctOption,
       category,
       explanation: explanation.trim(),
+      imageUrl: qImageUrl || undefined,
     }
 
     if (editIndex !== null) {
@@ -213,6 +223,46 @@ function CBTCreatePageContent() {
     }
 
     clearQuestionForm()
+  }
+
+  // Upload image to Supabase Storage
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Ukuran file terlalu besar. Maksimum 5MB.")
+      return
+    }
+
+    setUploadingImage(true)
+    try {
+      const supabase = createClient()
+      const fileExt = file.name.split(".").pop()
+      const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`
+      const filePath = `questions/${fileName}`
+
+      const { data, error } = await supabase.storage
+        .from("cbt-images")
+        .upload(filePath, file, {
+          cacheControl: "3600",
+          upsert: false,
+        })
+
+      if (error) throw error
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("cbt-images")
+        .getPublicUrl(filePath)
+
+      setQImageUrl(publicUrl)
+      toast.success("Gambar pendukung berhasil diunggah!")
+    } catch (err) {
+      console.error("Upload error:", err)
+      toast.error("Gagal mengunggah gambar. Pastikan bucket 'cbt-images' sudah siap di Supabase.")
+    } finally {
+      setUploadingImage(false)
+    }
   }
 
   // Sample JSON format helper
@@ -482,6 +532,61 @@ function CBTCreatePageContent() {
                       onChange={(e) => setQText(e.target.value)}
                       className="h-28"
                     />
+                  </div>
+
+                  {/* Image Upload Input */}
+                  <div className="space-y-2">
+                    <Label htmlFor="q-image">Gambar Pendukung (Opsional)</Label>
+                    <div className="flex flex-col gap-3">
+                      {qImageUrl ? (
+                        <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-border bg-muted flex items-center justify-center">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={qImageUrl}
+                            alt="Pendukung Soal"
+                            className="max-h-full max-w-full object-contain"
+                          />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            className="absolute top-2 right-2 h-7 w-7 rounded-full shadow-md"
+                            onClick={() => setQImageUrl("")}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center w-full">
+                          <label
+                            htmlFor="q-image-upload"
+                            className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-muted-foreground/20 rounded-lg cursor-pointer bg-muted/10 hover:bg-muted/20 transition-all"
+                          >
+                            <div className="flex flex-col items-center justify-center pt-5 pb-6 text-muted-foreground gap-2">
+                              {uploadingImage ? (
+                                <span className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                              ) : (
+                                <Upload className="h-6 w-6" />
+                              )}
+                              <p className="text-xs font-semibold">
+                                {uploadingImage ? "Mengunggah..." : "Klik untuk unggah gambar pendukung"}
+                              </p>
+                              <p className="text-[10px] text-muted-foreground/60">
+                                PNG, JPG, JPEG (Maks. 5MB)
+                              </p>
+                            </div>
+                            <input
+                              id="q-image-upload"
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={handleImageUpload}
+                              disabled={uploadingImage}
+                            />
+                          </label>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {/* Options A-E */}
