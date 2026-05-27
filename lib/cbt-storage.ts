@@ -376,6 +376,23 @@ export async function saveAttempt(attempt: Omit<CBTAttempt, "id" | "created_at">
   return newAttempt
 }
 
+/**
+ * Deletes a past test attempt
+ */
+export async function deleteAttempt(id: string): Promise<void> {
+  try {
+    const supabase = createClient()
+    await supabase.from("cbt_attempts").delete().eq("id", id)
+  } catch (err) {
+    console.warn("Supabase deleteAttempt failed:", err)
+  }
+
+  // Always delete locally too
+  const local = getLocalAttempts()
+  const filtered = local.filter((a) => a.id !== id)
+  saveLocalAttempts(filtered)
+}
+
 // --- Ratings and Comments for Community Hub ---
 
 export interface CBTComment {

@@ -26,6 +26,7 @@ import {
   createPackage,
   deletePackage,
   getPackageRatings,
+  deleteAttempt,
   type CBTPackage,
   type CBTAttempt,
 } from "@/lib/cbt-storage"
@@ -150,6 +151,20 @@ export default function CBTDashboardPage() {
       loadData()
     } catch (err) {
       toast.error("Gagal menghapus paket.")
+    }
+  }
+
+  async function handleDeleteAttempt(id: string, e: React.MouseEvent) {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!confirm("Hapus riwayat percobaan ujian ini?")) return
+
+    try {
+      await deleteAttempt(id)
+      toast.success("Riwayat percobaan berhasil dihapus.")
+      loadData()
+    } catch (err) {
+      toast.error("Gagal menghapus riwayat percobaan.")
     }
   }
 
@@ -492,11 +507,20 @@ export default function CBTDashboardPage() {
                               {att.score}% · {isPassed ? "LULUS" : "GAGAL"}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-right whitespace-nowrap">
+                          <td className="px-6 py-4 text-right whitespace-nowrap flex items-center justify-end gap-2">
                             <Button asChild variant="outline" size="sm">
                               <Link href={`/dashboard/cbt/results/${att.id}`}>
                                 Lihat Review
                               </Link>
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                              onClick={(e) => handleDeleteAttempt(att.id, e)}
+                              title="Hapus Riwayat"
+                            >
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </td>
                         </tr>
