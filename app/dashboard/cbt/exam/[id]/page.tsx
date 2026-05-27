@@ -241,7 +241,8 @@ export default function CBTExamPage() {
       toast.success("Ujian berhasil diselesaikan!")
       router.replace(`/dashboard/cbt/results/${attempt.id}`)
     } catch (err) {
-      toast.error("Gagal menyimpan hasil ujian. Silakan coba lagi.")
+      console.error("CBT Submit Error:", err)
+      toast.error(err instanceof Error ? `Gagal: ${err.message}` : "Gagal menyimpan hasil ujian. Silakan coba lagi.")
     } finally {
       setSubmitting(false)
       setIsSubmitOpen(false)
