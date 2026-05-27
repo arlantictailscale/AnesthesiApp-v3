@@ -291,7 +291,12 @@ function CBTCreatePageContent() {
     }
 
     try {
-      const parsed = JSON.parse(importJsonText)
+      // Sanitize backslashes to handle LaTeX or unescaped characters/symbols
+      const sanitizedText = importJsonText
+        .replace(/\\(?!["\\/bfnrt]|u[0-9a-fA-F]{4})/g, "\\\\")
+        .replace(/\\([tnr])(?=[a-zA-Z])/g, "\\\\$1")
+
+      const parsed = JSON.parse(sanitizedText)
       if (!Array.isArray(parsed)) {
         throw new Error("Format JSON harus berupa array berisi soal.")
       }
