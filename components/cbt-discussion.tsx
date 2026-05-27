@@ -117,7 +117,7 @@ export function CBTDiscussion({ packageId, packageName }: CBTDiscussionProps) {
   return (
     <div className="grid gap-6 md:grid-cols-3">
       {/* Ratings Panel */}
-      <Card className="border border-border bg-card shadow-sm flex flex-col">
+      <Card className="border border-border bg-card shadow-sm flex flex-col h-fit">
         <CardHeader className="pb-4">
           <CardTitle className="text-base font-bold flex items-center gap-1.5">
             <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
@@ -141,7 +141,7 @@ export function CBTDiscussion({ packageId, packageName }: CBTDiscussionProps) {
           </div>
         </CardContent>
 
-        <CardFooter className="w-full border-t border-border pt-4 flex flex-col items-center mt-auto">
+        <CardFooter className="w-full border-t border-border pt-4 flex flex-col items-center">
           <span className="text-xs font-semibold text-muted-foreground block mb-2">
             {ratings.userRating ? "Rating Anda" : "Berikan Rating Anda"}
           </span>
