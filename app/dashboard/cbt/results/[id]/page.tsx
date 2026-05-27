@@ -77,13 +77,17 @@ export default function CBTResultsPage() {
   const seconds = attempt.time_spent % 60
   const durationStr = `${minutes} menit ${seconds} detik`
 
-  // Calculate category statistics
   const categoriesList = [
     "Farmakologi & Fisiologi",
     "Resusitasi & Critical Care",
     "Anestesi Umum & Regional",
-    "Anestesi Obstetrik & Pediatrik",
-    "Neuroanestesi & Kardiovaskular",
+    "Anestesi Obstetrik",
+    "Anestesi Pediatrik",
+    "Neuroanestesi",
+    "Anestesi Kardiovaskular",
+    "Manajemen Nyeri (Pain Management)",
+    "Anestesi Geriatrik",
+    "Anestesi Rawat Jalan & NORA",
   ] as const
 
   const categoryStats = categoriesList.map((cat) => {

@@ -27,8 +27,13 @@ const CATEGORIES = [
   "Farmakologi & Fisiologi",
   "Resusitasi & Critical Care",
   "Anestesi Umum & Regional",
-  "Anestesi Obstetrik & Pediatrik",
-  "Neuroanestesi & Kardiovaskular",
+  "Anestesi Obstetrik",
+  "Anestesi Pediatrik",
+  "Neuroanestesi",
+  "Anestesi Kardiovaskular",
+  "Manajemen Nyeri (Pain Management)",
+  "Anestesi Geriatrik",
+  "Anestesi Rawat Jalan & NORA",
 ] as const
 
 export default function CBTCreatePage() {

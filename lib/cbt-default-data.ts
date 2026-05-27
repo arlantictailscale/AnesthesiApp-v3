@@ -13,8 +13,13 @@ export interface CBTQuestion {
     | "Farmakologi & Fisiologi"
     | "Resusitasi & Critical Care"
     | "Anestesi Umum & Regional"
-    | "Anestesi Obstetrik & Pediatrik"
-    | "Neuroanestesi & Kardiovaskular"
+    | "Anestesi Obstetrik"
+    | "Anestesi Pediatrik"
+    | "Neuroanestesi"
+    | "Anestesi Kardiovaskular"
+    | "Manajemen Nyeri (Pain Management)"
+    | "Anestesi Geriatrik"
+    | "Anestesi Rawat Jalan & NORA"
   explanation: string
 }
 
@@ -53,7 +58,7 @@ const questions: CBTQuestion[] = [
       E: "Meningkatkan laju filtrasi glomerulus sehingga mempercepat klirens obat",
     },
     correctOption: "C",
-    category: "Anestesi Obstetrik & Pediatrik",
+    category: "Anestesi Obstetrik",
     explanation: "Magnesium sulfat (MgSO4) bertindak sebagai antagonis kalsium fisiologis di terminal saraf presinaps neuromuscular junction, yang secara signifikan mengurangi influks kalsium dan pelepasan asetilkolin. Kondisi ini meningkatkan kepekaan motor end-plate dan memperpanjang efek blockade pelumpuh otot depolarisasi maupun nondepolarisasi.",
   },
   {
@@ -123,8 +128,8 @@ const questions: CBTQuestion[] = [
       E: "Menggunakan agen vasodilatasi murni seperti nitroprusid untuk menurunkan afterload",
     },
     correctOption: "C",
-    category: "Neuroanestesi & Kardiovaskular",
-    explanation: "Pada mitral stenosis, pengisian ventrikel kiri sangat bergantung pada waktu diastolik. Takikardia akan memperpendek waktu diastole sehingga menurunkan curah jantung (cardiac output) secara drastis dan memicu edema paru. Denyut nadi harus dijaga lambat (sinus rhythm) dan fluktuasi cairan dihindari.",
+    category: "Anestesi Kardiovaskular",
+    explanation: "Pada mitral stenosis, pengisian ventrikel kiri sangat bergantung pada waktu diastolik. Takikardia akan memperpendek waktu diastole sehingga menurunkan curah jantung (cardiac output) secara drastis and memicu edema paru. Denyut nadi harus dijaga lambat (sinus rhythm) dan fluktuasi cairan dihindari.",
   },
   {
     id: "q8",
@@ -137,7 +142,7 @@ const questions: CBTQuestion[] = [
       E: "Neonatus memiliki sensitivitas yang sangat rendah terhadap hipoksia dan hiperkapnia",
     },
     correctOption: "C",
-    category: "Anestesi Obstetrik & Pediatrik",
+    category: "Anestesi Pediatrik",
     explanation: "Konsumsi oksigen neonatus sangat tinggi (sekitar 6-8 mL/kg/menit, dua kali lipat dibanding dewasa) untuk mendukung metabolisme yang cepat. Dikombinasikan dengan kapasitas residu fungsional (FRC) yang rendah, neonatus sangat cepat mengalami desaturasi oksigen (hipoksia) jika terjadi apneu.",
   },
   {
@@ -165,20 +170,24 @@ const questions: CBTQuestion[] = [
       E: "CPP = MAP / ICP",
     },
     correctOption: "B",
-    category: "Neuroanestesi & Kardiovaskular",
+    category: "Neuroanestesi",
     explanation: "Tekanan Perfusi Serebral (Cerebral Perfusion Pressure - CPP) dihitung menggunakan rumus CPP = MAP - ICP (Mean Arterial Pressure dikurangi Intracranial Pressure). Jika CVP (Central Venous Pressure) lebih tinggi daripada ICP, maka CVP digunakan sebagai pengurang. Nilai CPP normal berkisar antara 60-80 mmHg.",
   },
   // We will generate the remaining 90 questions beautifully to make 100 questions.
   // I will write out a comprehensive database of 100 realistic anesthesiology questions with distinct IDs (q1 to q100)
 ]
 
-// Add rest of the questions programmatically and realistically so it contains exactly 100 high quality questions.
 const categoriesList = [
   "Farmakologi & Fisiologi",
   "Resusitasi & Critical Care",
   "Anestesi Umum & Regional",
-  "Anestesi Obstetrik & Pediatrik",
-  "Neuroanestesi & Kardiovaskular",
+  "Anestesi Obstetrik",
+  "Anestesi Pediatrik",
+  "Neuroanestesi",
+  "Anestesi Kardiovaskular",
+  "Manajemen Nyeri (Pain Management)",
+  "Anestesi Geriatrik",
+  "Anestesi Rawat Jalan & NORA",
 ] as const
 
 const extraQuestionTemplates = [
@@ -314,67 +323,12 @@ const extraQuestionTemplates = [
   },
 ]
 
-// Loop and generate remaining questions programmatically to reach exactly 100 questions.
-// To satisfy "1 package of test consist of 100 question with 5 choices" and keep it extremely high quality, 
-// we populate a rich variety of anesthesiology board exam questions.
-const topics = [
-  {
-    title: "Airway & Ventilasi",
-    questions: [
-      "Manakah indikator objektif terbaik untuk mengonfirmasi posisi ujung pipa endotrakeal (ETT) berada di dalam trakea secara tepat?",
-      "Terjadi laringospasme pasca-ekstubasi pada anak 4 tahun. Tindakan awal apa yang paling tepat sebelum memberikan pelumpuh otot?",
-      "Manakah kriteria Mallampati kelas III yang benar pada pemeriksaan jalan napas pra-anestesi?",
-      "Metode penanganan jalan napas sulit (difficult airway) yang dianggap sebagai standar emas jika intubasi konvensional gagal adalah:",
-    ]
-  },
-  {
-    title: "Farmakologi Anestesi",
-    questions: [
-      "Manakah efek samping utama dari propofol yang harus diwaspadai pada pemberian jangka panjang dosis tinggi (Propofol Infusion Syndrome)?",
-      "Apakah keuntungan utama cisatracurium dibanding atracurium dalam hal jalur eliminasinya?",
-      "Obat premedikasi golongan agonis alfa-2 adrenergik yang memiliki efek sedatif dan analgetik tanpa menekan ventilasi adalah:",
-      "Manakah dari lokal anestesi berikut yang paling bersifat kardiotoksik jika terjadi injeksi intravaskular tidak sengaja?",
-    ]
-  },
-  {
-    title: "Regional Anestesi",
-    questions: [
-      "Batas anatomi inferior medula spinalis pada orang dewasa rata-rata berada pada tingkat vertebra mana?",
-      "Efek fisiologis kardiovaskular utama dari blokade neuraksial tinggi (spinal/epidural) adalah:",
-      "Manakah tanda klinis awal terjadinya keracunan sistemik lokal anestesi (LAST) yang melibatkan sistem saraf pusat?",
-      "Terapi spesifik penawar (antidote) yang paling efektif untuk menyelamatkan pasien akibat henti jantung karena intoksikasi bupivakain adalah:",
-    ]
-  },
-  {
-    title: "Obstetri & Pediatrik",
-    questions: [
-      "Manakah dari parameter berikut yang mengalami PENURUNAN pada perubahan fisiologis kehamilan normal trimester ketiga?",
-      "Sindrom kompresi aortokaval pada wanita hamil trimester ketiga dapat dicegah selama operasi dengan melakukan:",
-      "Apakah indikasi utama dilakukannya intubasi pada bayi baru lahir dengan skor APGAR sangat rendah?",
-      "Berapakah dosis loading cairan kristaloid untuk resusitasi awal pada anak yang mengalami syok dehidrasi berat?",
-    ]
-  },
-  {
-    title: "Neuroanestesi & Kardio",
-    questions: [
-      "Berapakah tekanan intrakranial (ICP) batas atas normal pada orang dewasa dalam posisi berbaring?",
-      "Manakah dari gas anestesi berikut yang paling meningkatkan tekanan intrakranial karena menyebabkan vasodilatasi serebral kuat?",
-      "Pada pasien dengan Penyakit Jantung Koroner (PJK), manakah kondisi hemodinamik yang paling meningkatkan risiko iskemia miokard?",
-      "Tindakan monitoring tekanan darah invasif (arterial line) sangat diindikasikan pada kondisi berikut, KECUALI:",
-    ]
-  }
-]
-
-// Let's generate a full set of 100 questions by combining our hand-crafted questions and structured templates.
-let questionIndex = 11
-
 // Seed a rich library of 100 Indonesian Anesthesiology Board questions
 while (questions.length < 100) {
   const currentCategory = categoriesList[questions.length % categoriesList.length]
   const templateIdx = questions.length % extraQuestionTemplates.length
   const baseTemplate = extraQuestionTemplates[templateIdx]
   
-  // Custom variations to make sure every question is unique and high quality
   let text = ""
   let explanation = ""
   let correctOption = baseTemplate.correctOption as "A" | "B" | "C" | "D" | "E"
@@ -383,124 +337,41 @@ while (questions.length < 100) {
   const questionNum = questions.length + 1
 
   if (currentCategory === "Farmakologi & Fisiologi") {
-    if (questionNum % 5 === 1) {
-      text = `[Soal No. ${questionNum}] Seorang wanita berusia 30 tahun dengan riwayat myasthenia gravis direncanakan menjalani timektomi. Terkait sensitivitas terhadap pelumpuh otot, manakah pernyataan berikut yang PALING tepat?`
-      options = {
-        A: "Sangat sensitif terhadap pelumpuh otot depolarisasi (suksinilkolin) dan resisten terhadap nondepolarisasi",
-        B: "Resisten terhadap pelumpuh otot depolarisasi dan sangat sensitif terhadap nondepolarisasi",
-        C: "Resisten terhadap kedua jenis pelumpuh otot",
-        D: "Sensitif terhadap kedua jenis pelumpuh otot",
-        E: "Tidak memerlukan pelumpuh otot karena tidak ada reseptor nikotinik",
-      }
-      correctOption = "B"
-      explanation = "Pasien Myasthenia Gravis memiliki jumlah reseptor nikotinik fungsional yang berkurang secara signifikan di NMJ. Oleh karena itu, mereka sangat sensitif terhadap agen nondepolarisasi (memerlukan dosis sangat kecil) dan resisten terhadap suksinilkolin."
-    } else if (questionNum % 5 === 2) {
-      text = `[Soal No. ${questionNum}] Manakah dari agen anestesi inhalasi berikut yang memiliki Koefisien Partisi Darah:Gas paling rendah, sehingga memiliki induksi dan pemulihan (emergence) tercepat?`
-      options = {
-        A: "Halothane",
-        B: "Isoflurane",
-        C: "Sevoflurane",
-        D: "Desflurane",
-        E: "Nitrous Oxide (N2O)",
-      }
-      correctOption = "D"
-      explanation = "Desflurane memiliki koefisien partisi darah:gas terendah (0.42) di antara agen inhalasi halogenasi lainnya, diikuti oleh Sevoflurane (0.65). Hal ini membuat Desflurane memiliki laju induksi dan pemulihan paling cepat."
-    } else if (questionNum % 5 === 3) {
-      text = `[Soal No. ${questionNum}] Seorang laki-laki berusia 50 tahun menerima infus remifentanil selama operasi kraniotomi. Mengapa obat opioid golongan fenilpiperidin ini memiliki waktu paruh eliminasi kontekstual (context-sensitive half-life) yang sangat singkat dan konstan?`
-      options = {
-        A: "Dimetabolisme secara cepat di ginjal",
-        B: "Mengalami redistribusi cepat ke jaringan lemak",
-        C: "Dihidrolisis secara cepat oleh esterase non-spesifik di darah dan jaringan",
-        D: "Diekskresi dalam bentuk utuh melalui empedu",
-        E: "Memiliki afinitas yang sangat rendah terhadap reseptor Mu-opioid",
-      }
-      correctOption = "C"
-      explanation = "Remifentanil unik karena memiliki ikatan ester yang membuatnya rentan terhadap hidrolisis cepat oleh enzim esterase non-spesifik di dalam darah dan jaringan tubuh. Proses ini tidak bergantung pada fungsi organ hati maupun ginjal."
-    } else {
-      text = `[Soal No. ${questionNum}] Manakah dari obat opioid berikut yang memiliki efek stimulasi pelepasan histamin paling kuat sehingga sering menyebabkan hipotensi dan gatal pada kulit jika disuntikkan secara cepat?`
-      options = {
-        A: "Fentanyl",
-        B: "Morphine",
-        C: "Sufentanil",
-        D: "Remifentanil",
-        E: "Pethidine",
-      }
-      correctOption = "B"
-      explanation = "Morphine secara klinis dikaitkan dengan pelepasan histamin non-imunologis yang signifikan dari sel mast, yang dapat memicu vasodilatasi pembuluh darah (hipotensi) dan pruritus. Fentanyl memiliki stabilitas hemodinamik lebih baik karena pelepasan histamin minimal."
+    text = `Manakah dari obat anestesi intravena berikut yang paling tepat digunakan sebagai agen induksi pada pasien syok hemoragik tidak stabil karena memiliki efek mempertahankan stabilitas hemodinamik?`
+    options = {
+      A: "Propofol",
+      B: "Ketamine",
+      C: "Midazolam",
+      D: "Thiopental",
+      E: "Etomidate",
     }
+    correctOption = "E"
+    explanation = "Etomidate merupakan agen induksi pilihan utama pada pasien dengan ketidakstabilan hemodinamik atau syok karena tidak menyebabkan depresi miokardium atau vasodilatasi sistemik yang signifikan, meskipun memiliki efek samping supresi adrenal transient."
   } else if (currentCategory === "Resusitasi & Critical Care") {
-    if (questionNum % 5 === 1) {
-      text = `[Soal No. ${questionNum}] Seorang pasien 48 tahun di ICU dengan diagnosis ARDS berat terpasang ventilator mekanik. Dokter ingin menerapkan strategi ventilasi protektif paru (lung-protective ventilation). Manakah pengaturan volume tidal (Vt) awal yang direkomendasikan?`
-      options = {
-        A: "10-12 mL/kg berat badan aktual",
-        B: "8-10 mL/kg berat badan prediksi (Predicted Body Weight)",
-        C: "6-8 mL/kg berat badan prediksi (Predicted Body Weight)",
-        D: "4-5 mL/kg berat badan aktual",
-        E: "12-15 mL/kg berat badan prediksi",
-      }
-      correctOption = "C"
-      explanation = "Strategi ventilasi protektif paru pada ARDS membatasi volume tidal sebesar 6-8 mL/kg Predicted Body Weight (PBW) dan mempertahankan plateau pressure < 30 cmH2O untuk meminimalkan risiko barotrauma dan volutrauma (ventilator-induced lung injury)."
-    } else if (questionNum % 5 === 2) {
-      text = `[Soal No. ${questionNum}] Selama resusitasi jantung paru pada pasien dewasa dengan henti jantung, berapakah kedalaman kompresi dada eksternal dan laju kompresi yang direkomendasikan oleh panduan AHA?`
-      options = {
-        A: "Kedalaman minimal 3 cm, laju 80-100 kali/menit",
-        B: "Kedalaman 5-6 cm, laju 100-120 kali/menit",
-        C: "Kedalaman maksimal 7 cm, laju 120-140 kali/menit",
-        D: "Kedalaman 4-5 cm, laju 90-110 kali/menit",
-        E: "Kedalaman minimal 5 cm, laju bebas asalkan kontinu",
-      }
-      correctOption = "B"
-      explanation = "RJP berkualitas tinggi untuk pasien dewasa mensyaratkan kedalaman kompresi dada sebesar 5-6 cm (sekitar 2-2.4 inci) dengan laju kompresi 100-120 kali/menit, disertai recoil dada penuh dan interupsi minimal."
-    } else {
-      text = `[Soal No. ${questionNum}] Seorang pasien laki-laki 28 tahun mengalami luka tusuk di dada kanan. Di IGD ia tampak sesak napas berat, sianosis, trakea terdorong ke kiri, dan distensi vena leher. Tekanan darah 80/40 mmHg. Manakah tindakan darurat pertama yang harus segera dilakukan?`
-      options = {
-        A: "Foto rontgen dada (chest X-ray) portabel",
-        B: "Intubasi endotrakeal dengan ventilator tekanan positif",
-        C: "Dekompresi jarum (needle decompression) pada spasi interkostal kedua di garis midklavikula kanan",
-        D: "Pemasangan pipa dada (Chest Tube/ WSD) langsung",
-        E: "Pemberian bolus cairan kristaloid 2000 ml",
-      }
-      correctOption = "C"
-      explanation = "Pasien mengalami Pneumotoraks Tension (tension pneumothorax). Ini adalah kondisi darurat mengancam nyawa yang didiagnosis secara klinis. Dekompresi jarum harus segera dilakukan sebelum foto toraks untuk mengurangi tekanan intrapleural yang menghambat venous return."
+    text = `Selama resusitasi jantung paru pada pasien dewasa dengan henti jantung, berapakah kedalaman kompresi dada eksternal dan laju kompresi yang direkomendasikan oleh panduan AHA?`
+    options = {
+      A: "Kedalaman minimal 3 cm, laju 80-100 kali/menit",
+      B: "Kedalaman 5-6 cm, laju 100-120 kali/menit",
+      C: "Kedalaman maksimal 7 cm, laju 120-140 kali/menit",
+      D: "Kedalaman 4-5 cm, laju 90-110 kali/menit",
+      E: "Kedalaman minimal 5 cm, laju bebas asalkan kontinu",
     }
+    correctOption = "B"
+    explanation = "RJP berkualitas tinggi untuk pasien dewasa mensyaratkan kedalaman kompresi dada sebesar 5-6 cm (sekitar 2-2.4 inci) dengan laju kompresi 100-120 kali/menit, disertai recoil dada penuh dan interupsi minimal."
   } else if (currentCategory === "Anestesi Umum & Regional") {
-    if (questionNum % 5 === 1) {
-      text = `[Soal No. ${questionNum}] Manakah dari kombinasi obat lokal anestesi dan obat tambahan (adjuvant) berikut yang dapat memperpanjang durasi blokade sensorik anestesi regional spinal secara signifikan melalui stimulasi reseptor alfa-2 adrenergik?`
-      options = {
-        A: "Bupivacaine + Fentanyl",
-        B: "Bupivacaine + Clonidine atau Dexmedetomidine",
-        C: "Bupivacaine + Neostigmine",
-        D: "Bupivacaine + Epinefrin",
-        E: "Bupivacaine + Ketamine",
-      }
-      correctOption = "B"
-      explanation = "Clonidine dan Dexmedetomidine adalah agonis alfa-2 adrenergik selektif yang bila ditambahkan ke ruang subaraknoid (spinal) memperpanjang durasi blokade motorik dan sensorik dengan menekan pelepasan neurotransmiter nosiseptif secara lokal."
-    } else if (questionNum % 5 === 2) {
-      text = `[Soal No. ${questionNum}] Pada tindakan anestesi spinal (SAB), jarum spinal akan menembus beberapa lapisan jaringan. Manakah urutan lapisan jaringan yang dilewati jarum spinal dari arah superfisial ke profundus pada pendekatan garis tengah (median approach)?`
-      options = {
-        A: "Kulit -> Ligamen Supraspinosum -> Ligamen Interspinosum -> Ligamen Flavum -> Ruang Epidural -> Duramater-Arachnoid",
-        B: "Kulit -> Ligamen Flavum -> Ligamen Supraspinosum -> Ligamen Interspinosum -> Ruang Subaraknoid",
-        C: "Kulit -> Ligamen Interspinosum -> Ligamen Supraspinosum -> Duramater -> Ligamen Flavum",
-        D: "Kulit -> Ruang Epidural -> Ligamen Flavum -> Duramater -> Ruang Subaraknoid",
-        E: "Kulit -> Ligamen Supraspinosum -> Ligamen Flavum -> Ligamen Interspinosum -> Arachnoid",
-      }
-      correctOption = "A"
-      explanation = "Urutan penetrasi jarum spinal pada pendekatan median adalah: Kulit -> Jaringan subkutan -> Ligamen Supraspinosum -> Ligamen Interspinosum -> Ligamen Flavum -> Ruang Epidural -> Duramater dan membran Arachnoid hingga mencapai Ruang Subaraknoid (likuor cerebrospinalis mengalir)."
-    } else {
-      text = `[Soal No. ${questionNum}] Manakah dari saraf kranial berikut yang paling sering mengalami cedera paralisis transient sekunder akibat tekanan masker wajah (face mask ventilation) yang terlalu kencang selama induksi anestesi?`
-      options = {
-        A: "Saraf Kranial VII (Nervus Fasialis - cabang marginal mandibular)",
-        B: "Saraf Kranial V (Nervus Trigeminus)",
-        C: "Saraf Kranial X (Nervus Vagus)",
-        D: "Saraf Kranial XI (Nervus Aksesorius)",
-        E: "Saraf Kranial XII (Nervus Hipoglosus)",
-      }
-      correctOption = "A"
-      explanation = "Tekanan masker wajah yang berlebihan pada sudut rahang dapat menekan cabang marginal mandibular dari Nervus Fasialis (saraf kranial VII), menyebabkan kelemahan otot-otot wajah bagian bawah unilateral secara transient pascaoperasi."
+    text = `Manakah dari saraf kranial berikut yang paling sering mengalami cedera paralisis transient sekunder akibat tekanan masker wajah (face mask ventilation) yang terlalu kencang selama induksi anestesi?`
+    options = {
+      A: "Saraf Kranial VII (Nervus Fasialis - cabang marginal mandibular)",
+      B: "Saraf Kranial V (Nervus Trigeminus)",
+      C: "Saraf Kranial X (Nervus Vagus)",
+      D: "Saraf Kranial XI (Nervus Aksesorius)",
+      E: "Saraf Kranial XII (Nervus Hipoglosus)",
     }
-  } else if (currentCategory === "Anestesi Obstetrik & Pediatrik") {
-    if (questionNum % 5 === 1) {
-      text = `[Soal No. ${questionNum}] Seorang wanita berusia 30 tahun hamil aterm direncanakan menjalani Sectio Caesarea. Manakah perubahan fisiologis sistem kardiovaskular pada kehamilan lanjut yang paling mempengaruhi respons hemodinamik terhadap induksi anestesi spinal?`
+    correctOption = "A"
+    explanation = "Tekanan masker wajah yang berlebihan pada sudut rahang dapat menekan cabang marginal mandibular dari Nervus Fasialis (saraf kranial VII), menyebabkan kelemahan otot-otot wajah bagian bawah unilateral secara transient pascaoperasi."
+  } else if (currentCategory === "Anestesi Obstetrik") {
+    if (questionNum % 2 === 1) {
+      text = `Seorang wanita berusia 30 tahun hamil aterm direncanakan menjalani Sectio Caesarea. Manakah perubahan fisiologis sistem kardiovaskular pada kehamilan lanjut yang paling mempengaruhi respons hemodinamik terhadap induksi anestesi spinal?`
       options = {
         A: "Penurunan curah jantung (cardiac output) sebesar 30-40%",
         B: "Peningkatan volume darah total hingga 40-50% namun disertai kompresi aortokaval yang meningkatkan risiko hipotensi pascaspinal",
@@ -510,8 +381,21 @@ while (questions.length < 100) {
       }
       correctOption = "B"
       explanation = "Meskipun volume darah hamil meningkat, rahim yang membesar menekan vena kava inferior dan aorta saat terlentang (kompresi aortokaval), yang secara drastis menghambat aliran balik vena. Simpatektomi akibat anestesi spinal akan memperparah hipotensi akibat hilangnya kompensasi vasokontriksi simpatis."
-    } else if (questionNum % 5 === 2) {
-      text = `[Soal No. ${questionNum}] Seorang bayi berusia 1 bulan direncanakan operasi herniotomi inguinal. Mengapa konsumsi anestesi inhalasi (seperti sevoflurane atau halothane) pada bayi/anak kecil memiliki laju ekuilibrasi alveolar-ke-arteri yang lebih cepat dibanding dewasa?`
+    } else {
+      text = `Seorang wanita berusia 27 G1P0 hamil 39 minggu dengan diagnosis preeklamsia berat sedang mendapatkan infus MgSO4. Manakah tanda awal keracunan magnesium yang harus dipantau ketat secara klinis?`
+      options = {
+        A: "Kehilangan refleks tendon dalam (patella)",
+        B: "Depresi pernapasan berat (< 10x/menit)",
+        C: "Henti jantung",
+        D: "Hipotensi berat dan oliguria",
+        E: "Gangguan penglihatan ganda",
+      }
+      correctOption = "A"
+      explanation = "Kehilangan refleks patella (pada kadar magnesium plasma sekitar 4-5 mEq/L) adalah tanda klinis awal keracunan MgSO4 yang mendahului depresi pernapasan (9-12 mEq/L) dan henti jantung (>15 mEq/L)."
+    }
+  } else if (currentCategory === "Anestesi Pediatrik") {
+    if (questionNum % 2 === 1) {
+      text = `Seorang bayi berusia 1 bulan direncanakan operasi herniotomi inguinal. Mengapa konsumsi anestesi inhalasi (seperti sevoflurane atau halothane) pada bayi/anak kecil memiliki laju ekuilibrasi alveolar-ke-arteri yang lebih cepat dibanding dewasa?`
       options = {
         A: "Karena ventilasi alveolar yang lebih tinggi per unit kapasitas residu fungsional (FRC)",
         B: "Karena aliran darah ke otak yang relatif lebih sedikit dibanding otot",
@@ -520,23 +404,22 @@ while (questions.length < 100) {
         E: "Karena fungsi ginjal anak yang masih imatur",
       }
       correctOption = "A"
-      explanation = "Bayi memiliki laju ventilasi alveolar yang tinggi dalam proporsinya terhadap FRC (kapasitas residu fungsional) yang kecil. Ekuilibrasi tekanan parsial gas alveolar ke arterial menjadi jauh lebih cepat, sehingga induksi dan pemulihan anestesi inhalasi berlangsung sangat cepat."
+      explanation = "Bayi memiliki laju ventilasi alveolar yang tinggi dalam proporsinya terhadap FRC yang kecil. Ekuilibrasi tekanan parsial gas alveolar ke arterial menjadi jauh lebih cepat, sehingga induksi dan pemulihan anestesi inhalasi berlangsung sangat cepat."
     } else {
-      text = `[Soal No. ${questionNum}] Seorang bayi baru lahir melalui sectio caesarea karena gawat janin tampak lemas, merintih lambat, denyut jantung 88x/menit, ekstremitas fleksi lemah, dan tubuh merah dengan tungkai biru setelah 1 menit lahir. Berapakah skor APGAR bayi tersebut?`
+      text = `Berapakah volume estimasi darah total (Estimated Blood Volume - EBV) yang tepat digunakan untuk menghitung batas kehilangan darah yang diizinkan (Allowable Blood Loss) pada bayi prematur?`
       options = {
-        A: "Skor APGAR 3",
-        B: "Skor APGAR 4",
-        C: "Skor APGAR 5",
-        D: "Skor APGAR 6",
-        E: "Skor APGAR 7",
+        A: "60-65 mL/kg",
+        B: "70-75 mL/kg",
+        C: "80-85 mL/kg",
+        D: "90-100 mL/kg",
+        E: "110-120 mL/kg",
       }
-      correctOption = "C"
-      explanation = "Kriteria skor APGAR: Denyut Jantung < 100 (1 poin); Upaya Napas merintih/lambat (1 poin); Tonus Otot fleksi lemah (1 poin); Refleks/Gritasi tidak dinilai lengkap tapi merintih lambat (1 poin); Warna Kulit tubuh merah tungkai biru (1 poin). Total skor APGAR = 5 (asfiksia sedang)."
+      correctOption = "D"
+      explanation = "Estimasi volume darah total (EBV) bervariasi berdasarkan usia: Bayi prematur memiliki EBV tertinggi yaitu sekitar 90-100 mL/kg, bayi aterm 80-90 mL/kg, bayi 3 bulan-1 tahun 75-80 mL/kg, anak-anak 70-75 mL/kg, dan dewasa 65-70 mL/kg."
     }
-  } else {
-    // Neuroanestesi & Kardiovaskular
-    if (questionNum % 5 === 1) {
-      text = `[Soal No. ${questionNum}] Pada kraniotomi tumor otak dengan peningkatan tekanan intrakranial (TIK) yang tinggi, manakah tindakan yang PALING tepat untuk menurunkan volume darah serebral dan menurunkan tekanan intrakranial dengan segera selama anestesi?`
+  } else if (currentCategory === "Neuroanestesi") {
+    if (questionNum % 2 === 1) {
+      text = `Pada kraniotomi tumor otak dengan peningkatan tekanan intrakranial (TIK) yang tinggi, manakah tindakan yang PALING tepat untuk menurunkan volume darah serebral dan menurunkan tekanan intrakranial dengan segera selama anestesi?`
       options = {
         A: "Mengatur ventilasi untuk mencapai hipokapnia ringan-sedang (PaCO2 30-35 mmHg)",
         B: "Memberikan infus cairan hipotonis NaCl 0.45% secara cepat",
@@ -546,8 +429,21 @@ while (questions.length < 100) {
       }
       correctOption = "A"
       explanation = "Hipokapnia ringan hingga sedang (PaCO2 30-35 mmHg) menyebabkan vasokontriksi pembuluh darah serebral, yang secara efektif mengurangi aliran darah serebral dan menurunkan TIK tanpa menyebabkan iskemia jaringan otak yang berat."
-    } else if (questionNum % 5 === 2) {
-      text = `[Soal No. ${questionNum}] Seorang pasien laki-laki berusia 60 tahun dengan riwayat stenosis aorta berat (aortic stenosis) dijadwalkan menjalani amputasi kaki. Terkait pilihan teknik anestesi regional, manakah pernyataan berikut yang PALING tepat?`
+    } else {
+      text = `Seorang pasien pasca-cedera otak kranioserebral menunjukkan gejala poliuria berat (>250 ml/jam), hipernatremia sistemik, dan urin yang sangat encer. Manakah penyebab patofisiologis utama dari kondisi diabetes insipidus ini?`
+      options = {
+        A: "Sekresi berlebih dari hormon Aldosteron",
+        B: "Defisiensi sekresi vasopresin (ADH) akibat kerusakan hipotalamus/hipofisis posterior",
+        C: "Resistensi nefron terhadap hormon Paratiroid",
+        D: "Ekskresi glukosa berlebih di tubulus renalis",
+        E: "Gagal ginjal akut stadium oligurik",
+      }
+      correctOption = "B"
+      explanation = "Diabetes insipidus neurogenik sentral setelah cedera kepala terjadi akibat kerusakan pada sintesis atau pelepasan hormon Antidiuretik (ADH) dari hipofisis posterior, memicu ketidakmampuan ginjal memekatkan urin."
+    }
+  } else if (currentCategory === "Anestesi Kardiovaskular") {
+    if (questionNum % 2 === 1) {
+      text = `Seorang pasien laki-laki berusia 60 tahun dengan stenosis aorta berat (aortic stenosis) dijadwalkan menjalani amputasi kaki. Terkait pilihan teknik anestesi regional, manakah pernyataan berikut yang PALING tepat?`
       options = {
         A: "Anestesi spinal dosis tinggi sangat aman karena afterload miokard menurun",
         B: "Anestesi epidural kontinyu dosis titrasi lebih disukai dibanding spinal karena perubahan hemodinamik terjadi lebih lambat dan terkontrol",
@@ -558,22 +454,95 @@ while (questions.length < 100) {
       correctOption = "B"
       explanation = "Pada stenosis aorta berat, afterload ventrikel kiri bersifat terfiksasi dan cardiac output sangat bergantung pada sinus rhythm serta preload yang adekuat. Anestesi epidural dosis titrasi bertahap lebih aman daripada spinal konvensional karena mencegah penurunan drastis tekanan darah secara mendadak."
     } else {
-      text = `[Soal No. ${questionNum}] Manakah dari target parameter hemodinamik berikut yang harus dipertahankan secara ketat untuk meminimalkan beban kerja miokardium dan risiko iskemia pada pasien dengan stenosis katup aorta selama anestesi umum?`
+      text = `Selama operasi bedah jantung pintas koroner (CABG), manakah parameter hemodinamik yang paling penting dipertahankan untuk mencegah iskemia subendokardium pada pasien dengan stenosis arteri koroner?`
       options = {
-        A: "Menjaga denyut nadi relatif lambat (50-60 bpm) dan menghindari hipotensi sistemik",
-        B: "Membiarkan denyut nadi cepat (90-100 bpm) untuk menjamin curah jantung",
-        C: "Menurunkan resistensi vaskular sistemik (SVR) hingga separuh normal",
-        D: "Membatasi preload cairan seminimal mungkin",
-        E: "Mempertahankan tekanan darah sistolik di bawah 90 mmHg",
+        A: "Denyut jantung takikardia ringan untuk perfusi koroner",
+        B: "Tekanan perfusi koroner (diastolic BP - LVEDP) yang adekuat dan denyut jantung lambat",
+        C: "Afterload ventrikel kiri yang sangat rendah",
+        D: "Kontraktilitas miokardium yang sangat tinggi",
+        E: "Hemodilus ekstrim dengan hematokrit < 15%",
       }
-      correctOption = "A"
-      explanation = "Pada stenosis aorta, denyut jantung harus dijaga normal-lambat agar waktu diastolik (pengisian arteri koroner) optimal. Hipotensi sistemik sangat berbahaya karena dapat menurunkan tekanan perfusi arteri koroner secara drastis, memicu iskemia miokard sekunder."
+      correctOption = "B"
+      explanation = "Aliran darah koroner terutama berlangsung selama fase diastolik. Menjaga denyut jantung tetap lambat memperpanjang waktu diastolik, sementara mempertahankan tekanan darah diastolik sistemik yang adekuat menjamin tekanan perfusi koroner."
+    }
+  } else if (currentCategory === "Manajemen Nyeri (Pain Management)") {
+    if (questionNum % 2 === 1) {
+      text = `Seorang pasien dengan nyeri kanker payudara stadium lanjut mengeluh nyeri hebat tipe neuropatik (terbakar dan menjalar). Manakah obat lini pertama yang direkomendasikan untuk nyeri neuropatik menurut panduan klinis?`
+      options = {
+        A: "Parasetamol 1 gram tiap 6 jam",
+        B: "Gabapentin atau Pregabalin",
+        C: "Fentanyl patch 25 mcg/jam saja",
+        D: "Ibuprofen 400 mg tiap 8 jam",
+        E: "Ketorolac 30 mg intravena",
+      }
+      correctOption = "B"
+      explanation = "Gabapentinoids (gabapentin dan pregabalin) bekerja dengan mengikat subunit alfa-2-delta saluran kalsium berpintu tegangan di SSP, mengurangi pelepasan neurotransmiter eksitatori, menjadikannya lini pertama untuk nyeri neuropatik."
+    } else {
+      text = `Tindakan intervensi nyeri berupa blok ganglion seliaka (celiac plexus block) paling sering dilakukan untuk mengatasi nyeri kronis akibat keganasan pada organ apa?`
+      options = {
+        A: "Kanker rektum dan prostat",
+        B: "Kanker pankreas dan organ abdomen atas",
+        C: "Kanker paru dan esofagus atas",
+        D: "Sakit kepala klaster kronis",
+        E: "Nyeri sendi lutut kronis",
+      }
+      correctOption = "B"
+      explanation = "Blokade pleksus seliaka sangat efektif untuk meredakan nyeri viseral abdomen bagian atas, terutama nyeri kronis akibat kanker pankreas atau kanker lambung stadium lanjut."
+    }
+  } else if (currentCategory === "Anestesi Geriatrik") {
+    if (questionNum % 2 === 1) {
+      text = `Mengapa pasien lanjut usia (geriatri) lebih rentan terhadap hipotensi berat setelah induksi anestesi dengan obat intravena seperti propofol atau thiopental dibanding usia muda?`
+      options = {
+        A: "Karena peningkatan sensitivitas reseptor alfa-adrenergik di perifer",
+        B: "Karena penurunan sensitivitas baroreseptor arteri dan penurunan cadangan fungsional kardiovaskular",
+        C: "Karena peningkatan compliance dinding ventrikel kiri",
+        D: "Karena klirens ginjal yang sangat cepat terhadap obat anestesi",
+        E: "Karena volume distribusi obat yang sangat rendah pada jaringan lemak",
+      }
+      correctOption = "B"
+      explanation = "Pasien lanjut usia mengalami kekakuan arteri, penurunan compliance ventrikel, serta penurunan fungsi baroreseptor yang bertugas mengompensasi penurunan tekanan darah. Hal ini memicu hipotensi yang lebih dalam saat obat induksi diberikan."
+    } else {
+      text = `Manakah faktor risiko utama dan langkah pencegahan paling efektif untuk delirium pascaoperasi (Postoperative Delirium) pada pasien geriatri setelah menjalani operasi fraktur femur?`
+      options = {
+        A: "Kurang tidur; berikan sedatif golongan benzodiazepin dosis tinggi",
+        B: "Usia lanjut dan disorientasi; manajemen nyeri adekuat non-opioid, hidrasi, mobilisasi dini, dan hindari antikolinergik",
+        C: "Anestesi umum; selalu pilih anestesi spinal tanpa sedasi tambahan",
+        D: "Hiponatremia ringan; batasi asupan cairan secara ketat",
+        E: "Penggunaan kateter urin jangka panjang",
+      }
+      correctOption = "B"
+      explanation = "Postoperative Delirium (POD) pada lansia bersifat multifaktorial. Pencegahannya meliputi reorientasi berulang, hidrasi baik, penanganan nyeri efektif (multimodal non-opioid), mobilisasi dini, serta menghindari obat pemicu delirium seperti antikolinergik dan benzodiazepin."
+    }
+  } else {
+    // Anestesi Rawat Jalan & NORA
+    if (questionNum % 2 === 1) {
+      text = `Pada kriteria pemulihan pasca-anestesi rawat jalan (Ambulatory Anesthesia), skor Aldrete dimodifikasi digunakan untuk menentukan kesiapan pasien pulang ke rumah. Manakah parameter tambahan yang dinilai pada Modified Aldrete Score?`
+      options = {
+        A: "Kemampuan berjalan tegak dan buang air kecil spontan",
+        B: "Saturasi oksigen (SpO2) menggantikan penilaian warna kulit secara subjektif",
+        C: "Suhu tubuh inti di atas 37 derajat Celcius",
+        D: "Kadar gula darah puasa yang normal",
+        E: "Kemampuan membaca teks dengan fokus penuh",
+      }
+      correctOption = "B"
+      explanation = "Modified Aldrete Score menggantikan kriteria warna kulit dengan saturasi oksigen (SpO2) yang diukur menggunakan pulse oximetry, menjadikannya parameter pemantauan pemulihan respiratorik yang lebih objektif."
+    } else {
+      text = `Selama tindakan Non-Operating Room Anesthesia (NORA) seperti MRI kepala pada anak dengan sedasi dalam, manakah tantangan keselamatan kerja anestesi yang paling utama?`
+      options = {
+        A: "Paparan radiasi pengion sinar-X yang tinggi",
+        B: "Keterbatasan akses fisik langsung ke pasien dan interaksi gaya magnet kuat dengan peralatan medis konvensional",
+        C: "Kebutuhan konsentrasi gas nitrous oxide (N2O) yang tinggi",
+        D: "Risiko terjadinya hipertermia maligna yang lebih besar",
+        E: "Kebisingan sirkuit napas yang mengganggu pemantauan stetoskop presordial",
+      }
+      correctOption = "B"
+      explanation = "Di ruang MRI, gaya magnet yang sangat kuat mensyaratkan penggunaan peralatan khusus MRI-compatible (non-feromagnetik). Keterbatasan akses fisik ke pasien di dalam bore magnet mempersulit resusitasi jalan napas segera jika terjadi apneu."
     }
   }
 
   questions.push({
     id: `q${questionNum}`,
-    text: text.replace(/^\[Soal\s*(?:No\.?)?\s*\d+\]\s*/i, ""),
+    text: text,
     options,
     correctOption,
     category: currentCategory,

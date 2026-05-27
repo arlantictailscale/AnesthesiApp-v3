@@ -12,12 +12,17 @@ Each question must:
 1. Be a high-quality clinical scenario or case (HOTS - High Order Thinking Skills).
 2. Have exactly 5 choices (A, B, C, D, E).
 3. Have exactly 1 correct option ('A' | 'B' | 'C' | 'D' | 'E').
-4. Categorize under one of these five groups exactly:
+4. Categorize under one of these ten groups exactly:
    - "Farmakologi & Fisiologi"
    - "Resusitasi & Critical Care"
    - "Anestesi Umum & Regional"
-   - "Anestesi Obstetrik & Pediatrik"
-   - "Neuroanestesi & Kardiovaskular"
+   - "Anestesi Obstetrik"
+   - "Anestesi Pediatrik"
+   - "Neuroanestesi"
+   - "Anestesi Kardiovaskular"
+   - "Manajemen Nyeri (Pain Management)"
+   - "Anestesi Geriatrik"
+   - "Anestesi Rawat Jalan & NORA"
 5. Provide a detailed, highly professional explanation ("explanation") in Bahasa Indonesia summarizing the clinical/pharmacological rationale behind the correct choice.
 
 Return ONLY a single valid JSON array (no markdown code blocks, no trailing comments, no introductory prose) containing the question objects.
@@ -34,7 +39,7 @@ JSON schema template for each question:
     "E": "Pilihan jawaban E..."
   },
   "correctOption": "A" | "B" | "C" | "D" | "E",
-  "category": "Farmakologi & Fisiologi" | "Resusitasi & Critical Care" | "Anestesi Umum & Regional" | "Anestesi Obstetrik & Pediatrik" | "Neuroanestesi & Kardiovaskular",
+  "category": "Farmakologi & Fisiologi" | "Resusitasi & Critical Care" | "Anestesi Umum & Regional" | "Anestesi Obstetrik" | "Anestesi Pediatrik" | "Neuroanestesi" | "Anestesi Kardiovaskular" | "Manajemen Nyeri (Pain Management)" | "Anestesi Geriatrik" | "Anestesi Rawat Jalan & NORA",
   "explanation": "Penjelasan klinis mendalam..."
 }`
 
