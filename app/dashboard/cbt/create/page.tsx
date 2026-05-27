@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect, Suspense } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { toast } from "sonner"
 import { AppShell } from "@/components/app-shell"
 import { Button } from "@/components/ui/button"
@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { createPackage } from "@/lib/cbt-storage"
+import { createPackage, getPackage, updatePackage } from "@/lib/cbt-storage"
 import type { CBTQuestion } from "@/lib/cbt-default-data"
 import {
   ChevronLeft,
@@ -32,7 +32,22 @@ const CATEGORIES = [
 ] as const
 
 export default function CBTCreatePage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen flex-col items-center justify-center bg-muted/20 text-muted-foreground gap-4">
+        <span className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        <span>Memuat editor soal...</span>
+      </div>
+    }>
+      <CBTCreatePageContent />
+    </Suspense>
+  )
+}
+
+function CBTCreatePageContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const editId = searchParams.get("edit")
 
   // Package Metadata States
   const [name, setName] = useState("")
@@ -54,6 +69,40 @@ export default function CBTCreatePage() {
   const [explanation, setExplanation] = useState("")
 
   const [saving, setSaving] = useState(false)
+  const [loadingPackage, setLoadingPackage] = useState(!!editId)
+
+  // Load existing package for editing
+  useEffect(() => {
+    if (!editId) return
+
+    async function loadPkg() {
+      try {
+        const p = await getPackage(editId)
+        if (p) {
+          setName(p.name)
+          setDescription(p.description || "")
+          setQuestions(p.questions)
+        } else {
+          toast.error("Paket soal tidak ditemukan.")
+          router.push("/dashboard/cbt")
+        }
+      } catch (err) {
+        toast.error("Gagal memuat paket soal.")
+      } finally {
+        setLoadingPackage(false)
+      }
+    }
+    loadPkg()
+  }, [editId, router])
+
+  if (loadingPackage) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-muted/20 text-muted-foreground gap-4">
+        <span className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        <span>Memuat paket soal yang akan diedit...</span>
+      </div>
+    )
+  }
 
   // Reset question form
   function clearQuestionForm() {
@@ -142,7 +191,7 @@ export default function CBTCreatePage() {
     clearQuestionForm()
   }
 
-  // Save the entire package to Supabase
+  // Save/Update the entire package to Supabase
   async function handlePublishPackage() {
     if (!name.trim()) {
       toast.error("Nama paket ujian wajib diisi.")
@@ -155,11 +204,16 @@ export default function CBTCreatePage() {
 
     setSaving(true)
     try {
-      await createPackage(name.trim(), description.trim(), questions)
-      toast.success("Paket ujian kustom berhasil disimpan dan dipublikasikan!")
+      if (editId) {
+        await updatePackage(editId, name.trim(), description.trim(), questions)
+        toast.success("Paket ujian kustom berhasil diperbarui!")
+      } else {
+        await createPackage(name.trim(), description.trim(), questions)
+        toast.success("Paket ujian kustom berhasil disimpan dan dipublikasikan!")
+      }
       router.push("/dashboard/cbt")
     } catch (err) {
-      toast.error(err instanceof Error ? `Gagal: ${err.message}` : "Gagal mempublikasikan paket.")
+      toast.error(err instanceof Error ? `Gagal: ${err.message}` : "Gagal menyimpan paket.")
     } finally {
       setSaving(false)
     }
@@ -195,7 +249,7 @@ export default function CBTCreatePage() {
             ) : (
               <>
                 <Save className="h-4 w-4" />
-                Simpan & Publikasikan Paket
+                {editId ? "Perbarui & Publikasikan Paket" : "Simpan & Publikasikan Paket"}
               </>
             )}
           </Button>
@@ -208,9 +262,14 @@ export default function CBTCreatePage() {
               <BookOpen className="h-3.5 w-3.5" />
               Visual Question Builder
             </span>
-            <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Buat Paket Soal Baru</h1>
+            <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
+              {editId ? "Edit Paket Soal" : "Buat Paket Soal Baru"}
+            </h1>
             <p className="text-sm text-primary-foreground/80 max-w-2xl leading-relaxed">
-              Gunakan editor interaktif ini untuk merumuskan paket soal latihan anestesiologi Anda sendiri. Paket yang disimpan akan langsung dipublikasikan ke Community Hub sehingga dapat diakses oleh rekan sejawat lainnya.
+              {editId 
+                ? "Gunakan editor interaktif ini untuk mengubah paket soal latihan anestesiologi Anda. Perubahan akan langsung diperbarui ke database."
+                : "Gunakan editor interaktif ini untuk merumuskan paket soal latihan anestesiologi Anda sendiri. Paket yang disimpan akan langsung dipublikasikan ke Community Hub sehingga dapat diakses oleh rekan sejawat lainnya."
+              }
             </p>
           </div>
         </div>
@@ -437,7 +496,7 @@ export default function CBTCreatePage() {
                     className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold gap-1.5"
                   >
                     <Save className="h-4 w-4" />
-                    Simpan & Publikasikan
+                    {editId ? "Perbarui & Publikasikan" : "Simpan & Publikasikan"}
                   </Button>
                   <Button
                     variant="outline"

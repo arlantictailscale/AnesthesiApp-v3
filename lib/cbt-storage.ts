@@ -184,6 +184,70 @@ export async function createPackage(
 }
 
 /**
+ * Updates an existing custom CBT package
+ */
+export async function updatePackage(
+  id: string,
+  name: string,
+  description: string,
+  questions: CBTQuestion[],
+): Promise<CBTPackage> {
+  const updatedPkg: CBTPackage = {
+    id,
+    name,
+    description,
+    questions,
+  }
+
+  let savedInDb = false
+
+  try {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (user) {
+      updatedPkg.creator_email = user.email || undefined
+      const payload = {
+        name,
+        description,
+        questions,
+        user_id: user.id,
+        creator_email: user.email || null,
+      }
+      
+      const { data, error } = await supabase
+        .from("cbt_packages")
+        .update(payload)
+        .eq("id", id)
+        .select("*")
+        .single()
+
+      if (!error && data) {
+        savedInDb = true
+      } else if (error) {
+        console.warn("Supabase update package error, falling back to local:", error)
+      }
+    }
+  } catch (err) {
+    console.warn("Supabase updatePackage failed, updating locally only:", err)
+  }
+
+  // Update locally in localStorage
+  const local = getLocalCustomPackages()
+  const idx = local.findIndex((p) => p.id === id)
+  if (idx !== -1) {
+    local[idx] = updatedPkg
+    saveLocalCustomPackages(local)
+  } else if (!savedInDb) {
+    // Fallback: if not found locally and not saved in DB, add it locally
+    local.unshift(updatedPkg)
+    saveLocalCustomPackages(local)
+  }
+
+  return updatedPkg
+}
+
+/**
  * Deletes a custom package
  */
 export async function deletePackage(id: string): Promise<void> {

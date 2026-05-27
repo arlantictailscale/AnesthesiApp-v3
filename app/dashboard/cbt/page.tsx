@@ -45,6 +45,7 @@ import {
   TrendingUp,
   Star,
   MessageSquare,
+  Edit2,
 } from "lucide-react"
 
 export default function CBTDashboardPage() {
@@ -515,14 +516,28 @@ export default function CBTDashboardPage() {
                           <span className="text-[10px] text-muted-foreground font-normal">({rInfo.count})</span>
                         </div>
                         {!isDefault && (!pkg.creator_email || (currentUser?.email && pkg.creator_email === currentUser.email)) && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6 text-muted-foreground hover:text-destructive shrink-0"
-                            onClick={(e) => handleDeletePkg(pkg.id, e)}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
+                          <div className="flex items-center gap-0.5 shrink-0">
+                            <Button
+                              asChild
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 text-muted-foreground hover:text-primary"
+                              title="Edit Paket"
+                            >
+                              <Link href={`/dashboard/cbt/create?edit=${pkg.id}`} onClick={(e) => e.stopPropagation()}>
+                                <Edit2 className="h-3.5 w-3.5" />
+                              </Link>
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                              onClick={(e) => handleDeletePkg(pkg.id, e)}
+                              title="Hapus Paket"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
                         )}
                       </div>
                     </div>
