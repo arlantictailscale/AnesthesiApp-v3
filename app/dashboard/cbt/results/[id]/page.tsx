@@ -67,7 +67,8 @@ export default function CBTResultsPage() {
     )
   }
 
-  const questions = pkg.questions
+  const questions = pkg.questions || []
+  const totalQuestions = questions.length
   const score = attempt.score
   const isPassed = score >= 70
 
@@ -93,7 +94,8 @@ export default function CBTResultsPage() {
     catQuestions.forEach((q) => {
       // Find the index of this question in the original array
       const origIdx = questions.findIndex((origQ) => origQ.id === q.id)
-      const userAns = attempt.answers[origIdx.toString()] || ""
+      const answersMap = attempt.answers || {}
+      const userAns = answersMap[origIdx.toString()] || ""
       if (userAns === q.correctOption) {
         correct++
       }
@@ -115,7 +117,8 @@ export default function CBTResultsPage() {
 
   // Filters for review accordion
   const filteredQuestions = questions.map((q, idx) => {
-    const userAns = attempt.answers[idx.toString()] || ""
+    const answersMap = attempt.answers || {}
+    const userAns = answersMap[idx.toString()] || ""
     const isCorrect = userAns === q.correctOption
     const isUnanswered = userAns === ""
 
@@ -314,7 +317,7 @@ export default function CBTResultsPage() {
                 className="h-8 text-xs font-semibold text-rose-500 hover:text-rose-600"
                 onClick={() => setActiveFilter("incorrect")}
               >
-                Salah ({totalQuestions - attempt.correct_count - Object.values(attempt.answers).filter(v => v === "").length})
+                Salah ({totalQuestions - attempt.correct_count - Object.values(attempt.answers || {}).filter(v => v === "").length})
               </Button>
               <Button
                 variant={activeFilter === "unanswered" ? "secondary" : "ghost"}
@@ -322,7 +325,7 @@ export default function CBTResultsPage() {
                 className="h-8 text-xs font-semibold text-muted-foreground"
                 onClick={() => setActiveFilter("unanswered")}
               >
-                Kosong ({Object.values(attempt.answers).filter(v => v === "").length})
+                Kosong ({Object.values(attempt.answers || {}).filter(v => v === "").length})
               </Button>
             </div>
           </div>
