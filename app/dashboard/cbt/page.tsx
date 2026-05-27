@@ -19,11 +19,13 @@ import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { createClient } from "@/lib/supabase/client"
 import {
   listPackages,
   listAttempts,
   createPackage,
   deletePackage,
+  getPackageRatings,
   type CBTPackage,
   type CBTAttempt,
 } from "@/lib/cbt-storage"
@@ -40,6 +42,7 @@ import {
   HelpCircle,
   ChevronRight,
   TrendingUp,
+  Star,
 } from "lucide-react"
 
 export default function CBTDashboardPage() {
@@ -47,6 +50,8 @@ export default function CBTDashboardPage() {
   const [attempts, setAttempts] = useState<CBTAttempt[]>([])
   const [loading, setLoading] = useState(true)
   const [activeProgressMap, setActiveProgressMap] = useState<Record<string, boolean>>({})
+  const [currentUser, setCurrentUser] = useState<any>(null)
+  const [ratingsMap, setRatingsMap] = useState<Record<string, { average: number; count: number }>>({})
 
   // Upload/Create states
   const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -65,6 +70,28 @@ export default function CBTDashboardPage() {
       const atts = await listAttempts()
       setPackages(pkgs)
       setAttempts(atts)
+
+      // Get current logged-in user
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      setCurrentUser(user)
+
+      // Load ratings in parallel
+      const ratingsData = await Promise.all(
+        pkgs.map(async (p) => {
+          try {
+            const r = await getPackageRatings(p.id)
+            return { id: p.id, average: r.average, count: r.count }
+          } catch {
+            return { id: p.id, average: 0, count: 0 }
+          }
+        })
+      )
+      const rMap: Record<string, { average: number; count: number }> = {}
+      ratingsData.forEach((item) => {
+        rMap[item.id] = { average: item.average, count: item.count }
+      })
+      setRatingsMap(rMap)
     } catch (err) {
       toast.error("Gagal memuat data ujian.")
     } finally {
@@ -304,135 +331,144 @@ export default function CBTDashboardPage() {
               <p className="text-sm text-muted-foreground">Pilih paket latihan yang tersedia untuk memulai CBT Simulator.</p>
             </div>
 
-            {/* Add package dialog trigger */}
-            <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-              <DialogTrigger asChild>
-                <Button className="gap-2">
+            <div className="flex flex-wrap gap-2">
+              <Button asChild variant="outline" className="gap-1.5 font-semibold">
+                <Link href="/dashboard/cbt/create">
                   <Plus className="h-4 w-4" />
-                  Tambah Paket Ujian
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle>Tambah Paket Soal Baru</DialogTitle>
-                  <DialogDescription>
-                    Tambahkan paket soal kustom Anda sendiri menggunakan template JSON atau buat secara instan menggunakan kecerdasan buatan (AI).
-                  </DialogDescription>
-                </DialogHeader>
+                  Buat Ujian Baru (Visual)
+                </Link>
+              </Button>
 
-                <Tabs defaultValue="ai" className="w-full mt-4">
-                  <TabsList className="grid w-full grid-cols-2 mb-4">
-                    <TabsTrigger value="ai" className="gap-1.5">
-                      <Sparkles className="h-4 w-4 text-primary" />
-                      Hasilkan dengan AI
-                    </TabsTrigger>
-                    <TabsTrigger value="json" className="gap-1.5">
-                      <FileText className="h-4 w-4" />
-                      Unggah JSON Soal
-                    </TabsTrigger>
-                  </TabsList>
+              {/* Add package dialog trigger */}
+              <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+                <DialogTrigger asChild>
+                  <Button className="gap-2">
+                    <Sparkles className="h-4 w-4" />
+                    Tambah via AI / JSON
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>Tambah Paket Soal Baru</DialogTitle>
+                    <DialogDescription>
+                      Tambahkan paket soal kustom Anda sendiri menggunakan template JSON atau buat secara instan menggunakan kecerdasan buatan (AI).
+                    </DialogDescription>
+                  </DialogHeader>
 
-                  {/* AI Generator Tab */}
-                  <TabsContent value="ai" className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="aiTopic">Topik Ujian Spesifik</Label>
-                      <Input
-                        id="aiTopic"
-                        placeholder="Contoh: Obstetrik Anestesi, Preeklamsia, Blok Regional Ekstremitas Bawah, dll."
-                        value={aiTopic}
-                        onChange={(e) => setAiTopic(e.target.value)}
-                        disabled={generating}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="aiCount">Jumlah Soal</Label>
-                      <select
-                        id="aiCount"
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                        value={aiCount}
-                        onChange={(e) => setAiCount(Number(e.target.value))}
-                        disabled={generating}
-                      >
-                        <option value="5">5 Soal (Cepat)</option>
-                        <option value="10">10 Soal (Latihan Singkat)</option>
-                        <option value="20">20 Soal (Komprehensif)</option>
-                      </select>
-                    </div>
+                  <Tabs defaultValue="ai" className="w-full mt-4">
+                    <TabsList className="grid w-full grid-cols-2 mb-4">
+                      <TabsTrigger value="ai" className="gap-1.5">
+                        <Sparkles className="h-4 w-4 text-primary" />
+                        Hasilkan dengan AI
+                      </TabsTrigger>
+                      <TabsTrigger value="json" className="gap-1.5">
+                        <FileText className="h-4 w-4" />
+                        Unggah JSON Soal
+                      </TabsTrigger>
+                    </TabsList>
 
-                    <DialogFooter className="pt-4">
-                      <Button
-                        type="button"
-                        onClick={handleAiGeneration}
-                        disabled={generating}
-                        className="w-full sm:w-auto gap-2"
-                      >
-                        {generating ? (
-                          <>
-                            <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
-                            Sedang Merumuskan Soal...
-                          </>
-                        ) : (
-                          <>
-                            <Sparkles className="h-4 w-4" />
-                            Hasilkan Soal Latihan
-                          </>
-                        )}
-                      </Button>
-                    </DialogFooter>
-                  </TabsContent>
-
-                  {/* JSON Upload Tab */}
-                  <TabsContent value="json" className="space-y-4">
-                    <div className="grid gap-4 sm:grid-cols-2">
+                    {/* AI Generator Tab */}
+                    <TabsContent value="ai" className="space-y-4">
                       <div className="space-y-2">
-                        <Label htmlFor="pkgName">Nama Paket Soal</Label>
+                        <Label htmlFor="aiTopic">Topik Ujian Spesifik</Label>
                         <Input
-                          id="pkgName"
-                          placeholder="Contoh: Paket Latihan Kardiovaskular A"
-                          value={pkgName}
-                          onChange={(e) => setPkgName(e.target.value)}
+                          id="aiTopic"
+                          placeholder="Contoh: Obstetrik Anestesi, Preeklamsia, Blok Regional Ekstremitas Bawah, dll."
+                          value={aiTopic}
+                          onChange={(e) => setAiTopic(e.target.value)}
+                          disabled={generating}
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="pkgDesc">Deskripsi Singkat</Label>
-                        <Input
-                          id="pkgDesc"
-                          placeholder="Latihan soal khusus anestesi obstetrik..."
-                          value={pkgDesc}
-                          onChange={(e) => setPkgDesc(e.target.value)}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="jsonText">Salin JSON Soal Di Sini</Label>
-                        <Button
-                          variant="link"
-                          className="h-auto p-0 text-xs"
-                          onClick={() => setJsonText(sampleJson)}
+                        <Label htmlFor="aiCount">Jumlah Soal</Label>
+                        <select
+                          id="aiCount"
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          value={aiCount}
+                          onChange={(e) => setAiCount(Number(e.target.value))}
+                          disabled={generating}
                         >
-                          Gunakan Contoh Format
-                        </Button>
+                          <option value="5">5 Soal (Cepat)</option>
+                          <option value="10">10 Soal (Latihan Singkat)</option>
+                          <option value="20">20 Soal (Komprehensif)</option>
+                        </select>
                       </div>
-                      <Textarea
-                        id="jsonText"
-                        placeholder={`Masukkan array JSON berisi soal di sini...\nFormat:\n${sampleJson}`}
-                        className="font-mono text-xs h-[180px]"
-                        value={jsonText}
-                        onChange={(e) => setJsonText(e.target.value)}
-                      />
-                    </div>
 
-                    <DialogFooter className="pt-4">
-                      <Button type="button" onClick={handleJsonUpload} className="w-full sm:w-auto">
-                        Simpan Paket Ujian
-                      </Button>
-                    </DialogFooter>
-                  </TabsContent>
-                </Tabs>
-              </DialogContent>
-            </Dialog>
+                      <DialogFooter className="pt-4">
+                        <Button
+                          type="button"
+                          onClick={handleAiGeneration}
+                          disabled={generating}
+                          className="w-full sm:w-auto gap-2"
+                        >
+                          {generating ? (
+                            <>
+                              <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
+                              Sedang Merumuskan Soal...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="h-4 w-4" />
+                              Hasilkan Soal Latihan
+                            </>
+                          )}
+                        </Button>
+                      </DialogFooter>
+                    </TabsContent>
+
+                    {/* JSON Upload Tab */}
+                    <TabsContent value="json" className="space-y-4">
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="space-y-2">
+                          <Label htmlFor="pkgName">Nama Paket Soal</Label>
+                          <Input
+                            id="pkgName"
+                            placeholder="Contoh: Paket Latihan Kardiovaskular A"
+                            value={pkgName}
+                            onChange={(e) => setPkgName(e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="pkgDesc">Deskripsi Singkat</Label>
+                          <Input
+                            id="pkgDesc"
+                            placeholder="Latihan soal khusus anestesi obstetrik..."
+                            value={pkgDesc}
+                            onChange={(e) => setPkgDesc(e.target.value)}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="jsonText">Salin JSON Soal Di Sini</Label>
+                          <Button
+                            variant="link"
+                            className="h-auto p-0 text-xs"
+                            onClick={() => setJsonText(sampleJson)}
+                          >
+                            Gunakan Contoh Format
+                          </Button>
+                        </div>
+                        <Textarea
+                          id="jsonText"
+                          placeholder={`Masukkan array JSON berisi soal di sini...\nFormat:\n${sampleJson}`}
+                          className="font-mono text-xs h-[180px]"
+                          value={jsonText}
+                          onChange={(e) => setJsonText(e.target.value)}
+                        />
+                      </div>
+
+                      <DialogFooter className="pt-4">
+                        <Button type="button" onClick={handleJsonUpload} className="w-full sm:w-auto">
+                          Simpan Paket Ujian
+                        </Button>
+                      </DialogFooter>
+                    </TabsContent>
+                  </Tabs>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
 
           {loading ? (
@@ -441,90 +477,149 @@ export default function CBTDashboardPage() {
                 <Card key={n} className="animate-pulse bg-card p-6 h-[180px] border border-border" />
               ))}
             </div>
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {packages.map((pkg) => {
-                // Find user's highest score for this package
-                const pkgAttempts = attempts.filter((a) => a.package_id === pkg.id)
-                const high = pkgAttempts.length > 0 ? Math.max(...pkgAttempts.map((a) => a.score)) : null
+          ) : (() => {
+            const myOrOfficialPackages = packages.filter((pkg) => {
+              const isDefault = pkg.id === "default-national-exam"
+              const isMine = pkg.creator_email && currentUser?.email && pkg.creator_email === currentUser.email
+              const isLocalOnly = !pkg.creator_email
+              return isDefault || isMine || isLocalOnly
+            })
 
-                const isDefault = pkg.id === "default-national-exam"
+            const communityPackages = packages.filter((pkg) => {
+              const isDefault = pkg.id === "default-national-exam"
+              const isMine = pkg.creator_email && currentUser?.email && pkg.creator_email === currentUser.email
+              const isLocalOnly = !pkg.creator_email
+              return !isDefault && !isMine && !isLocalOnly
+            })
 
-                return (
-                  <Card key={pkg.id} className="relative flex flex-col justify-between overflow-hidden border border-border bg-card transition-all hover:shadow-md hover:border-primary/30">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${isDefault ? "bg-primary/10 text-primary" : "bg-secondary text-secondary-foreground"}`}>
-                          {isDefault ? "Resmi Kolegium" : "Kustom User"}
-                        </span>
-                        {!isDefault && (
+            function renderPackageCard(pkg: CBTPackage) {
+              const pkgAttempts = attempts.filter((a) => a.package_id === pkg.id)
+              const high = pkgAttempts.length > 0 ? Math.max(...pkgAttempts.map((a) => a.score)) : null
+              const isDefault = pkg.id === "default-national-exam"
+              const rInfo = ratingsMap[pkg.id] || { average: 0, count: 0 }
+
+              return (
+                <Card key={pkg.id} className="relative flex flex-col justify-between overflow-hidden border border-border bg-card transition-all hover:shadow-md hover:border-primary/30">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${isDefault ? "bg-primary/10 text-primary" : "bg-secondary text-secondary-foreground"}`}>
+                        {isDefault ? "Resmi Kolegium" : pkg.creator_email ? `Oleh: ${pkg.creator_email.split('@')[0]}` : "Kustom User"}
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        {rInfo.count > 0 && (
+                          <div className="flex items-center gap-1 text-xs text-yellow-500 font-semibold" title={`Average: ${rInfo.average} stars`}>
+                            <Star className="h-3.5 w-3.5 fill-yellow-500 text-yellow-500" />
+                            <span>{rInfo.average}</span>
+                            <span className="text-[10px] text-muted-foreground font-normal">({rInfo.count})</span>
+                          </div>
+                        )}
+                        {!isDefault && (!pkg.creator_email || (currentUser?.email && pkg.creator_email === currentUser.email)) && (
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                            className="h-6 w-6 text-muted-foreground hover:text-destructive shrink-0"
                             onClick={(e) => handleDeletePkg(pkg.id, e)}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-3.5 w-3.5" />
                           </Button>
                         )}
                       </div>
-                      <CardTitle className="line-clamp-2 mt-2 text-lg font-bold">{pkg.name}</CardTitle>
-                      <CardDescription className="line-clamp-2 text-xs leading-relaxed mt-1">
-                        {pkg.description || "Tidak ada deskripsi."}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="pt-0 flex flex-col gap-4">
-                      <div className="flex items-center justify-between border-t border-border pt-3 text-xs text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <HelpCircle className="h-3.5 w-3.5" />
-                          <span>{pkg.questions.length} Soal</span>
-                        </div>
-                        {activeProgressMap[pkg.id] ? (
-                          <span className="inline-flex items-center gap-1 font-semibold text-amber-500 animate-pulse">
-                            <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                            Sedang Berlangsung
-                          </span>
-                        ) : high !== null ? (
-                          <div className="flex items-center gap-1 font-semibold text-emerald-500">
-                            <Award className="h-3.5 w-3.5" />
-                            <span>Skor: {high}%</span>
-                          </div>
-                        ) : (
-                          <span className="italic">Belum dicoba</span>
-                        )}
+                    </div>
+                    <CardTitle className="line-clamp-2 mt-2 text-lg font-bold">{pkg.name}</CardTitle>
+                    <CardDescription className="line-clamp-2 text-xs leading-relaxed mt-1">
+                      {pkg.description || "Tidak ada deskripsi."}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-0 flex flex-col gap-4">
+                    <div className="flex items-center justify-between border-t border-border pt-3 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <HelpCircle className="h-3.5 w-3.5" />
+                        <span>{pkg.questions.length} Soal</span>
                       </div>
-
                       {activeProgressMap[pkg.id] ? (
-                        <div className="flex flex-col gap-2">
-                          <Button asChild className="w-full gap-2 bg-amber-500 hover:bg-amber-600 text-white font-semibold shadow-sm">
-                            <Link href={`/dashboard/cbt/exam/${pkg.id}`}>
-                              Lanjutkan Ujian
-                              <ChevronRight className="h-4 w-4" />
-                            </Link>
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="w-full text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/5"
-                            onClick={(e) => handleResetProgress(pkg.id, e)}
-                          >
-                            Ulangi dari Awal
-                          </Button>
+                        <span className="inline-flex items-center gap-1 font-semibold text-amber-500 animate-pulse">
+                          <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                          Sedang Berlangsung
+                        </span>
+                      ) : high !== null ? (
+                        <div className="flex items-center gap-1 font-semibold text-emerald-500">
+                          <Award className="h-3.5 w-3.5" />
+                          <span>Skor: {high}%</span>
                         </div>
                       ) : (
-                        <Button asChild className="w-full gap-2">
+                        <span className="italic">Belum dicoba</span>
+                      )}
+                    </div>
+
+                    {activeProgressMap[pkg.id] ? (
+                      <div className="flex flex-col gap-2">
+                        <Button asChild className="w-full gap-2 bg-amber-500 hover:bg-amber-600 text-white font-semibold shadow-sm">
                           <Link href={`/dashboard/cbt/exam/${pkg.id}`}>
-                            Mulai Ujian
+                            Lanjutkan Ujian
                             <ChevronRight className="h-4 w-4" />
                           </Link>
                         </Button>
-                      )}
-                    </CardContent>
-                  </Card>
-                )
-              })}
-            </div>
-          )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/5"
+                          onClick={(e) => handleResetProgress(pkg.id, e)}
+                        >
+                          Ulangi dari Awal
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button asChild className="w-full gap-2">
+                        <Link href={`/dashboard/cbt/exam/${pkg.id}`}>
+                          Mulai Ujian
+                          <ChevronRight className="h-4 w-4" />
+                        </Link>
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+              )
+            }
+
+            return (
+              <Tabs defaultValue="my-exams" className="w-full">
+                <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
+                  <TabsTrigger value="my-exams" className="gap-1.5 font-semibold">
+                    <Award className="h-4 w-4 text-primary" />
+                    Ujian & Latihan Saya
+                  </TabsTrigger>
+                  <TabsTrigger value="community-hub" className="gap-1.5 font-semibold">
+                    <Sparkles className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                    Community Hub ({communityPackages.length})
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="my-exams" className="space-y-4">
+                  {myOrOfficialPackages.length === 0 ? (
+                    <Card className="p-8 text-center border border-dashed border-border bg-card">
+                      <p className="text-muted-foreground text-sm">Belum ada paket ujian kustom.</p>
+                    </Card>
+                  ) : (
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      {myOrOfficialPackages.map((pkg) => renderPackageCard(pkg))}
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="community-hub" className="space-y-4">
+                  {communityPackages.length === 0 ? (
+                    <Card className="p-8 text-center border border-dashed border-border bg-card">
+                      <p className="text-muted-foreground text-sm">Belum ada paket ujian dari komunitas. Jadilah yang pertama membuat dan membagikannya!</p>
+                    </Card>
+                  ) : (
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      {communityPackages.map((pkg) => renderPackageCard(pkg))}
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
+            )
+          })()}
         </div>
 
         {/* Attempts History */}

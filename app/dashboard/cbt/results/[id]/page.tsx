@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { getAttempt, getPackage, type CBTAttempt, type CBTPackage } from "@/lib/cbt-storage"
+import { CBTDiscussion } from "@/components/cbt-discussion"
 import {
   ArrowLeft,
   Award,
@@ -413,6 +414,12 @@ export default function CBTResultsPage() {
               })
             )}
           </div>
+        </div>
+
+        {/* Discussion & Community Hub Section */}
+        <div className="border-t border-border pt-8 mt-4">
+          <h2 className="text-xl font-bold tracking-tight mb-4 text-foreground">Diskusi & Rating Paket Soal</h2>
+          <CBTDiscussion packageId={attempt.package_id} packageName={pkg.name} />
         </div>
       </div>
     </AppShell>

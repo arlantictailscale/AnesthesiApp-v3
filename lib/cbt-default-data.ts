@@ -23,6 +23,7 @@ export interface CBTPackage {
   name: string
   description: string
   questions: CBTQuestion[]
+  creator_email?: string
 }
 
 // Custom questions generation spanning 100 detailed anesthesiology board exam questions in Bahasa Indonesia

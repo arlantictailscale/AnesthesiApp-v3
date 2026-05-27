@@ -101,6 +101,7 @@ export async function listPackages(): Promise<CBTPackage[]> {
         name: row.name,
         description: row.description || "",
         questions: row.questions as CBTQuestion[],
+        creator_email: row.creator_email || undefined,
       }))
     }
   } catch (err) {
@@ -147,11 +148,13 @@ export async function createPackage(
     const { data: { user } } = await supabase.auth.getUser()
 
     if (user) {
+      newPkg.creator_email = user.email || undefined
       const payload = {
         name,
         description,
         questions,
         user_id: user.id,
+        creator_email: user.email || null,
       }
       const { data, error } = await supabase
         .from("cbt_packages")
@@ -164,6 +167,7 @@ export async function createPackage(
         savedInDb = true
       } else if (error) {
         console.error("Supabase insert package error:", error)
+        throw new Error(error.message)
       }
     }
   } catch (err) {
@@ -293,6 +297,7 @@ export async function saveAttempt(attempt: Omit<CBTAttempt, "id" | "created_at">
         savedInDb = true
       } else if (error) {
         console.error("Supabase save attempt error:", error)
+        throw new Error(error.message)
       }
     }
   } catch (err) {
@@ -305,4 +310,142 @@ export async function saveAttempt(attempt: Omit<CBTAttempt, "id" | "created_at">
   saveLocalAttempts(local)
 
   return newAttempt
+}
+
+// --- Ratings and Comments for Community Hub ---
+
+export interface CBTComment {
+  id: string
+  user_id: string
+  user_email: string
+  package_id: string
+  comment: string
+  created_at: string
+}
+
+export interface CBTRatingsSummary {
+  average: number
+  count: number
+  userRating?: number
+}
+
+/**
+ * Submits or updates a rating (1-5) for a package
+ */
+export async function ratePackage(packageId: string, rating: number): Promise<void> {
+  try {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      throw new Error("Anda harus masuk log untuk memberikan rating.")
+    }
+
+    const { error } = await supabase
+      .from("cbt_ratings")
+      .upsert({
+        user_id: user.id,
+        package_id: packageId,
+        rating,
+      }, {
+        onConflict: "user_id,package_id"
+      })
+
+    if (error) throw new Error(error.message)
+  } catch (err) {
+    console.error("Failed to rate package:", err)
+    throw err
+  }
+}
+
+/**
+ * Gets the average rating and review count, as well as the current user's rating if logged in
+ */
+export async function getPackageRatings(packageId: string): Promise<CBTRatingsSummary> {
+  const defaultSummary: CBTRatingsSummary = { average: 0, count: 0 }
+  try {
+    const supabase = createClient()
+    const { data, error } = await supabase
+      .from("cbt_ratings")
+      .select("rating, user_id")
+      .eq("package_id", packageId)
+
+    if (error) throw new Error(error.message)
+    if (!data || data.length === 0) return defaultSummary
+
+    const count = data.length
+    const total = data.reduce((acc: number, curr: any) => acc + curr.rating, 0)
+    const average = Number((total / count).toFixed(1))
+
+    // Find current user rating if logged in
+    let userRating: number | undefined = undefined
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      const found = data.find((r: any) => r.user_id === user.id)
+      if (found) userRating = found.rating
+    }
+
+    return { average, count, userRating }
+  } catch (err) {
+    console.warn("Failed to get package ratings, returning default:", err)
+    return defaultSummary
+  }
+}
+
+/**
+ * Adds a new comment to a package discussion
+ */
+export async function addComment(packageId: string, comment: string): Promise<CBTComment> {
+  try {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      throw new Error("Anda harus masuk log untuk berkomentar.")
+    }
+
+    const payload = {
+      user_id: user.id,
+      user_email: user.email || "Anonim",
+      package_id: packageId,
+      comment,
+    }
+
+    const { data, error } = await supabase
+      .from("cbt_comments")
+      .insert(payload)
+      .select("*")
+      .single()
+
+    if (error) throw new Error(error.message)
+    return {
+      id: data.id,
+      user_id: data.user_id,
+      user_email: data.user_email,
+      package_id: data.package_id,
+      comment: data.comment,
+      created_at: data.created_at,
+    }
+  } catch (err) {
+    console.error("Failed to add comment:", err)
+    throw err
+  }
+}
+
+/**
+ * Gets all comments for a package discussion
+ */
+export async function getPackageComments(packageId: string): Promise<CBTComment[]> {
+  try {
+    const supabase = createClient()
+    const { data, error } = await supabase
+      .from("cbt_comments")
+      .select("*")
+      .eq("package_id", packageId)
+      .order("created_at", { ascending: false })
+
+    if (error) throw new Error(error.message)
+    return (data || []) as CBTComment[]
+  } catch (err) {
+    console.warn("Failed to get comments, returning empty array:", err)
+    return []
+  }
 }
