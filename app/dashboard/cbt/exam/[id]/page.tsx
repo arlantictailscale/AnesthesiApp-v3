@@ -1,7 +1,7 @@
 "use client"
 
 import { useParams, useRouter } from "next/navigation"
-import { useEffect, useState, use } from "react"
+import { useEffect, useState, use, useRef } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -44,6 +44,7 @@ export default function CBTExamPage() {
   const [timeLeft, setTimeLeft] = useState(0) // seconds
   const [totalDuration, setTotalDuration] = useState(0)
   const [examFinished, setExamFinished] = useState(false)
+  const isFinishedRef = useRef(false)
 
   // Submit Modal
   const [isSubmitOpen, setIsSubmitOpen] = useState(false)
@@ -96,7 +97,7 @@ export default function CBTExamPage() {
 
   // Save progress dynamically
   useEffect(() => {
-    if (loading || !pkg || examFinished) return
+    if (loading || !pkg || examFinished || isFinishedRef.current) return
 
     const progress = {
       answers,
@@ -112,6 +113,15 @@ export default function CBTExamPage() {
       console.error("Failed to save exam progress:", e)
     }
   }, [answers, flagged, activeIdx, timeLeft, totalDuration, loading, pkg, examFinished, packageId])
+
+  // Safeguard: make sure progress is cleared on unmount if exam is finished/exited
+  useEffect(() => {
+    return () => {
+      if (isFinishedRef.current && typeof window !== "undefined") {
+        localStorage.removeItem(`anesthesiapp:cbt_progress_${packageId}`)
+      }
+    }
+  }, [packageId])
 
   // Timer countdown
   useEffect(() => {
@@ -134,13 +144,14 @@ export default function CBTExamPage() {
   // Warn user before refresh/close
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isFinishedRef.current || examFinished) return
       e.preventDefault()
       e.returnValue = "Ujian sedang berlangsung. Progress Anda akan hilang jika menutup halaman ini."
       return e.returnValue
     }
     window.addEventListener("beforeunload", handleBeforeUnload)
     return () => window.removeEventListener("beforeunload", handleBeforeUnload)
-  }, [])
+  }, [examFinished])
 
   if (loading || !pkg) {
     return (
@@ -200,12 +211,14 @@ export default function CBTExamPage() {
 
   // Force submit when timer hits zero
   async function handleForceSubmit() {
+    isFinishedRef.current = true
     setExamFinished(true)
     toast.warning("Waktu ujian telah habis! Mengirimkan jawaban Anda...")
     await submitExam(true)
   }
 
   async function submitExam(isForce = false) {
+    isFinishedRef.current = true
     setExamFinished(true)
     setSubmitting(true)
     try {
@@ -436,6 +449,7 @@ export default function CBTExamPage() {
                   className="w-full text-muted-foreground hover:text-foreground hover:bg-muted/50 gap-1.5"
                   onClick={() => {
                     if (confirm("Keluar dari ujian? Progress Anda saat ini akan dihapus.")) {
+                      isFinishedRef.current = true
                       setExamFinished(true)
                       if (typeof window !== "undefined") {
                         localStorage.removeItem(`anesthesiapp:cbt_progress_${packageId}`)
