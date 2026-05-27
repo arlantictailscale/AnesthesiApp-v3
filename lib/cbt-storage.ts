@@ -107,8 +107,8 @@ export async function listPackages(): Promise<CBTPackage[]> {
     console.warn("Supabase listPackages failed, falling back to localStorage:", err)
   }
 
-  // Combine and deduplicate by ID
-  const allPackages = [...builtInPackages, ...dbCustom, ...localCustom]
+  // Combine and deduplicate by ID, prioritizing database packages over built-in fallbacks
+  const allPackages = [...dbCustom, ...builtInPackages, ...localCustom]
   const seenIds = new Set<string>()
   return allPackages.filter((pkg) => {
     if (seenIds.has(pkg.id)) return false
