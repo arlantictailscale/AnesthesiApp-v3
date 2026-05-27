@@ -60,10 +60,31 @@ export default function CBTExamPage() {
           return
         }
         setPkg(p)
-        // Scaled time: 60 seconds per question (100 minutes for 100 questions)
-        const seconds = p.questions.length * 60
+        
+        // Default time: 60 seconds per question (100 minutes for 100 questions)
+        const defaultSeconds = p.questions.length * 60
+        let seconds = defaultSeconds
+        let duration = defaultSeconds
+
+        if (typeof window !== "undefined") {
+          const rawProgress = localStorage.getItem(`anesthesiapp:cbt_progress_${packageId}`)
+          if (rawProgress) {
+            try {
+              const saved = JSON.parse(rawProgress)
+              setAnswers(saved.answers || {})
+              setFlagged(new Set(saved.flagged || []))
+              setActiveIdx(saved.activeIdx || 0)
+              seconds = saved.timeLeft ?? defaultSeconds
+              duration = saved.totalDuration ?? defaultSeconds
+              toast.info("Melanjutkan progres ujian sebelumnya.")
+            } catch (e) {
+              console.error("Failed to parse saved exam progress:", e)
+            }
+          }
+        }
+
         setTimeLeft(seconds)
-        setTotalDuration(seconds)
+        setTotalDuration(duration)
       } catch (err) {
         toast.error("Gagal memuat paket ujian.")
       } finally {
@@ -72,6 +93,25 @@ export default function CBTExamPage() {
     }
     load()
   }, [packageId, router])
+
+  // Save progress dynamically
+  useEffect(() => {
+    if (loading || !pkg || examFinished) return
+
+    const progress = {
+      answers,
+      flagged: Array.from(flagged),
+      activeIdx,
+      timeLeft,
+      totalDuration,
+    }
+
+    try {
+      localStorage.setItem(`anesthesiapp:cbt_progress_${packageId}`, JSON.stringify(progress))
+    } catch (e) {
+      console.error("Failed to save exam progress:", e)
+    }
+  }, [answers, flagged, activeIdx, timeLeft, totalDuration, loading, pkg, examFinished, packageId])
 
   // Timer countdown
   useEffect(() => {
@@ -192,6 +232,11 @@ export default function CBTExamPage() {
         time_spent,
         answers: answersMap,
       })
+
+      // Clear saved progress
+      if (typeof window !== "undefined") {
+        localStorage.removeItem(`anesthesiapp:cbt_progress_${pkg.id}`)
+      }
 
       toast.success("Ujian berhasil diselesaikan!")
       router.replace(`/dashboard/cbt/results/${attempt.id}`)
@@ -388,7 +433,10 @@ export default function CBTExamPage() {
                   size="sm"
                   className="w-full text-muted-foreground hover:text-foreground hover:bg-muted/50 gap-1.5"
                   onClick={() => {
-                    if (confirm("Keluar dari ujian? Progress Anda saat ini akan dibatalkan.")) {
+                    if (confirm("Keluar dari ujian? Progress Anda saat ini akan dihapus.")) {
+                      if (typeof window !== "undefined") {
+                        localStorage.removeItem(`anesthesiapp:cbt_progress_${packageId}`)
+                      }
                       router.replace("/dashboard/cbt")
                     }
                   }}
