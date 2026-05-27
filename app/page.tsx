@@ -104,8 +104,8 @@ export default async function LandingPage() {
                 <dd className="text-2xl font-semibold">7</dd>
               </div>
               <div>
-                <dt className="text-xs text-muted-foreground">Data fields</dt>
-                <dd className="text-2xl font-semibold">50+</dd>
+                <dt className="text-xs text-muted-foreground">CBT Questions</dt>
+                <dd className="text-2xl font-semibold">100+</dd>
               </div>
               <div>
                 <dt className="text-xs text-muted-foreground">Secured by</dt>
@@ -121,30 +121,30 @@ export default async function LandingPage() {
               <div className="border-b border-border bg-card p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs text-muted-foreground">Case #1287</p>
-                    <p className="font-semibold">General Anesthesia</p>
+                    <p className="text-xs text-muted-foreground">CBT Exam Prep</p>
+                    <p className="font-semibold">Simulasi Ujian Nasional</p>
                   </div>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
-                    <span className="h-1.5 w-1.5 rounded-full bg-primary" /> Step 3 of 7
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-1 text-xs font-semibold text-emerald-500">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Active Hub
                   </span>
                 </div>
                 <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted">
-                  <div className="h-full w-[43%] rounded-full bg-primary" />
+                  <div className="h-full w-[85%] rounded-full bg-emerald-500" />
                 </div>
               </div>
               <div className="space-y-3 p-4 text-sm">
-                <MockField label="Patient" value="J. Doe · M · 54y" />
-                <MockField label="Weight / Height" value="78 kg · 175 cm" />
-                <MockField label="BMI (auto)" value="25.5" highlight />
-                <MockField label="Diagnosis" value="Acute cholecystitis" />
-                <MockField label="B1 Airway" value="Patent, Mallampati II" />
-                <MockField label="Room" value="OT-4" />
+                <MockField label="Ujian" value="National Board Practice" />
+                <MockField label="Kategori" value="10 Subspesialisasi" />
+                <MockField label="Waktu" value="180 Menit" />
+                <MockField label="Fitur AI" value="Pertanyaan Generator" highlight />
+                <MockField label="Media" value="Pendukung Gambar (CVC/ETT)" />
+                <MockField label="Pembahasan" value="Penjelasan Klinis Lengkap" />
               </div>
               <div className="flex items-center justify-between border-t border-border bg-muted/40 p-3">
                 <Button variant="ghost" size="sm">
-                  Back
+                  Dashboard
                 </Button>
-                <Button size="sm">Continue</Button>
+                <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold">Mulai Ujian</Button>
               </div>
             </Card>
           </div>
@@ -155,69 +155,111 @@ export default async function LandingPage() {
       <section id="features" className="border-t border-border bg-muted/30">
         <div className="mx-auto max-w-6xl px-4 py-16 md:px-6 md:py-24">
           <div className="mx-auto max-w-2xl text-center">
-            <p className="text-sm font-medium text-primary">Features</p>
+            <p className="text-sm font-medium text-primary">Platform Terintegrasi</p>
             <h2 className="mt-2 text-balance text-3xl font-semibold tracking-tight md:text-4xl">
-              Everything you need to document a case
+              Fitur Utama & Ekosistem Anestesiologi
             </h2>
             <p className="mt-4 text-pretty text-muted-foreground">
-              From pre-op assessment to post-op monitoring — structured fields matching real
-              clinical workflows.
+              Didesain khusus untuk residen, spesialis anestesi, serta akademisi untuk mencatat rekam medis, bersiap menghadapi ujian nasional, dan berkolaborasi.
             </p>
           </div>
 
           <div className="mt-12 grid gap-4 md:grid-cols-3">
             <FeatureCard
               icon={<Smartphone className="h-5 w-5" />}
-              title="Mobile-first"
-              description="Designed for use at the bedside. Large touch targets, legible typography, and generous spacing."
-            />
-            <FeatureCard
-              icon={<ClipboardList className="h-5 w-5" />}
-              title="7-step wizard"
-              description="Break extensive data entry into manageable steps. Navigate freely and save drafts at any time."
-            />
-            <FeatureCard
-              icon={<Activity className="h-5 w-5" />}
-              title="Auto BMI calc"
-              description="Real-time BMI calculation updates as you enter weight and height. No manual math."
-            />
-            <FeatureCard
-              icon={<ShieldCheck className="h-5 w-5" />}
-              title="Secure by default"
-              description="Row-level security ensures clinicians only see their own cases. Ready for Supabase."
-            />
-            <FeatureCard
-              icon={<Database className="h-5 w-5" />}
-              title="Research-ready"
-              description="Structured schema exports cleanly to PostgreSQL. Perfect for big-data medical studies."
+              title="Pencatat Kasus Klinis (7-Step)"
+              description="Sistem dokumentasi kasus klinis portabel di bangsal bedah dengan penghitungan otomatis IMT, B1-B6 respirasi, hingga post-op."
             />
             <FeatureCard
               icon={<LineChart className="h-5 w-5" />}
-              title="Complete coverage"
-              description="B1–B6 exam, investigations, anesthesia regimen, intra-op monitoring, and post-op tracking."
+              title="Ujian CBT & Simulasi"
+              description="Akses paket ujian 100 soal standar kompetensi nasional dengan pembahasan interaktif di 10 subspesialisasi utama."
+            />
+            <FeatureCard
+              icon={<ClipboardList className="h-5 w-5" />}
+              title="Visual Builder & AI / JSON"
+              description="Buat paket ujian secara kustom, ketik manual, unggah format JSON pendukung LaTeX, atau hasilkan otomatis dengan AI."
+            />
+            <FeatureCard
+              icon={<Database className="h-5 w-5" />}
+              title="Gambar Pendukung & Storage"
+              description="Simpan dan lampirkan gambar klinis (seperti posisi ETT atau pembacaan CVC) secara langsung untuk melengkapi penjelasan soal."
+            />
+            <FeatureCard
+              icon={<Activity className="h-5 w-5" />}
+              title="Community Hub & Diskusi"
+              description="Bagikan paket soal Anda, berikan rating bintang, dan bahas soal secara kolaboratif bersama kolega anestesi seluruh Indonesia."
+            />
+            <FeatureCard
+              icon={<ShieldCheck className="h-5 w-5" />}
+              title="Data Riset Terkunci & Aman"
+              description="Dengan sistem RLS Supabase, data log kasus dan paket buatan Anda tetap terlindungi dan tersimpan terenskripsi secara aman."
             />
           </div>
         </div>
       </section>
 
+      {/* Roadmap & Future Expansion */}
+      <section id="roadmap" className="border-t border-border bg-card">
+        <div className="mx-auto max-w-6xl px-4 py-16 md:px-6 md:py-24">
+          <div className="mx-auto max-w-2xl text-center">
+            <p className="text-sm font-medium text-emerald-500 font-bold">Rencana Pengembangan</p>
+            <h2 className="mt-2 text-balance text-3xl font-semibold tracking-tight md:text-4xl">
+              Fitur Masa Depan (Segera Hadir)
+            </h2>
+            <p className="mt-4 text-pretty text-muted-foreground">
+              Kami sedang membangun modul-modul referensi klinis tambahan untuk melengkapi ekosistem praktek harian Anda di ruang operasi.
+            </p>
+          </div>
+
+          <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <Card className="p-6 border border-border bg-muted/20 relative overflow-hidden">
+              <div className="absolute top-3 right-3 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-500 uppercase tracking-wide">
+                Dalam Pengembangan
+              </div>
+              <h3 className="font-bold text-lg text-foreground mt-2">Perpustakaan Obat (Drug Library)</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                Daftar dosis obat anestesi, dosis infus kontinyu, farmakodinamika obat induksi, pelumpuh otot, hingga panduan pencampuran obat darurat secara instan.
+              </p>
+            </Card>
+
+            <Card className="p-6 border border-border bg-muted/20 relative overflow-hidden">
+              <div className="absolute top-3 right-3 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-500 uppercase tracking-wide">
+                Dalam Pengembangan
+              </div>
+              <h3 className="font-bold text-lg text-foreground mt-2">Pedoman Klinis (Guidelines Library)</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                Kumpulan algoritma tata laksana medis penting (AHA ACLS/PALS, ASA Difficult Airway, penanganan MH, tata laksana keracunan anestesi lokal/LAST).
+              </p>
+            </Card>
+
+            <Card className="p-6 border border-border bg-muted/20 relative overflow-hidden">
+              <div className="absolute top-3 right-3 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary uppercase tracking-wide">
+                Tahap Perencanaan
+              </div>
+              <h3 className="font-bold text-lg text-foreground mt-2">Kalkulator Anestesi Lanjut</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                Kalkulator perhitungan kebutuhan cairan puasa/maintenance, taksiran kehilangan darah (MABL), koreksi elektrolit, hingga estimasi klirens ginjal residen.
+              </p>
+            </Card>
+          </div>
+        </div>
+      </section>
+
       {/* Workflow */}
-      <section id="workflow" className="mx-auto max-w-6xl px-4 py-16 md:px-6 md:py-24">
+      <section id="workflow" className="mx-auto max-w-6xl px-4 py-16 md:px-6 md:py-24 border-t border-border">
         <div className="mx-auto max-w-2xl text-center">
-          <p className="text-sm font-medium text-primary">Workflow</p>
+          <p className="text-sm font-medium text-primary">Alur Ujian CBT</p>
           <h2 className="mt-2 text-balance text-3xl font-semibold tracking-tight md:text-4xl">
-            A clinical workflow, step by step
+            Bagaimana CBT Prep Membantu Anda
           </h2>
         </div>
         <ol className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {[
-            { n: "01", t: "General & Patient", d: "Procedure date, demographics, vitals, BMI." },
-            { n: "02", t: "Clinical Assessment", d: "Diagnosis, procedure, subjective history." },
-            { n: "03", t: "Objective B1–B6", d: "Airway, CV, neuro, urine, abdomen, temp." },
-            { n: "04", t: "Investigations", d: "Labs, imaging, assessment, planning." },
-            { n: "05", t: "Anesthesia Regimen", d: "Pre-induction, induction, maintenance." },
-            { n: "06", t: "Intra-Operative", d: "Ventilator, hemodynamics, fluids, bleeding." },
-            { n: "07", t: "Post-Operative", d: "PACU room, hemodynamics, labs." },
-            { n: "→", t: "Exported", d: "Saved for research, review, and audit." },
+            { n: "01", t: "Pilih / Buat Paket", d: "Pilih paket ujian dari daftar default atau buat sendiri secara visual / AI." },
+            { n: "02", t: "Simulasi Ujian Riil", d: "Kerjakan soal dengan batasan waktu simulasi ujian nasional yang menantang." },
+            { n: "03", t: "Tinjau Hasil & Analisis", d: "Peroleh analisis kelemahan di 10 subspesialisasi dan lihat statistik kelulusan Anda." },
+            { n: "04", t: "Kolaborasi & Diskusi", d: "Bahas soal sulit bersama rekan sejawat di kolom komentar pembahasan." },
           ].map((s) => (
             <li key={s.n} className="rounded-lg border border-border bg-card p-5">
               <div className="font-mono text-xs text-primary">{s.n}</div>
