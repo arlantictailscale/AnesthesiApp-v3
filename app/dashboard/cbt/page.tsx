@@ -29,6 +29,7 @@ import {
   type CBTPackage,
   type CBTAttempt,
 } from "@/lib/cbt-storage"
+import { CBTDiscussion } from "@/components/cbt-discussion"
 import {
   BookOpen,
   Plus,
@@ -43,6 +44,7 @@ import {
   ChevronRight,
   TrendingUp,
   Star,
+  MessageSquare,
 } from "lucide-react"
 
 export default function CBTDashboardPage() {
@@ -52,6 +54,7 @@ export default function CBTDashboardPage() {
   const [activeProgressMap, setActiveProgressMap] = useState<Record<string, boolean>>({})
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [ratingsMap, setRatingsMap] = useState<Record<string, { average: number; count: number }>>({})
+  const [discussionPkg, setDiscussionPkg] = useState<CBTPackage | null>(null)
 
   // Upload/Create states
   const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -506,13 +509,11 @@ export default function CBTDashboardPage() {
                         {isDefault ? "Resmi Kolegium" : pkg.creator_email ? `Oleh: ${pkg.creator_email.split('@')[0]}` : "Kustom User"}
                       </span>
                       <div className="flex items-center gap-1.5">
-                        {rInfo.count > 0 && (
-                          <div className="flex items-center gap-1 text-xs text-yellow-500 font-semibold" title={`Average: ${rInfo.average} stars`}>
-                            <Star className="h-3.5 w-3.5 fill-yellow-500 text-yellow-500" />
-                            <span>{rInfo.average}</span>
-                            <span className="text-[10px] text-muted-foreground font-normal">({rInfo.count})</span>
-                          </div>
-                        )}
+                        <div className="flex items-center gap-1 text-xs text-yellow-500 font-semibold" title={`Average: ${rInfo.average} stars`}>
+                          <Star className={`h-3.5 w-3.5 ${rInfo.count > 0 ? "fill-yellow-500 text-yellow-500" : "text-muted-foreground/30"}`} />
+                          <span>{rInfo.count > 0 ? rInfo.average : "0.0"}</span>
+                          <span className="text-[10px] text-muted-foreground font-normal">({rInfo.count})</span>
+                        </div>
                         {!isDefault && (!pkg.creator_email || (currentUser?.email && pkg.creator_email === currentUser.email)) && (
                           <Button
                             variant="ghost"
@@ -553,12 +554,23 @@ export default function CBTDashboardPage() {
 
                     {activeProgressMap[pkg.id] ? (
                       <div className="flex flex-col gap-2">
-                        <Button asChild className="w-full gap-2 bg-amber-500 hover:bg-amber-600 text-white font-semibold shadow-sm">
-                          <Link href={`/dashboard/cbt/exam/${pkg.id}`}>
-                            Lanjutkan Ujian
-                            <ChevronRight className="h-4 w-4" />
-                          </Link>
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button asChild className="flex-1 gap-2 bg-amber-500 hover:bg-amber-600 text-white font-semibold shadow-sm">
+                            <Link href={`/dashboard/cbt/exam/${pkg.id}`}>
+                              Lanjutkan Ujian
+                              <ChevronRight className="h-4 w-4" />
+                            </Link>
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-10 w-10 shrink-0 text-muted-foreground hover:text-foreground"
+                            onClick={() => setDiscussionPkg(pkg)}
+                            title="Diskusi & Ulasan"
+                          >
+                            <MessageSquare className="h-4 w-4" />
+                          </Button>
+                        </div>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -569,12 +581,23 @@ export default function CBTDashboardPage() {
                         </Button>
                       </div>
                     ) : (
-                      <Button asChild className="w-full gap-2">
-                        <Link href={`/dashboard/cbt/exam/${pkg.id}`}>
-                          Mulai Ujian
-                          <ChevronRight className="h-4 w-4" />
-                        </Link>
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button asChild className="flex-1 gap-2">
+                          <Link href={`/dashboard/cbt/exam/${pkg.id}`}>
+                            Mulai Ujian
+                            <ChevronRight className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-10 w-10 shrink-0 text-muted-foreground hover:text-foreground"
+                          onClick={() => setDiscussionPkg(pkg)}
+                          title="Diskusi & Ulasan"
+                        >
+                          <MessageSquare className="h-4 w-4" />
+                        </Button>
+                      </div>
                     )}
                   </CardContent>
                 </Card>
@@ -701,6 +724,26 @@ export default function CBTDashboardPage() {
             </Card>
           )}
         </div>
+
+        {/* Discussion Dialog Popover */}
+        <Dialog open={!!discussionPkg} onOpenChange={(open) => !open && setDiscussionPkg(null)}>
+          <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                <MessageSquare className="h-5 w-5 text-primary" />
+                Diskusi & Ulasan: {discussionPkg?.name}
+              </DialogTitle>
+              <DialogDescription>
+                Berikan rating, tanyakan materi, atau diskusikan soal ini dengan penulis dan rekan sejawat lainnya.
+              </DialogDescription>
+            </DialogHeader>
+            {discussionPkg && (
+              <div className="mt-4">
+                <CBTDiscussion packageId={discussionPkg.id} packageName={discussionPkg.name} />
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </AppShell>
   )
