@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { createClient } from "@/lib/supabase/client"
 import {
   ratePackage,
@@ -117,7 +117,7 @@ export function CBTDiscussion({ packageId, packageName }: CBTDiscussionProps) {
   return (
     <div className="grid gap-6 md:grid-cols-3">
       {/* Ratings Panel */}
-      <Card className="border border-border bg-card shadow-sm h-fit">
+      <Card className="border border-border bg-card shadow-sm flex flex-col">
         <CardHeader className="pb-4">
           <CardTitle className="text-base font-bold flex items-center gap-1.5">
             <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
@@ -139,39 +139,39 @@ export function CBTDiscussion({ packageId, packageName }: CBTDiscussionProps) {
               {ratings.count} ulasan
             </span>
           </div>
-
-          <div className="w-full border-t border-border pt-4">
-            <span className="text-xs font-semibold text-muted-foreground block mb-2">
-              {ratings.userRating ? "Rating Anda" : "Berikan Rating Anda"}
-            </span>
-
-            {user ? (
-              <div className="flex items-center justify-center gap-1">
-                {[1, 2, 3, 4, 5].map((star) => {
-                  const isActive = star <= (hoverRating ?? ratings.userRating ?? 0)
-                  return (
-                    <button
-                      key={star}
-                      disabled={ratingLoading}
-                      onClick={() => handleRate(star)}
-                      onMouseEnter={() => setHoverRating(star)}
-                      onMouseLeave={() => setHoverRating(null)}
-                      className="p-1 transition-transform active:scale-95 focus:outline-none"
-                    >
-                      <Star
-                        className={`h-6 w-6 transition-all ${isActive ? "text-yellow-500 fill-yellow-500 scale-110" : "text-muted-foreground/30 hover:text-yellow-500"}`}
-                      />
-                    </button>
-                  )
-                })}
-              </div>
-            ) : (
-              <span className="text-xs text-muted-foreground italic">
-                Masuk log untuk memberi ulasan.
-              </span>
-            )}
-          </div>
         </CardContent>
+
+        <CardFooter className="w-full border-t border-border pt-4 flex flex-col items-center mt-auto">
+          <span className="text-xs font-semibold text-muted-foreground block mb-2">
+            {ratings.userRating ? "Rating Anda" : "Berikan Rating Anda"}
+          </span>
+
+          {user ? (
+            <div className="flex items-center justify-center gap-1">
+              {[1, 2, 3, 4, 5].map((star) => {
+                const isActive = star <= (hoverRating ?? ratings.userRating ?? 0)
+                return (
+                  <button
+                    key={star}
+                    disabled={ratingLoading}
+                    onClick={() => handleRate(star)}
+                    onMouseEnter={() => setHoverRating(star)}
+                    onMouseLeave={() => setHoverRating(null)}
+                    className="p-1 transition-transform active:scale-95 focus:outline-none"
+                  >
+                    <Star
+                      className={`h-6 w-6 transition-all ${isActive ? "text-yellow-500 fill-yellow-500 scale-110" : "text-muted-foreground/30 hover:text-yellow-500"}`}
+                    />
+                  </button>
+                )
+              })}
+            </div>
+          ) : (
+            <span className="text-xs text-muted-foreground italic">
+              Masuk log untuk memberi ulasan.
+            </span>
+          )}
+        </CardFooter>
       </Card>
 
       {/* Discussion Board */}
