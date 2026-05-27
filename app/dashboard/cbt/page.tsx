@@ -57,16 +57,7 @@ export default function CBTDashboardPage() {
   const [ratingsMap, setRatingsMap] = useState<Record<string, { average: number; count: number }>>({})
   const [discussionPkg, setDiscussionPkg] = useState<CBTPackage | null>(null)
 
-  // Upload/Create states
-  const [isCreateOpen, setIsCreateOpen] = useState(false)
-  const [pkgName, setPkgName] = useState("")
-  const [pkgDesc, setPkgDesc] = useState("")
-  const [jsonText, setJsonText] = useState("")
 
-  // AI Generator states
-  const [aiTopic, setAiTopic] = useState("")
-  const [aiCount, setAiCount] = useState(10)
-  const [generating, setGenerating] = useState(false)
 
   async function loadData() {
     try {
@@ -148,81 +139,6 @@ export default function CBTDashboardPage() {
     totalAttempts > 0
       ? Math.round((attempts.filter((a) => a.score >= 70).length / totalAttempts) * 100)
       : 0
-
-  async function handleJsonUpload() {
-    if (!pkgName.trim()) {
-      toast.error("Nama paket wajib diisi.")
-      return
-    }
-
-    try {
-      const parsed = JSON.parse(jsonText)
-      if (!Array.isArray(parsed)) {
-        throw new Error("Format JSON harus berupa array berisi soal.")
-      }
-
-      // Basic validation
-      for (const [index, q] of parsed.entries()) {
-        if (!q.text || !q.options || !q.correctOption || !q.category) {
-          throw new Error(`Soal pada indeks ${index} kekurangan data penting (text/options/correctOption/category).`)
-        }
-        if (!["A", "B", "C", "D", "E"].includes(q.correctOption)) {
-          throw new Error(`Soal pada indeks ${index} memiliki correctOption tidak valid (harus A/B/C/D/E).`)
-        }
-      }
-
-      await createPackage(pkgName, pkgDesc, parsed)
-      toast.success("Paket ujian kustom berhasil ditambahkan!")
-      setIsCreateOpen(false)
-      setPkgName("")
-      setPkgDesc("")
-      setJsonText("")
-      loadData()
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Gagal mengurai JSON. Pastikan format valid.")
-    }
-  }
-
-  async function handleAiGeneration() {
-    if (!aiTopic.trim()) {
-      toast.error("Topik atau materi wajib diisi.")
-      return
-    }
-
-    setGenerating(true)
-    try {
-      const response = await fetch("/api/ai/generate-cbt", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          topic: aiTopic,
-          count: aiCount,
-        }),
-      })
-
-      const result = await response.json()
-      if (!response.ok) {
-        throw new Error(result.error || "Gagal menghasilkan soal menggunakan AI.")
-      }
-
-      await createPackage(
-        `Paket AI: ${aiTopic}`,
-        `Paket soal latihan kustom yang dihasilkan menggunakan AI untuk materi: ${aiTopic}. Berisi ${aiCount} soal pilihan ganda.`,
-        result.questions,
-      )
-
-      toast.success(`Berhasil menghasilkan ${aiCount} soal kustom via AI!`)
-      setIsCreateOpen(false)
-      setAiTopic("")
-      setAiCount(10)
-      loadData()
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Gagal membuat soal dengan AI.")
-    } finally {
-      setGenerating(false)
-    }
-  }
-
   async function handleDeletePkg(id: string, e: React.MouseEvent) {
     e.preventDefault()
     e.stopPropagation()
@@ -236,23 +152,6 @@ export default function CBTDashboardPage() {
       toast.error("Gagal menghapus paket.")
     }
   }
-
-  const sampleJson = `[
-  {
-    "id": "cq1",
-    "text": "Contoh pertanyaan anestesiologi di sini...",
-    "options": {
-      "A": "Pilihan A",
-      "B": "Pilihan B",
-      "C": "Pilihan C",
-      "D": "Pilihan D",
-      "E": "Pilihan E"
-    },
-    "correctOption": "A",
-    "category": "Farmakologi & Fisiologi",
-    "explanation": "Penjelasan mengapa pilihan A benar di sini..."
-  }
-]`
 
   return (
     <AppShell>
@@ -336,142 +235,12 @@ export default function CBTDashboardPage() {
             </div>
 
             <div className="flex flex-wrap gap-2">
-              <Button asChild variant="outline" className="gap-1.5 font-semibold">
+              <Button asChild className="gap-1.5 font-semibold bg-primary hover:bg-primary/90 text-primary-foreground">
                 <Link href="/dashboard/cbt/create">
-                  <Plus className="h-4 w-4" />
-                  Buat Ujian Baru (Visual)
+                  <Sparkles className="h-4 w-4" />
+                  Buat Ujian Baru (Visual / AI / JSON)
                 </Link>
               </Button>
-
-              {/* Add package dialog trigger */}
-              <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-                <DialogTrigger asChild>
-                  <Button className="gap-2">
-                    <Sparkles className="h-4 w-4" />
-                    Tambah via AI / JSON
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl">
-                  <DialogHeader>
-                    <DialogTitle>Tambah Paket Soal Baru</DialogTitle>
-                    <DialogDescription>
-                      Tambahkan paket soal kustom Anda sendiri menggunakan template JSON atau buat secara instan menggunakan kecerdasan buatan (AI).
-                    </DialogDescription>
-                  </DialogHeader>
-
-                  <Tabs defaultValue="ai" className="w-full mt-4">
-                    <TabsList className="grid w-full grid-cols-2 mb-4">
-                      <TabsTrigger value="ai" className="gap-1.5">
-                        <Sparkles className="h-4 w-4 text-primary" />
-                        Hasilkan dengan AI
-                      </TabsTrigger>
-                      <TabsTrigger value="json" className="gap-1.5">
-                        <FileText className="h-4 w-4" />
-                        Unggah JSON Soal
-                      </TabsTrigger>
-                    </TabsList>
-
-                    {/* AI Generator Tab */}
-                    <TabsContent value="ai" className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="aiTopic">Topik Ujian Spesifik</Label>
-                        <Input
-                          id="aiTopic"
-                          placeholder="Contoh: Obstetrik Anestesi, Preeklamsia, Blok Regional Ekstremitas Bawah, dll."
-                          value={aiTopic}
-                          onChange={(e) => setAiTopic(e.target.value)}
-                          disabled={generating}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="aiCount">Jumlah Soal</Label>
-                        <select
-                          id="aiCount"
-                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                          value={aiCount}
-                          onChange={(e) => setAiCount(Number(e.target.value))}
-                          disabled={generating}
-                        >
-                          <option value="5">5 Soal (Cepat)</option>
-                          <option value="10">10 Soal (Latihan Singkat)</option>
-                          <option value="20">20 Soal (Komprehensif)</option>
-                        </select>
-                      </div>
-
-                      <DialogFooter className="pt-4">
-                        <Button
-                          type="button"
-                          onClick={handleAiGeneration}
-                          disabled={generating}
-                          className="w-full sm:w-auto gap-2"
-                        >
-                          {generating ? (
-                            <>
-                              <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
-                              Sedang Merumuskan Soal...
-                            </>
-                          ) : (
-                            <>
-                              <Sparkles className="h-4 w-4" />
-                              Hasilkan Soal Latihan
-                            </>
-                          )}
-                        </Button>
-                      </DialogFooter>
-                    </TabsContent>
-
-                    {/* JSON Upload Tab */}
-                    <TabsContent value="json" className="space-y-4">
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        <div className="space-y-2">
-                          <Label htmlFor="pkgName">Nama Paket Soal</Label>
-                          <Input
-                            id="pkgName"
-                            placeholder="Contoh: Paket Latihan Kardiovaskular A"
-                            value={pkgName}
-                            onChange={(e) => setPkgName(e.target.value)}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="pkgDesc">Deskripsi Singkat</Label>
-                          <Input
-                            id="pkgDesc"
-                            placeholder="Latihan soal khusus anestesi obstetrik..."
-                            value={pkgDesc}
-                            onChange={(e) => setPkgDesc(e.target.value)}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Label htmlFor="jsonText">Salin JSON Soal Di Sini</Label>
-                          <Button
-                            variant="link"
-                            className="h-auto p-0 text-xs"
-                            onClick={() => setJsonText(sampleJson)}
-                          >
-                            Gunakan Contoh Format
-                          </Button>
-                        </div>
-                        <Textarea
-                          id="jsonText"
-                          placeholder={`Masukkan array JSON berisi soal di sini...\nFormat:\n${sampleJson}`}
-                          className="font-mono text-xs h-[180px]"
-                          value={jsonText}
-                          onChange={(e) => setJsonText(e.target.value)}
-                        />
-                      </div>
-
-                      <DialogFooter className="pt-4">
-                        <Button type="button" onClick={handleJsonUpload} className="w-full sm:w-auto">
-                          Simpan Paket Ujian
-                        </Button>
-                      </DialogFooter>
-                    </TabsContent>
-                  </Tabs>
-                </DialogContent>
-              </Dialog>
             </div>
           </div>
 

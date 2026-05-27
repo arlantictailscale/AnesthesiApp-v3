@@ -21,7 +21,17 @@ import {
   AlertCircle,
   Edit2,
   BookOpen,
+  FileText,
 } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 const CATEGORIES = [
   "Farmakologi & Fisiologi",
@@ -60,6 +70,15 @@ function CBTCreatePageContent() {
 
   // List of added questions
   const [questions, setQuestions] = useState<CBTQuestion[]>([])
+
+  // Import AI/JSON Dialog States
+  const [isImportOpen, setIsImportOpen] = useState(false)
+  const [importJsonText, setImportJsonText] = useState("")
+  const [importPkgName, setImportPkgName] = useState("")
+  const [importPkgDesc, setImportPkgDesc] = useState("")
+  const [aiTopic, setAiTopic] = useState("")
+  const [aiCount, setAiCount] = useState(10)
+  const [generating, setGenerating] = useState(false)
   
   // Current active question being edited/created
   const [editIndex, setEditIndex] = useState<number | null>(null) // null means creating new
@@ -196,6 +215,105 @@ function CBTCreatePageContent() {
     clearQuestionForm()
   }
 
+  // Sample JSON format helper
+  const sampleJson = `[
+  {
+    "id": "cq1",
+    "text": "Contoh pertanyaan anestesiologi di sini...",
+    "options": {
+      "A": "Pilihan A",
+      "B": "Pilihan B",
+      "C": "Pilihan C",
+      "D": "Pilihan D",
+      "E": "Pilihan E"
+    },
+    "correctOption": "A",
+    "category": "Farmakologi & Fisiologi",
+    "explanation": "Penjelasan mengapa pilihan A benar di sini..."
+  }
+]`
+
+  // Import from JSON into builder workspace
+  function handleJsonImport() {
+    if (!importPkgName.trim()) {
+      toast.error("Nama paket wajib diisi.")
+      return
+    }
+
+    try {
+      const parsed = JSON.parse(importJsonText)
+      if (!Array.isArray(parsed)) {
+        throw new Error("Format JSON harus berupa array berisi soal.")
+      }
+
+      // Basic validation
+      for (const [index, q] of parsed.entries()) {
+        if (!q.text || !q.options || !q.correctOption || !q.category) {
+          throw new Error(`Soal pada indeks ${index} kekurangan data penting (text/options/correctOption/category).`)
+        }
+        if (!["A", "B", "C", "D", "E"].includes(q.correctOption)) {
+          throw new Error(`Soal pada indeks ${index} memiliki correctOption tidak valid (harus A/B/C/D/E).`)
+        }
+      }
+
+      if (questions.length > 0 && !confirm("Impor ini akan menggantikan daftar soal saat ini di editor. Lanjutkan?")) {
+        return
+      }
+
+      setName(importPkgName.trim())
+      setDescription(importPkgDesc.trim())
+      setQuestions(parsed)
+      toast.success(`Berhasil memuat ${parsed.length} soal dari JSON ke dalam editor!`)
+      setIsImportOpen(false)
+      setImportJsonText("")
+      setImportPkgName("")
+      setImportPkgDesc("")
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Gagal mengurai JSON. Pastikan format valid.")
+    }
+  }
+
+  // Generate via AI into builder workspace
+  async function handleAiImport() {
+    if (!aiTopic.trim()) {
+      toast.error("Topik atau materi wajib diisi.")
+      return
+    }
+
+    setGenerating(true)
+    try {
+      const response = await fetch("/api/ai/generate-cbt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          topic: aiTopic,
+          count: aiCount,
+        }),
+      })
+
+      const result = await response.json()
+      if (!response.ok) {
+        throw new Error(result.error || "Gagal menghasilkan soal menggunakan AI.")
+      }
+
+      if (questions.length > 0 && !confirm("Proses ini akan menggantikan daftar soal saat ini di editor. Lanjutkan?")) {
+        return
+      }
+
+      setName(`Paket AI: ${aiTopic}`)
+      setDescription(`Paket soal latihan kustom yang dihasilkan menggunakan AI untuk materi: ${aiTopic}. Berisi ${aiCount} soal pilihan ganda.`)
+      setQuestions(result.questions)
+      toast.success(`Berhasil menghasilkan ${aiCount} soal kustom via AI ke dalam editor!`)
+      setIsImportOpen(false)
+      setAiTopic("")
+      setAiCount(10)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Gagal membuat soal dengan AI.")
+    } finally {
+      setGenerating(false)
+    }
+  }
+
   // Save/Update the entire package to Supabase
   async function handlePublishPackage() {
     if (!name.trim()) {
@@ -276,6 +394,15 @@ function CBTCreatePageContent() {
                 : "Gunakan editor interaktif ini untuk merumuskan paket soal latihan anestesiologi Anda sendiri. Paket yang disimpan akan langsung dipublikasikan ke Community Hub sehingga dapat diakses oleh rekan sejawat lainnya."
               }
             </p>
+            <div className="flex flex-wrap gap-2 mt-2">
+              <Button
+                onClick={() => setIsImportOpen(true)}
+                className="bg-primary-foreground text-primary hover:bg-primary-foreground/90 font-semibold gap-1.5 shadow-sm"
+              >
+                <Sparkles className="h-4 w-4" />
+                {questions.length > 0 ? "Impor / Hasilkan via AI atau JSON (Menimpa)" : "Impor / Hasilkan via AI atau JSON"}
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -519,6 +646,130 @@ function CBTCreatePageContent() {
             </Card>
           </div>
         </div>
+        {/* Import/Generate Dialog */}
+        <Dialog open={isImportOpen} onOpenChange={setIsImportOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Impor / Hasilkan Soal</DialogTitle>
+              <DialogDescription>
+                Hasilkan paket soal secara instan menggunakan kecerdasan buatan (AI) atau muat soal kustom Anda dari template JSON langsung ke dalam editor.
+              </DialogDescription>
+            </DialogHeader>
+
+            <Tabs defaultValue="ai" className="w-full mt-4">
+              <TabsList className="grid w-full grid-cols-2 mb-4">
+                <TabsTrigger value="ai" className="gap-1.5">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  Hasilkan dengan AI
+                </TabsTrigger>
+                <TabsTrigger value="json" className="gap-1.5">
+                  <FileText className="h-4 w-4" />
+                  Unggah JSON Soal
+                </TabsTrigger>
+              </TabsList>
+
+              {/* AI Generator Tab */}
+              <TabsContent value="ai" className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="aiTopic">Topik Ujian Spesifik</Label>
+                  <Input
+                    id="aiTopic"
+                    placeholder="Contoh: Obstetrik Anestesi, Preeklamsia, Blok Regional Ekstremitas Bawah, dll."
+                    value={aiTopic}
+                    onChange={(e) => setAiTopic(e.target.value)}
+                    disabled={generating}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="aiCount">Jumlah Soal</Label>
+                  <select
+                    id="aiCount"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    value={aiCount}
+                    onChange={(e) => setAiCount(Number(e.target.value))}
+                    disabled={generating}
+                  >
+                    <option value="5">5 Soal (Cepat)</option>
+                    <option value="10">10 Soal (Latihan Singkat)</option>
+                    <option value="20">20 Soal (Komprehensif)</option>
+                  </select>
+                </div>
+
+                <DialogFooter className="pt-4">
+                  <Button
+                    type="button"
+                    onClick={handleAiImport}
+                    disabled={generating}
+                    className="w-full sm:w-auto gap-2"
+                  >
+                    {generating ? (
+                      <>
+                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
+                        Sedang Merumuskan Soal...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-4 w-4" />
+                        Hasilkan Soal ke Editor
+                      </>
+                    )}
+                  </Button>
+                </DialogFooter>
+              </TabsContent>
+
+              {/* JSON Upload Tab */}
+              <TabsContent value="json" className="space-y-4">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="importPkgName">Nama Paket Soal</Label>
+                    <Input
+                      id="importPkgName"
+                      placeholder="Contoh: Paket Latihan Kardiovaskular A"
+                      value={importPkgName}
+                      onChange={(e) => setImportPkgName(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="importPkgDesc">Deskripsi Singkat</Label>
+                    <Input
+                      id="importPkgDesc"
+                      placeholder="Latihan soal khusus anestesi obstetrik..."
+                      value={importPkgDesc}
+                      onChange={(e) => setImportPkgDesc(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="importJsonText">Salin JSON Soal Di Sini</Label>
+                    <Button
+                      variant="link"
+                      className="h-auto p-0 text-xs text-primary"
+                      type="button"
+                      onClick={() => setImportJsonText(sampleJson)}
+                    >
+                      Gunakan Contoh Format
+                    </Button>
+                  </div>
+                  <Textarea
+                    id="importJsonText"
+                    placeholder={`Masukkan array JSON berisi soal di sini...\nFormat:\n${sampleJson}`}
+                    className="font-mono text-xs h-[180px]"
+                    value={importJsonText}
+                    onChange={(e) => setImportJsonText(e.target.value)}
+                  />
+                </div>
+
+                <DialogFooter className="pt-4">
+                  <Button type="button" onClick={handleJsonImport} className="w-full sm:w-auto">
+                    Muat ke Editor
+                  </Button>
+                </DialogFooter>
+              </TabsContent>
+            </Tabs>
+          </DialogContent>
+        </Dialog>
       </div>
     </AppShell>
   )
