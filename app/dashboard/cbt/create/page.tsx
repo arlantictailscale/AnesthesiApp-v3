@@ -292,9 +292,8 @@ function CBTCreatePageContent() {
 
     try {
       // Sanitize backslashes to handle LaTeX or unescaped characters/symbols
-      const sanitizedText = importJsonText
-        .replace(/\\(?!["\\/bfnrt]|u[0-9a-fA-F]{4})/g, "\\\\")
-        .replace(/\\([tnr])(?=[a-zA-Z])/g, "\\\\$1")
+      // Escape every backslash except those escaping a double quote (\")
+      const sanitizedText = importJsonText.replace(/\\(?!")/g, "\\\\")
 
       const parsed = JSON.parse(sanitizedText)
       if (!Array.isArray(parsed)) {
