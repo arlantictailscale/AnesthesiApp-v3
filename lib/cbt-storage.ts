@@ -19,6 +19,24 @@ export interface CBTAttempt {
 const CUSTOM_PACKAGES_KEY = "anesthesiapp:cbt_custom_packages"
 const ATTEMPTS_KEY = "anesthesiapp:cbt_attempts"
 
+function generateId(): string {
+  if (typeof window !== "undefined" && typeof window.crypto !== "undefined") {
+    if (typeof window.crypto.randomUUID === "function") {
+      return window.crypto.randomUUID()
+    }
+    if (typeof window.crypto.getRandomValues === "function") {
+      try {
+        return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, (c) =>
+          (Number(c) ^ (window.crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (Number(c) / 4)))).toString(16)
+        )
+      } catch {
+        // ignore and fallback
+      }
+    }
+  }
+  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+}
+
 // Helper: load local items
 function getLocalCustomPackages(): CBTPackage[] {
   if (typeof window === "undefined") return []
@@ -116,7 +134,7 @@ export async function createPackage(
   questions: CBTQuestion[],
 ): Promise<CBTPackage> {
   const newPkg: CBTPackage = {
-    id: typeof crypto !== "undefined" ? crypto.randomUUID() : Math.random().toString(36).substring(2),
+    id: generateId(),
     name,
     description,
     questions,
@@ -243,7 +261,7 @@ export async function getAttempt(id: string): Promise<CBTAttempt | null> {
 export async function saveAttempt(attempt: Omit<CBTAttempt, "id" | "created_at">): Promise<CBTAttempt> {
   const newAttempt: CBTAttempt = {
     ...attempt,
-    id: typeof crypto !== "undefined" ? crypto.randomUUID() : Math.random().toString(36).substring(2),
+    id: generateId(),
     created_at: new Date().toISOString(),
   }
 
