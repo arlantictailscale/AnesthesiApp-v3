@@ -300,15 +300,27 @@ function CBTCreatePageContent() {
         throw new Error("Format JSON harus berupa array berisi soal.")
       }
 
-      // Basic validation
-      for (const [index, q] of parsed.entries()) {
-        if (!q.text || !q.options || !q.correctOption || !q.category) {
-          throw new Error(`Soal pada indeks ${index} kekurangan data penting (text/options/correctOption/category).`)
+      // Map and fill defaults for incomplete fields so the user can edit/complete them in the visual editor
+      const sanitizedQuestions = parsed.map((q: any, index: number) => {
+        const options = q.options || {}
+        return {
+          id: q.id || `cq_${Date.now()}_${index}`,
+          text: q.text || "",
+          options: {
+            A: options.A || "",
+            B: options.B || "",
+            C: options.C || "",
+            D: options.D || "",
+            E: options.E || "",
+          },
+          correctOption: (q.correctOption && ["A", "B", "C", "D", "E"].includes(q.correctOption))
+            ? q.correctOption
+            : "A",
+          category: q.category || "Farmakologi & Fisiologi",
+          explanation: q.explanation || "",
+          imageUrl: q.imageUrl || undefined,
         }
-        if (!["A", "B", "C", "D", "E"].includes(q.correctOption)) {
-          throw new Error(`Soal pada indeks ${index} memiliki correctOption tidak valid (harus A/B/C/D/E).`)
-        }
-      }
+      })
 
       if (questions.length > 0 && !confirm("Impor ini akan menggantikan daftar soal saat ini di editor. Lanjutkan?")) {
         return
@@ -316,7 +328,7 @@ function CBTCreatePageContent() {
 
       setName(importPkgName.trim())
       setDescription(importPkgDesc.trim())
-      setQuestions(parsed)
+      setQuestions(sanitizedQuestions)
       toast.success(`Berhasil memuat ${parsed.length} soal dari JSON ke dalam editor!`)
       setIsImportOpen(false)
       setImportJsonText("")
