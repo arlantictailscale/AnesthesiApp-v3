@@ -52,7 +52,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     router.refresh()
   }
 
-  const isCases = pathname === "/dashboard"
+  const isCbt = pathname?.startsWith("/dashboard/cbt")
+  const isCases = (pathname === "/dashboard" || pathname?.startsWith("/cases")) && !isCbt
   const isNew = pathname?.startsWith("/cases/new")
 
   return (
@@ -80,6 +81,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <Plus className="h-4 w-4" />
                 <span className="hidden sm:inline">New case</span>
               </Link>
+            </Button>
+            <Button
+              asChild
+              variant={isCbt ? "secondary" : "ghost"}
+              size="sm"
+            >
+              <Link href="/dashboard/cbt">CBT Prep</Link>
             </Button>
           </nav>
 
