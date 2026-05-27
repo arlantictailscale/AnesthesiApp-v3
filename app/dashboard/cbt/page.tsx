@@ -262,7 +262,29 @@ export default function CBTDashboardPage() {
           {loading ? (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {[1, 2, 3].map((n) => (
-                <Card key={n} className="animate-pulse bg-card p-6 h-[180px] border border-border" />
+                <Card key={n} className="animate-pulse flex flex-col justify-between overflow-hidden border border-border bg-card p-6 min-h-[220px]">
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <div className="h-4 w-24 bg-muted rounded-full" />
+                      <div className="h-4 w-12 bg-muted rounded-full" />
+                    </div>
+                    <div className="h-5 w-3/4 bg-muted rounded" />
+                    <div className="space-y-2">
+                      <div className="h-3 w-full bg-muted rounded" />
+                      <div className="h-3 w-5/6 bg-muted rounded" />
+                    </div>
+                  </div>
+                  <div className="border-t border-border pt-4 mt-4 flex flex-col gap-3">
+                    <div className="flex justify-between items-center">
+                      <div className="h-3 w-16 bg-muted rounded" />
+                      <div className="h-3 w-20 bg-muted rounded" />
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="h-10 flex-1 bg-muted rounded-md" />
+                      <div className="h-10 w-10 bg-muted rounded-md" />
+                    </div>
+                  </div>
+                </Card>
               ))}
             </div>
           ) : (() => {
@@ -470,7 +492,22 @@ export default function CBTDashboardPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
-                    {attempts.map((att) => {
+                    {loading ? (
+                      [1, 2, 3].map((n) => (
+                        <tr key={n} className="animate-pulse">
+                          <td className="px-6 py-4"><div className="h-4 w-40 bg-muted rounded animate-pulse" /></td>
+                          <td className="px-6 py-4"><div className="h-4 w-32 bg-muted rounded animate-pulse" /></td>
+                          <td className="px-6 py-4"><div className="h-4 w-16 bg-muted rounded animate-pulse" /></td>
+                          <td className="px-6 py-4"><div className="h-4 w-12 bg-muted rounded animate-pulse" /></td>
+                          <td className="px-6 py-4"><div className="h-6 w-20 bg-muted rounded-full animate-pulse" /></td>
+                          <td className="px-6 py-4 text-right flex justify-end gap-2">
+                            <div className="h-8 w-24 bg-muted rounded animate-pulse" />
+                            <div className="h-8 w-8 bg-muted rounded animate-pulse" />
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      attempts.map((att) => {
                       const minutes = Math.floor(att.time_spent / 60)
                       const seconds = att.time_spent % 60
                       const durationStr = `${minutes}m ${seconds}s`
@@ -525,7 +562,7 @@ export default function CBTDashboardPage() {
                           </td>
                         </tr>
                       )
-                    })}
+                    }))}
                   </tbody>
                 </table>
               </div>
