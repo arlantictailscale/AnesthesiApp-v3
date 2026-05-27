@@ -46,6 +46,7 @@ export default function CBTDashboardPage() {
   const [packages, setPackages] = useState<CBTPackage[]>([])
   const [attempts, setAttempts] = useState<CBTAttempt[]>([])
   const [loading, setLoading] = useState(true)
+  const [activeProgressMap, setActiveProgressMap] = useState<Record<string, boolean>>({})
 
   // Upload/Create states
   const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -74,6 +75,35 @@ export default function CBTDashboardPage() {
   useEffect(() => {
     loadData()
   }, [])
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && packages.length > 0) {
+      const progressMap: Record<string, boolean> = {}
+      packages.forEach((pkg) => {
+        const raw = localStorage.getItem(`anesthesiapp:cbt_progress_${pkg.id}`)
+        if (raw) {
+          progressMap[pkg.id] = true
+        }
+      })
+      setActiveProgressMap(progressMap)
+    }
+  }, [packages])
+
+  function handleResetProgress(packageId: string, e: React.MouseEvent) {
+    e.preventDefault()
+    e.stopPropagation()
+    if (confirm("Hapus progress berjalan dan ulangi ujian dari awal?")) {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem(`anesthesiapp:cbt_progress_${packageId}`)
+        setActiveProgressMap((prev) => {
+          const next = { ...prev }
+          delete next[packageId]
+          return next
+        })
+        toast.success("Progress berhasil dihapus. Anda dapat memulai ulang ujian.")
+      }
+    }
+  }
 
   // Calculate statistics
   const totalAttempts = attempts.length
@@ -449,7 +479,12 @@ export default function CBTDashboardPage() {
                           <HelpCircle className="h-3.5 w-3.5" />
                           <span>{pkg.questions.length} Soal</span>
                         </div>
-                        {high !== null ? (
+                        {activeProgressMap[pkg.id] ? (
+                          <span className="inline-flex items-center gap-1 font-semibold text-amber-500 animate-pulse">
+                            <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                            Sedang Berlangsung
+                          </span>
+                        ) : high !== null ? (
                           <div className="flex items-center gap-1 font-semibold text-emerald-500">
                             <Award className="h-3.5 w-3.5" />
                             <span>Skor: {high}%</span>
@@ -459,12 +494,31 @@ export default function CBTDashboardPage() {
                         )}
                       </div>
 
-                      <Button asChild className="w-full gap-2">
-                        <Link href={`/dashboard/cbt/exam/${pkg.id}`}>
-                          Mulai Ujian
-                          <ChevronRight className="h-4 w-4" />
-                        </Link>
-                      </Button>
+                      {activeProgressMap[pkg.id] ? (
+                        <div className="flex flex-col gap-2">
+                          <Button asChild className="w-full gap-2 bg-amber-500 hover:bg-amber-600 text-white font-semibold shadow-sm">
+                            <Link href={`/dashboard/cbt/exam/${pkg.id}`}>
+                              Lanjutkan Ujian
+                              <ChevronRight className="h-4 w-4" />
+                            </Link>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/5"
+                            onClick={(e) => handleResetProgress(pkg.id, e)}
+                          >
+                            Ulangi dari Awal
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button asChild className="w-full gap-2">
+                          <Link href={`/dashboard/cbt/exam/${pkg.id}`}>
+                            Mulai Ujian
+                            <ChevronRight className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                      )}
                     </CardContent>
                   </Card>
                 )
