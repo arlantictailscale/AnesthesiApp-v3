@@ -1,8 +1,13 @@
 export const AI_MODELS = [
   {
+    id: "openrouter/owl-alpha",
+    label: "Owl Alpha",
+    description: "OpenRouter Owl Alpha — default model for AnesthesiApp",
+  },
+  {
     id: "inclusionai/ling-2.6-1t:free",
     label: "Ling 2.6 1T (free)",
-    description: "InclusionAI Ling 2.6, 1T parameters — default for AnesthesiApp",
+    description: "InclusionAI Ling 2.6, 1T parameters",
   },
   {
     id: "inclusionai/ling-2.6-flash:free",
@@ -28,4 +33,4 @@ export const AI_MODELS = [
 
 export type AiModelId = (typeof AI_MODELS)[number]["id"]
 
-export const DEFAULT_AI_MODEL: AiModelId = "inclusionai/ling-2.6-1t:free"
+export const DEFAULT_AI_MODEL: AiModelId = "openrouter/owl-alpha"
