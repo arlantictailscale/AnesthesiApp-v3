@@ -93,7 +93,7 @@ export default function CaseDetailPage() {
             <EmptyTitle>Case not found</EmptyTitle>
             <EmptyDescription>This case may have been deleted.</EmptyDescription>
           </EmptyHeader>
-          <Button onClick={() => router.replace("/dashboard")}>Back to dashboard</Button>
+          <Button onClick={() => router.replace("/cases")}>Back to dashboard</Button>
         </Empty>
       </AppShell>
     )
@@ -194,7 +194,7 @@ export default function CaseDetailPage() {
     },
   ]
 
-  const backHref = isOwner ? "/dashboard" : "/dashboard/research"
+  const backHref = isOwner ? "/cases" : "/research"
 
   return (
     <AppShell>

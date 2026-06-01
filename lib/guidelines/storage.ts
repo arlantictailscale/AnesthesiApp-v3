@@ -1,7 +1,7 @@
 "use client"
 
 import { createClient } from "@/lib/supabase/client"
-import { builtInGuidelines } from "./guideline-default-data"
+import { builtInGuidelines } from "./default-data"
 import type { AnesthesiaGuideline, GuidelineData } from "./schema"
 
 const CUSTOM_GUIDELINES_KEY = "anesthesiapp:custom_guidelines"

@@ -14,7 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { getPackage, saveAttempt, type CBTPackage } from "@/lib/cbt-storage"
+import { getPackage, saveAttempt, type CBTPackage } from "@/lib/cbt/storage"
 import { Logo } from "@/components/logo"
 import {
   AlertTriangle,
@@ -57,7 +57,7 @@ export default function CBTExamPage() {
         const p = await getPackage(packageId)
         if (!p) {
           toast.error("Paket ujian tidak ditemukan.")
-          router.replace("/dashboard/cbt")
+          router.replace("/cbt")
           return
         }
         setPkg(p)
@@ -253,7 +253,7 @@ export default function CBTExamPage() {
       }
 
       toast.success("Ujian berhasil diselesaikan!")
-      router.replace(`/dashboard/cbt/results/${attempt.id}`)
+      router.replace(`/cbt/results/${attempt.id}`)
     } catch (err) {
       console.error("CBT Submit Error:", err)
       toast.error(err instanceof Error ? `Gagal: ${err.message}` : "Gagal menyimpan hasil ujian. Silakan coba lagi.")
@@ -465,7 +465,7 @@ export default function CBTExamPage() {
                       if (typeof window !== "undefined") {
                         localStorage.removeItem(`anesthesiapp:cbt_progress_${packageId}`)
                       }
-                      router.replace("/dashboard/cbt")
+                      router.replace("/cbt")
                     }
                   }}
                 >

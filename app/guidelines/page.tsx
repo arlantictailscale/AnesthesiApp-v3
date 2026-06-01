@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { getSession } from "@/lib/storage"
-import { listGuidelines, createGuideline, updateGuideline, deleteGuideline, uploadGuidelineFile } from "@/lib/guideline-storage"
+import { listGuidelines, createGuideline, updateGuideline, deleteGuideline, uploadGuidelineFile } from "@/lib/guidelines/storage"
 import type { AnesthesiaGuideline, GuidelineData } from "@/lib/schema"
 import { guidelineSchema } from "@/lib/schema"
 import {

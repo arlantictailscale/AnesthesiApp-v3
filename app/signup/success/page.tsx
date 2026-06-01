@@ -61,7 +61,7 @@ function SignUpSuccessPageContent() {
         toast.success("Email berhasil dikonfirmasi!")
         setSuccess(true)
         setTimeout(() => {
-          router.push("/dashboard")
+          router.push("/cases")
           router.refresh()
         }, 1500)
       }

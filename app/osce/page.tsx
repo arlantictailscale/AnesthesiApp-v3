@@ -7,8 +7,8 @@ import { AppShell } from "@/components/app-shell"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { listOsceStations, listOsceAttempts, deleteOsceStation } from "@/lib/osce-storage"
-import type { OsceStation, OsceAttempt } from "@/lib/osce-default-data"
+import { listOsceStations, listOsceAttempts, deleteOsceStation } from "@/lib/osce/storage"
+import type { OsceStation, OsceAttempt } from "@/lib/osce/default-data"
 import {
   BookOpen, Play, CheckCircle2, History, TrendingUp, Award, Clock, HelpCircle, AlertTriangle, Plus, Edit2, Trash2
 } from "lucide-react"
@@ -76,7 +76,7 @@ export default function OscePrepDashboard() {
             </p>
           </div>
           <Button asChild className="sm:self-start bg-primary hover:bg-primary/95 text-primary-foreground font-bold text-xs shrink-0 h-9 gap-1.5 shadow-sm">
-            <Link href="/dashboard/osce/create">
+            <Link href="/osce/create">
               <Plus className="h-4 w-4" />
               Buat Station Baru
             </Link>
@@ -177,7 +177,7 @@ export default function OscePrepDashboard() {
                         {s.user_id !== null && (
                           <>
                             <Button asChild size="sm" variant="outline" className="h-8 text-xs font-semibold px-2.5 gap-1">
-                              <Link href={`/dashboard/osce/create?edit=${s.id}`}>
+                              <Link href={`/osce/create?edit=${s.id}`}>
                                 <Edit2 className="h-3 w-3 text-muted-foreground" /> Edit
                               </Link>
                             </Button>
@@ -192,7 +192,7 @@ export default function OscePrepDashboard() {
                           </>
                         )}
                         <Button asChild size="sm" className="gap-1.5 font-bold text-xs h-8">
-                          <Link href={`/dashboard/osce/practice/${s.id}`}>
+                          <Link href={`/osce/practice/${s.id}`}>
                             <Play className="h-3.5 w-3.5 fill-current" /> Mulai Simulasi
                           </Link>
                         </Button>

@@ -40,7 +40,7 @@ export default async function LandingPage() {
           <div className="flex items-center gap-2">
             {isLoggedIn ? (
               <Button asChild size="sm">
-                <Link href="/dashboard">Go to Dashboard</Link>
+                <Link href="/cases">Go to Dashboard</Link>
               </Button>
             ) : (
               <>
@@ -79,7 +79,7 @@ export default async function LandingPage() {
             <div className="flex flex-col gap-3 sm:flex-row">
               {isLoggedIn ? (
                 <Button asChild size="lg" className="gap-2">
-                  <Link href="/dashboard">
+                  <Link href="/cases">
                     Go to your cases
                     <ArrowRight className="h-4 w-4" />
                   </Link>
@@ -286,7 +286,7 @@ export default async function LandingPage() {
               <div className="flex flex-col gap-3 md:items-end">
                 {isLoggedIn ? (
                   <Button asChild size="lg" variant="secondary" className="w-full md:w-auto">
-                    <Link href="/dashboard">Go to Dashboard</Link>
+                    <Link href="/cases">Go to Dashboard</Link>
                   </Button>
                 ) : (
                   <>

@@ -1,7 +1,7 @@
 "use client"
 
 import { createClient } from "@/lib/supabase/client"
-import { builtInPackages, type CBTPackage, type CBTQuestion } from "./cbt-default-data"
+import { builtInPackages, type CBTPackage, type CBTQuestion } from "./default-data"
 
 export interface CBTAttempt {
   id: string

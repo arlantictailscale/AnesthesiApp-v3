@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { getSession } from "@/lib/storage"
-import { listDrugs, createDrug, updateDrug, deleteDrug } from "@/lib/drug-storage"
+import { listDrugs, createDrug, updateDrug, deleteDrug } from "@/lib/drugs/storage"
 import type { AnesthesiaDrug, DrugData } from "@/lib/schema"
 import { drugSchema } from "@/lib/schema"
 import { 

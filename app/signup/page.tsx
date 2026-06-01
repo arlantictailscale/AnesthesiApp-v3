@@ -41,7 +41,7 @@ export default function SignUpPage() {
       return
     }
     toast.success("Account created")
-    router.push("/dashboard")
+    router.push("/cases")
     router.refresh()
   }
 

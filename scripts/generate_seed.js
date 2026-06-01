@@ -2,15 +2,15 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-console.log("Compiling lib/cbt-default-data.ts to JS...");
+console.log("Compiling lib/cbt/default-data.ts to JS...");
 const tempDir = path.join(__dirname, 'temp');
 
 try {
   // Use tsc to compile default data file to JS
-  execSync(`npx tsc --module commonjs --target es2020 --outDir "${tempDir}" "${path.join(__dirname, '../lib/cbt-default-data.ts')}"`, { stdio: 'inherit' });
+  execSync(`npx tsc --module commonjs --target es2020 --outDir "${tempDir}" "${path.join(__dirname, '../lib/cbt/default-data.ts')}"`, { stdio: 'inherit' });
   
   // Require the compiled JS file
-  const { DEFAULT_CBT_PACKAGE } = require(path.join(tempDir, 'cbt-default-data.js'));
+  const { DEFAULT_CBT_PACKAGE } = require(path.join(tempDir, 'default-data.js'));
   
   console.log(`Successfully loaded default package: "${DEFAULT_CBT_PACKAGE.name}" with ${DEFAULT_CBT_PACKAGE.questions.length} questions.`);
 

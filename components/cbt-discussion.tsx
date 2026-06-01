@@ -13,7 +13,7 @@ import {
   getPackageComments,
   type CBTComment,
   type CBTRatingsSummary,
-} from "@/lib/cbt-storage"
+} from "@/lib/cbt/storage"
 import { Star, MessageSquare, Send, Calendar, User } from "lucide-react"
 
 interface CBTDiscussionProps {

@@ -29,7 +29,7 @@ import {
   deleteAttempt,
   type CBTPackage,
   type CBTAttempt,
-} from "@/lib/cbt-storage"
+} from "@/lib/cbt/storage"
 import { CBTDiscussion } from "@/components/cbt-discussion"
 import {
   BookOpen,
@@ -251,7 +251,7 @@ export default function CBTDashboardPage() {
 
             <div className="flex flex-wrap gap-2">
               <Button asChild className="gap-1.5 font-semibold bg-primary hover:bg-primary/90 text-primary-foreground">
-                <Link href="/dashboard/cbt/create">
+                <Link href="/cbt/create">
                   <Sparkles className="h-4 w-4" />
                   Buat Ujian Baru (Visual / AI / JSON)
                 </Link>
@@ -330,7 +330,7 @@ export default function CBTDashboardPage() {
                               className="h-6 w-6 text-muted-foreground hover:text-primary"
                               title="Edit Paket"
                             >
-                              <Link href={`/dashboard/cbt/create?edit=${pkg.id}`} onClick={(e) => e.stopPropagation()}>
+                              <Link href={`/cbt/create?edit=${pkg.id}`} onClick={(e) => e.stopPropagation()}>
                                 <Edit2 className="h-3.5 w-3.5" />
                               </Link>
                             </Button>
@@ -377,7 +377,7 @@ export default function CBTDashboardPage() {
                       <div className="flex flex-col gap-2">
                         <div className="flex gap-2">
                           <Button asChild className="flex-1 gap-2 bg-amber-500 hover:bg-amber-600 text-white font-semibold shadow-sm">
-                            <Link href={`/dashboard/cbt/exam/${pkg.id}`}>
+                            <Link href={`/cbt/exam/${pkg.id}`}>
                               Lanjutkan Ujian
                               <ChevronRight className="h-4 w-4" />
                             </Link>
@@ -404,7 +404,7 @@ export default function CBTDashboardPage() {
                     ) : (
                       <div className="flex gap-2">
                         <Button asChild className="flex-1 gap-2">
-                          <Link href={`/dashboard/cbt/exam/${pkg.id}`}>
+                          <Link href={`/cbt/exam/${pkg.id}`}>
                             Mulai Ujian
                             <ChevronRight className="h-4 w-4" />
                           </Link>
@@ -546,7 +546,7 @@ export default function CBTDashboardPage() {
                           </td>
                           <td className="px-6 py-4 text-right whitespace-nowrap flex items-center justify-end gap-2">
                             <Button asChild variant="outline" size="sm">
-                              <Link href={`/dashboard/cbt/results/${att.id}`}>
+                              <Link href={`/cbt/results/${att.id}`}>
                                 Lihat Review
                               </Link>
                             </Button>

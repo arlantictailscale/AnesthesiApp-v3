@@ -29,21 +29,34 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   const { pathname } = request.nextUrl
+
+  // Redirect /dashboard or successful auth redirects to /cases
+  if (user && (pathname === "/login" || pathname === "/signup" || pathname === "/dashboard")) {
+    const url = request.nextUrl.clone()
+    url.pathname = "/cases"
+    url.search = ""
+    return NextResponse.redirect(url)
+  }
+
+  if (!user && pathname === "/dashboard") {
+    const url = request.nextUrl.clone()
+    url.pathname = "/login"
+    url.searchParams.set("next", "/cases")
+    return NextResponse.redirect(url)
+  }
+
   const isProtected =
-    pathname.startsWith("/dashboard") || pathname.startsWith("/cases")
-  const isAuthPage = pathname === "/login" || pathname === "/signup"
+    pathname.startsWith("/cases") ||
+    pathname.startsWith("/cbt") ||
+    pathname.startsWith("/osce") ||
+    pathname.startsWith("/drugs") ||
+    pathname.startsWith("/guidelines") ||
+    pathname.startsWith("/research")
 
   if (isProtected && !user) {
     const url = request.nextUrl.clone()
     url.pathname = "/login"
     url.searchParams.set("next", pathname)
-    return NextResponse.redirect(url)
-  }
-
-  if (isAuthPage && user) {
-    const url = request.nextUrl.clone()
-    url.pathname = "/dashboard"
-    url.search = ""
     return NextResponse.redirect(url)
   }
 

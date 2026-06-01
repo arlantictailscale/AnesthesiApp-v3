@@ -9,8 +9,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { createPackage, getPackage, updatePackage } from "@/lib/cbt-storage"
-import type { CBTQuestion } from "@/lib/cbt-default-data"
+import { createPackage, getPackage, updatePackage } from "@/lib/cbt/storage"
+import type { CBTQuestion } from "@/lib/cbt/default-data"
 import { createClient } from "@/lib/supabase/client"
 import {
   ChevronLeft,
@@ -114,7 +114,7 @@ function CBTCreatePageContent() {
           setQuestions(p.questions)
         } else {
           toast.error("Paket soal tidak ditemukan.")
-          router.push("/dashboard/cbt")
+          router.push("/cbt")
         }
       } catch (err) {
         toast.error("Gagal memuat paket soal.")
@@ -400,7 +400,7 @@ function CBTCreatePageContent() {
         await createPackage(name.trim(), description.trim(), questions)
         toast.success("Paket ujian kustom berhasil disimpan dan dipublikasikan!")
       }
-      router.push("/dashboard/cbt")
+      router.push("/cbt")
     } catch (err) {
       toast.error(err instanceof Error ? `Gagal: ${err.message}` : "Gagal menyimpan paket.")
     } finally {
@@ -420,7 +420,7 @@ function CBTCreatePageContent() {
         {/* Header Navigation */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={() => router.push("/dashboard/cbt")} className="gap-1.5">
+            <Button variant="ghost" size="sm" onClick={() => router.push("/cbt")} className="gap-1.5">
               <ChevronLeft className="h-4 w-4" />
               Kembali ke Dashboard
             </Button>
@@ -756,7 +756,7 @@ function CBTCreatePageContent() {
                     className="w-full text-muted-foreground hover:text-foreground"
                     onClick={() => {
                       if (confirm("Batalkan pembuatan paket? Semua data yang dimasukkan akan hilang.")) {
-                        router.push("/dashboard/cbt")
+                        router.push("/cbt")
                       }
                     }}
                   >

@@ -1,7 +1,7 @@
 "use client"
 
 import { createClient } from "@/lib/supabase/client"
-import { builtInDrugs } from "./drug-default-data"
+import { builtInDrugs } from "./default-data"
 import type { AnesthesiaDrug, DrugData } from "./schema"
 
 const CUSTOM_DRUGS_KEY = "anesthesiapp:custom_drugs"

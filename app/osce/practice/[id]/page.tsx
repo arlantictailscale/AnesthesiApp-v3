@@ -8,8 +8,8 @@ import { AppShell } from "@/components/app-shell"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { getOsceStation, saveOsceAttempt } from "@/lib/osce-storage"
-import type { OsceStation } from "@/lib/osce-default-data"
+import { getOsceStation, saveOsceAttempt } from "@/lib/osce/storage"
+import type { OsceStation } from "@/lib/osce/default-data"
 import {
   ArrowLeft, Clock, Play, Send, CheckCircle2, RefreshCw, Loader2, AlertCircle, Award, Check
 } from "lucide-react"
@@ -233,7 +233,7 @@ export default function OsceArenaPage() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-4">
           <div className="flex items-center gap-3">
             <Button asChild variant="ghost" size="icon" className="h-8 w-8">
-              <Link href="/dashboard/osce">
+              <Link href="/osce">
                 <ArrowLeft className="h-4 w-4" />
               </Link>
             </Button>
@@ -324,7 +324,7 @@ export default function OsceArenaPage() {
                 <RefreshCw className="h-3.5 w-3.5" /> Ulangi Ujian
               </Button>
               <Button asChild className="gap-1.5 font-bold text-xs">
-                <Link href="/dashboard/osce">
+                <Link href="/osce">
                   <Check className="h-3.5 w-3.5" /> Selesai Review
                 </Link>
               </Button>

@@ -10,8 +10,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { createOsceStation, getOsceStation, updateOsceStation } from "@/lib/osce-storage"
-import type { OsceStation, RubricItem } from "@/lib/osce-default-data"
+import { createOsceStation, getOsceStation, updateOsceStation } from "@/lib/osce/storage"
+import type { OsceStation, RubricItem } from "@/lib/osce/default-data"
 import {
   ChevronLeft,
   Plus,
@@ -120,7 +120,7 @@ function OSCECreatePageContent() {
           setRubricItems(s.rubric || [])
         } else {
           toast.error("Stasiun OSCE tidak ditemukan.")
-          router.push("/dashboard/osce")
+          router.push("/osce")
         }
       } catch (err) {
         toast.error("Gagal memuat stasiun OSCE.")
@@ -351,7 +351,7 @@ function OSCECreatePageContent() {
         await createOsceStation(stationPayload)
         toast.success("Stasiun OSCE kustom berhasil disimpan dan dipublikasikan!")
       }
-      router.push("/dashboard/osce")
+      router.push("/osce")
       router.refresh()
     } catch (err) {
       toast.error(err instanceof Error ? `Gagal menyimpan: ${err.message}` : "Gagal menyimpan stasiun OSCE.")
@@ -366,7 +366,7 @@ function OSCECreatePageContent() {
         {/* Header Actions */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={() => router.push("/dashboard/osce")} className="gap-1.5 font-bold">
+            <Button variant="ghost" size="sm" onClick={() => router.push("/osce")} className="gap-1.5 font-bold">
               <ChevronLeft className="h-4 w-4" />
               Kembali ke Dashboard
             </Button>
@@ -699,7 +699,7 @@ function OSCECreatePageContent() {
                     className="w-full text-muted-foreground hover:text-foreground text-xs"
                     onClick={() => {
                       if (confirm("Batalkan pengeditan? Semua perubahan akan hilang.")) {
-                        router.push("/dashboard/osce")
+                        router.push("/osce")
                       }
                     }}
                   >

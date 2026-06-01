@@ -1,8 +1,8 @@
 "use client"
 
 import { createClient } from "@/lib/supabase/client"
-import { builtInOsceStations } from "./osce-default-data"
-import type { OsceStation, OsceAttempt } from "./osce-default-data"
+import { builtInOsceStations } from "./default-data"
+import type { OsceStation, OsceAttempt } from "./default-data"
 
 const OSCE_CUSTOM_STATIONS_KEY = "anesthesiapp:osce_stations"
 const OSCE_ATTEMPTS_KEY = "anesthesiapp:osce_attempts"

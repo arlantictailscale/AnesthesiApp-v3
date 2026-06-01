@@ -8,7 +8,7 @@ import { AppShell } from "@/components/app-shell"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { getAttempt, getPackage, type CBTAttempt, type CBTPackage } from "@/lib/cbt-storage"
+import { getAttempt, getPackage, type CBTAttempt, type CBTPackage } from "@/lib/cbt/storage"
 import { CBTDiscussion } from "@/components/cbt-discussion"
 import {
   ArrowLeft,
@@ -40,7 +40,7 @@ export default function CBTResultsPage() {
         const att = await getAttempt(attemptId)
         if (!att) {
           toast.error("Riwayat hasil ujian tidak ditemukan.")
-          router.replace("/dashboard/cbt")
+          router.replace("/cbt")
           return
         }
         setAttempt(att)
@@ -151,7 +151,7 @@ export default function CBTResultsPage() {
         {/* Back Link */}
         <div className="flex items-center gap-2">
           <Button asChild variant="ghost" size="sm">
-            <Link href="/dashboard/cbt" className="gap-1.5 text-muted-foreground hover:text-foreground">
+            <Link href="/cbt" className="gap-1.5 text-muted-foreground hover:text-foreground">
               <ArrowLeft className="h-4 w-4" />
               Kembali ke Dashboard CBT
             </Link>

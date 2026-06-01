@@ -52,19 +52,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     router.refresh()
   }
 
-  const isCbt = pathname?.startsWith("/dashboard/cbt")
-  const isDrugs = pathname?.startsWith("/dashboard/drugs")
-  const isGuidelines = pathname?.startsWith("/dashboard/guidelines")
-  const isResearch = pathname?.startsWith("/dashboard/research")
-  const isOsce = pathname?.startsWith("/dashboard/osce")
-  const isCases = (pathname === "/dashboard" || pathname?.startsWith("/cases")) && !isCbt && !isDrugs && !isGuidelines && !isResearch && !isOsce
+  const isCbt = pathname?.startsWith("/cbt")
+  const isDrugs = pathname?.startsWith("/drugs")
+  const isGuidelines = pathname?.startsWith("/guidelines")
+  const isResearch = pathname?.startsWith("/research")
+  const isOsce = pathname?.startsWith("/osce")
   const isNew = pathname?.startsWith("/cases/new")
+  const isCases = pathname?.startsWith("/cases") && !isNew
 
   return (
     <div className="flex min-h-screen flex-col bg-muted/20">
       <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between gap-3 px-4 md:px-6">
-          <Logo href="/dashboard" height={30} />
+          <Logo href="/cases" height={30} />
 
 
           <nav className="flex items-center gap-1">
@@ -73,7 +73,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               variant={isCases ? "secondary" : "ghost"}
               size="sm"
             >
-              <Link href="/dashboard">My cases</Link>
+              <Link href="/cases">My cases</Link>
             </Button>
             <Button
               asChild
@@ -91,35 +91,35 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               variant={isCbt ? "secondary" : "ghost"}
               size="sm"
             >
-              <Link href="/dashboard/cbt">CBT Prep</Link>
+              <Link href="/cbt">CBT Prep</Link>
             </Button>
             <Button
               asChild
               variant={isOsce ? "secondary" : "ghost"}
               size="sm"
             >
-              <Link href="/dashboard/osce">OSCE Prep</Link>
+              <Link href="/osce">OSCE Prep</Link>
             </Button>
             <Button
               asChild
               variant={isDrugs ? "secondary" : "ghost"}
               size="sm"
             >
-              <Link href="/dashboard/drugs">Drug Library</Link>
+              <Link href="/drugs">Drug Library</Link>
             </Button>
             <Button
               asChild
               variant={isGuidelines ? "secondary" : "ghost"}
               size="sm"
             >
-              <Link href="/dashboard/guidelines">Guidelines</Link>
+              <Link href="/guidelines">Guidelines</Link>
             </Button>
             <Button
               asChild
               variant={isResearch ? "secondary" : "ghost"}
               size="sm"
             >
-              <Link href="/dashboard/research">Research</Link>
+              <Link href="/research">Research</Link>
             </Button>
           </nav>
 
