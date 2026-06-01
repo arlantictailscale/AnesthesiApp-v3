@@ -363,13 +363,21 @@ export default function DrugLibraryPage() {
                   const isSelected = drug.id === selectedDrugId
                   const isCustom = drug.user_id !== null
                   return (
-                    <button
+                    <div
                       key={drug.id}
+                      role="button"
+                      tabIndex={0}
                       onClick={() => {
                         setSelectedDrugId(drug.id)
                         setShowMobileDetails(true)
                       }}
-                      className={`flex flex-col text-left p-3.5 rounded-lg border transition-all relative overflow-hidden group ${
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          setSelectedDrugId(drug.id)
+                          setShowMobileDetails(true)
+                        }
+                      }}
+                      className={`flex flex-col text-left p-3.5 rounded-lg border transition-all relative overflow-hidden group cursor-pointer w-full h-auto ${
                         isSelected 
                           ? "bg-primary/5 border-primary text-foreground ring-1 ring-primary/30" 
                           : "bg-background border-border hover:bg-muted/30 text-foreground"
@@ -378,7 +386,7 @@ export default function DrugLibraryPage() {
                       {drug.is_high_alert && (
                         <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-500" title="High Alert Medication" />
                       )}
-                      <div className="flex justify-between items-start gap-2">
+                      <div className="flex justify-between items-start gap-2 w-full">
                         <span className="font-semibold text-sm line-clamp-1 group-hover:text-primary transition-colors">
                           {drug.name}
                         </span>
@@ -395,16 +403,16 @@ export default function DrugLibraryPage() {
                           )}
                         </div>
                       </div>
-                      <span className="text-xs text-muted-foreground mt-1 line-clamp-1">
+                      <span className="text-xs text-muted-foreground mt-1 line-clamp-1 w-full">
                         {drug.category}
                       </span>
-                      <div className="flex items-center gap-3 mt-2 text-[10px] text-muted-foreground">
+                      <div className="flex items-center gap-3 mt-2 text-[10px] text-muted-foreground w-full">
                         <span className="flex items-center gap-1 font-medium">
-                          <Clock className="h-3 w-3 shrink-0" />
+                          <Clock className="h-3.5 w-3.5 shrink-0" />
                           Onset: {drug.onset_of_action}
                         </span>
                       </div>
-                    </button>
+                    </div>
                   )
                 })
               )}
@@ -492,7 +500,7 @@ export default function DrugLibraryPage() {
                     <Card className="bg-muted/10 border-border col-span-1">
                       <CardContent className="p-3">
                         <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Induction Dose</span>
-                        <div className="font-bold text-xs text-foreground mt-1 line-clamp-2" title={activeDrug.induction_dose}>
+                        <div className="font-bold text-xs text-foreground mt-1 whitespace-pre-wrap" title={activeDrug.induction_dose}>
                           {activeDrug.induction_dose}
                         </div>
                       </CardContent>
@@ -500,7 +508,7 @@ export default function DrugLibraryPage() {
                     <Card className="bg-muted/10 border-border col-span-1">
                       <CardContent className="p-3">
                         <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Maintenance Dose</span>
-                        <div className="font-bold text-xs text-foreground mt-1 line-clamp-2" title={activeDrug.maintenance_dose}>
+                        <div className="font-bold text-xs text-foreground mt-1 whitespace-pre-wrap" title={activeDrug.maintenance_dose}>
                           {activeDrug.maintenance_dose}
                         </div>
                       </CardContent>
