@@ -77,9 +77,15 @@ export async function getSession(): Promise<Session | null> {
 
 export async function listCases(): Promise<StoredCase[]> {
   const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return []
+
   const { data, error } = await supabase
     .from("anesthesia_cases")
     .select("*")
+    .eq("user_id", user.id)
     .order("created_at", { ascending: false })
   if (error) throw new Error(error.message)
   return (data ?? []) as StoredCase[]
