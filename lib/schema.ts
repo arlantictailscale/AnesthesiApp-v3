@@ -111,3 +111,30 @@ export const STEP_TITLES = [
   "Intra-Operative",
   "Post-Operative",
 ] as const
+
+export const drugSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  category: z.string().min(1, "Category is required"),
+  mechanism_of_action: z.string().min(1, "Mechanism of action is required"),
+  pharmacokinetics: z.string().min(1, "Pharmacokinetics is required"),
+  pharmacodynamics: z.string().min(1, "Pharmacodynamics is required"),
+  onset_of_action: z.string().min(1, "Onset of action is required"),
+  duration_of_action: z.string().min(1, "Duration of action is required"),
+  induction_dose: z.string().min(1, "Induction dose is required"),
+  maintenance_dose: z.string().min(1, "Maintenance dose is required"),
+  side_effects: z.string().min(1, "Side effects are required"),
+  clinical_considerations: z.string().min(1, "Clinical considerations are required"),
+  contraindications: z.string().optional().default(""),
+  infusion_guidelines: z.string().optional().default(""),
+  is_high_alert: z.boolean().default(false),
+})
+
+export type DrugData = z.infer<typeof drugSchema>
+
+export type AnesthesiaDrug = DrugData & {
+  id: string
+  user_id: string | null
+  created_at?: string
+  updated_at?: string
+}
+
