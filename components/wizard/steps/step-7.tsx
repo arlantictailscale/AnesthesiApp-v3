@@ -50,6 +50,25 @@ export function Step7() {
       <FieldRow label="Laboratory Results" htmlFor="lab_results_post">
         <Textarea id="lab_results_post" rows={3} {...register("lab_results_post")} placeholder="Post-op labs" />
       </FieldRow>
+
+      <div className="border-t border-border pt-4 mt-2">
+        <div className="flex items-start gap-3 rounded-lg border border-primary/20 bg-primary/5 p-4">
+          <input
+            id="is_shared"
+            type="checkbox"
+            className="h-4 w-4 mt-0.5 rounded border-input text-primary focus:ring-primary focus:ring-offset-background"
+            {...register("is_shared")}
+          />
+          <div className="flex flex-col gap-1">
+            <label htmlFor="is_shared" className="text-sm font-semibold text-foreground cursor-pointer">
+              Share Case anonymously for Clinical Research
+            </label>
+            <p className="text-xs text-muted-foreground leading-normal">
+              By checking this, you allow other practitioners to view this case study in the Research Library. Your patient's name will automatically be hidden to preserve patient confidentiality.
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

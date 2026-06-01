@@ -117,6 +117,32 @@ export async function deleteCase(id: string): Promise<void> {
   if (error) throw new Error(error.message)
 }
 
+export async function listSharedCases(): Promise<StoredCase[]> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from("anesthesia_cases")
+    .select("*")
+    .eq("is_shared", true)
+    .order("created_at", { ascending: false })
+  if (error) throw new Error(error.message)
+  return (data ?? []) as StoredCase[]
+}
+
+export async function updateCase(
+  id: string,
+  data: Partial<CaseData>,
+): Promise<StoredCase> {
+  const supabase = createClient()
+  const { data: updated, error } = await supabase
+    .from("anesthesia_cases")
+    .update(data)
+    .eq("id", id)
+    .select("*")
+    .single()
+  if (error) throw new Error(error.message)
+  return updated as StoredCase
+}
+
 // --- Draft (wizard autosave, local only) ---
 
 export function saveDraft(data: Partial<CaseData>) {

@@ -77,6 +77,7 @@ export const step7Schema = z.object({
   post_op_room: z.enum(["Low Care", "High Care", "ICU"]).optional(),
   hemodynamics_post: z.string().optional().default(""),
   lab_results_post: z.string().optional().default(""),
+  is_shared: z.boolean().default(true),
 })
 
 export const caseSchema = step1Schema

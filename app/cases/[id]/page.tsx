@@ -3,13 +3,15 @@
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
+import { toast } from "sonner"
 import { AppShell } from "@/components/app-shell"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
-import { getCase } from "@/lib/storage"
+import { getCase, getSession, updateCase } from "@/lib/storage"
 import type { StoredCase } from "@/lib/schema"
-import { ArrowLeft, FileText } from "lucide-react"
+import { ArrowLeft, FileText, Globe, Lock, Loader2 } from "lucide-react"
 
 type Section = {
   title: string
@@ -35,6 +37,14 @@ export default function CaseDetailPage() {
   const params = useParams<{ id: string }>()
   const router = useRouter()
   const [c, setC] = useState<StoredCase | null | undefined>(undefined)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [sharingLoading, setSharingLoading] = useState(false)
+
+  useEffect(() => {
+    getSession().then((session) => {
+      if (session) setCurrentUserId(session.userId)
+    })
+  }, [])
 
   useEffect(() => {
     if (!params?.id) return
@@ -50,6 +60,22 @@ export default function CaseDetailPage() {
       active = false
     }
   }, [params?.id])
+
+  async function handleToggleSharing() {
+    if (!c || sharingLoading) return
+    setSharingLoading(true)
+    try {
+      const currentShared = c.is_shared !== false
+      const nextSharedState = !currentShared
+      const updated = await updateCase(c.id, { is_shared: nextSharedState })
+      setC(updated)
+      toast.success(nextSharedState ? "Case is now shared for research" : "Case is now private")
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update sharing settings.")
+    } finally {
+      setSharingLoading(false)
+    }
+  }
 
   if (c === undefined) {
     return (
@@ -73,12 +99,15 @@ export default function CaseDetailPage() {
     )
   }
 
+  const isOwner = currentUserId !== null && c !== null && c !== undefined && c.user_id === currentUserId
+  const isShared = c ? c.is_shared !== false : true
+
   const sections: Section[] = [
     {
       title: "General & Patient",
       rows: [
         ["Procedure Date", val(c.procedure_date)],
-        ["Patient", val(c.patient_name)],
+        ["Patient", val(isOwner ? c.patient_name : "Patient [Anonymized]")],
         ["Sex", val(c.sex)],
         ["Age", val(c.age)],
         ["MRN", val(c.medical_record_number)],
@@ -165,24 +194,63 @@ export default function CaseDetailPage() {
     },
   ]
 
+  const backHref = isOwner ? "/dashboard" : "/dashboard/research"
+
   return (
     <AppShell>
       <div className="flex flex-col gap-6">
-        <div className="flex flex-col gap-2">
-          <Button asChild variant="ghost" size="sm" className="w-fit gap-1 px-2">
-            <Link href="/dashboard">
-              <ArrowLeft className="h-4 w-4" /> Back
-            </Link>
-          </Button>
-          <div className="flex flex-col gap-1">
-            <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
-              {c.patient_name}
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              MRN {c.medical_record_number} · {c.sex} · {c.age}y · Saved{" "}
-              {new Date(c.created_at).toLocaleString()}
-            </p>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-2">
+            <Button asChild variant="ghost" size="sm" className="w-fit gap-1 px-2">
+              <Link href={backHref}>
+                <ArrowLeft className="h-4 w-4" /> Back
+              </Link>
+            </Button>
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
+                  {isOwner ? c.patient_name : "Patient [Anonymized]"}
+                </h1>
+                {!isOwner && (
+                  <Badge variant="secondary" className="bg-primary/15 text-primary border-primary/20 font-bold text-xs">
+                    Research Case
+                  </Badge>
+                )}
+                {isOwner && (
+                  <Badge variant="outline" className={`text-xs font-semibold ${isShared ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : "bg-muted text-muted-foreground border-border"}`}>
+                    {isShared ? "Shared for Research" : "Private Case"}
+                  </Badge>
+                )}
+              </div>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                MRN {c.medical_record_number} · {c.sex} · {c.age}y · Logged{" "}
+                {new Date(c.created_at).toLocaleDateString()}
+              </p>
+            </div>
           </div>
+
+          {/* Share option toggle for the owner */}
+          {isOwner && (
+            <Button
+              variant={isShared ? "outline" : "default"}
+              size="sm"
+              disabled={sharingLoading}
+              onClick={handleToggleSharing}
+              className="gap-2 shrink-0 font-semibold"
+            >
+              {sharingLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : isShared ? (
+                <>
+                  <Lock className="h-4 w-4" /> Make Case Private
+                </>
+              ) : (
+                <>
+                  <Globe className="h-4 w-4" /> Share for Research
+                </>
+              )}
+            </Button>
+          )}
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
