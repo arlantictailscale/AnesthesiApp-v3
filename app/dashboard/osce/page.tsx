@@ -7,10 +7,10 @@ import { AppShell } from "@/components/app-shell"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { listOsceStations, listOsceAttempts } from "@/lib/osce-storage"
+import { listOsceStations, listOsceAttempts, deleteOsceStation } from "@/lib/osce-storage"
 import type { OsceStation, OsceAttempt } from "@/lib/osce-default-data"
 import {
-  BookOpen, Play, CheckCircle2, History, TrendingUp, Award, Clock, HelpCircle, AlertTriangle
+  BookOpen, Play, CheckCircle2, History, TrendingUp, Award, Clock, HelpCircle, AlertTriangle, Plus, Edit2, Trash2
 } from "lucide-react"
 
 export default function OscePrepDashboard() {
@@ -28,6 +28,17 @@ export default function OscePrepDashboard() {
       toast.error("Failed to load OSCE preparation data.")
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm("Apakah Anda yakin ingin menghapus stasiun OSCE kustom ini?")) return
+    try {
+      await deleteOsceStation(id)
+      toast.success("Stasiun OSCE kustom berhasil dihapus.")
+      loadData()
+    } catch (err) {
+      toast.error("Gagal menghapus stasiun OSCE.")
     }
   }
 
@@ -54,14 +65,22 @@ export default function OscePrepDashboard() {
     <AppShell>
       <div className="flex flex-col gap-6">
         {/* Page Header */}
-        <div className="flex flex-col gap-2">
-          <h1 className="text-2xl font-bold tracking-tight md:text-3xl flex items-center gap-2">
-            <BookOpen className="h-7 w-7 text-primary" />
-            OSCE Preparation Study
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Prepare for practical clinical examinations using our simulated OSCE stations. Practice with an AI examiner and get evaluated against standard grading rubrics.
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border/40 pb-4">
+          <div className="flex flex-col gap-2">
+            <h1 className="text-2xl font-bold tracking-tight md:text-3xl flex items-center gap-2">
+              <BookOpen className="h-7 w-7 text-primary" />
+              OSCE Preparation Study
+            </h1>
+            <p className="text-sm text-muted-foreground max-w-3xl">
+              Prepare for practical clinical examinations using our simulated OSCE stations. Practice with an AI examiner and get evaluated against standard grading rubrics.
+            </p>
+          </div>
+          <Button asChild className="sm:self-start bg-primary hover:bg-primary/95 text-primary-foreground font-bold text-xs shrink-0 h-9 gap-1.5 shadow-sm">
+            <Link href="/dashboard/osce/create">
+              <Plus className="h-4 w-4" />
+              Buat Station Baru
+            </Link>
+          </Button>
         </div>
 
         {/* Analytics Grid */}
@@ -154,11 +173,30 @@ export default function OscePrepDashboard() {
                       <span className="text-[11px] text-muted-foreground font-semibold flex items-center gap-1">
                         <HelpCircle className="h-3.5 w-3.5 text-primary" /> {s.rubric.length} Evaluation Aspects
                       </span>
-                      <Button asChild size="sm" className="gap-1.5 font-bold text-xs h-8">
-                        <Link href={`/dashboard/osce/practice/${s.id}`}>
-                          <Play className="h-3.5 w-3.5 fill-current" /> Mulai Simulasi
-                        </Link>
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        {s.user_id !== null && (
+                          <>
+                            <Button asChild size="sm" variant="outline" className="h-8 text-xs font-semibold px-2.5 gap-1">
+                              <Link href={`/dashboard/osce/create?edit=${s.id}`}>
+                                <Edit2 className="h-3 w-3 text-muted-foreground" /> Edit
+                              </Link>
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="destructive" 
+                              className="h-8 text-xs font-semibold px-2.5"
+                              onClick={() => handleDelete(s.id)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </>
+                        )}
+                        <Button asChild size="sm" className="gap-1.5 font-bold text-xs h-8">
+                          <Link href={`/dashboard/osce/practice/${s.id}`}>
+                            <Play className="h-3.5 w-3.5 fill-current" /> Mulai Simulasi
+                          </Link>
+                        </Button>
+                      </div>
                     </div>
                   </Card>
                 ))}

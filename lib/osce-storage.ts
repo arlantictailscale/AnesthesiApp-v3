@@ -17,6 +17,15 @@ function getLocalCustomStations(): OsceStation[] {
   }
 }
 
+function saveLocalCustomStations(stations: OsceStation[]) {
+  if (typeof window === "undefined") return
+  try {
+    localStorage.setItem(OSCE_CUSTOM_STATIONS_KEY, JSON.stringify(stations))
+  } catch (e) {
+    console.error("Failed to save OSCE custom stations locally:", e)
+  }
+}
+
 function getLocalAttempts(): OsceAttempt[] {
   if (typeof window === "undefined") return []
   try {
@@ -156,4 +165,158 @@ export async function saveOsceAttempt(
   }
 
   return newAttempt
+}
+
+/**
+ * Creates and saves a new custom OSCE station
+ */
+export async function createOsceStation(
+  station: Omit<OsceStation, "id" | "user_id" | "created_at" | "updated_at">
+): Promise<OsceStation> {
+  const newStation: OsceStation = {
+    ...station,
+    id: typeof crypto !== "undefined" && typeof crypto.randomUUID === "function" 
+      ? crypto.randomUUID() 
+      : Math.random().toString(36).substring(2, 15),
+    user_id: "",
+  }
+
+  let savedInDb = false
+
+  try {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (user) {
+      newStation.user_id = user.id
+      const payload = {
+        title: station.title,
+        category: station.category,
+        duration_minutes: station.duration_minutes,
+        scenario: station.scenario,
+        instructions_participant: station.instructions_participant,
+        instructions_examiner: station.instructions_examiner,
+        rubric: station.rubric,
+        equipment: station.equipment,
+        user_id: user.id,
+      }
+      const { data, error } = await supabase
+        .from("osce_stations")
+        .insert(payload)
+        .select("*")
+        .single()
+
+      if (!error && data) {
+        newStation.id = data.id
+        savedInDb = true
+      } else if (error) {
+        console.error("Supabase insert OSCE station error:", error)
+        throw new Error(error.message)
+      }
+    }
+  } catch (err) {
+    console.warn("Supabase createOsceStation failed, saving locally only:", err)
+  }
+
+  if (!savedInDb) {
+    const local = getLocalCustomStations()
+    local.unshift(newStation)
+    saveLocalCustomStations(local)
+  }
+
+  return newStation
+}
+
+/**
+ * Updates an existing custom OSCE station
+ */
+export async function updateOsceStation(
+  id: string,
+  station: Partial<Omit<OsceStation, "id" | "user_id" | "created_at" | "updated_at">>
+): Promise<OsceStation> {
+  let savedInDb = false
+  let updatedStation: OsceStation | null = null
+
+  try {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (user) {
+      const payload = {
+        ...station,
+        updated_at: new Date().toISOString(),
+      }
+      
+      const { data, error } = await supabase
+        .from("osce_stations")
+        .update(payload)
+        .eq("id", id)
+        .select("*")
+        .single()
+
+      if (!error && data) {
+        updatedStation = data as OsceStation
+        savedInDb = true
+      } else if (error) {
+        console.warn("Supabase update OSCE station error, falling back to local:", error)
+      }
+    }
+  } catch (err) {
+    console.warn("Supabase updateOsceStation failed, updating locally only:", err)
+  }
+
+  // Update locally in localStorage
+  const local = getLocalCustomStations()
+  const idx = local.findIndex((s) => s.id === id)
+  
+  if (idx !== -1) {
+    const existing = local[idx]
+    const merged = {
+      ...existing,
+      ...station,
+      updated_at: new Date().toISOString()
+    } as OsceStation
+    local[idx] = merged
+    saveLocalCustomStations(local)
+    if (!updatedStation) {
+      updatedStation = merged
+    }
+  } else if (!savedInDb) {
+    // If not found locally but we didn't save in DB, let's create a placeholder
+    const stations = await listOsceStations()
+    const existing = stations.find((s) => s.id === id)
+    if (existing) {
+      const merged = {
+        ...existing,
+        ...station,
+        updated_at: new Date().toISOString()
+      } as OsceStation
+      local.unshift(merged)
+      saveLocalCustomStations(local)
+      updatedStation = merged
+    }
+  }
+
+  if (!updatedStation) {
+    throw new Error("Station not found to update")
+  }
+
+  return updatedStation
+}
+
+/**
+ * Deletes a custom OSCE station
+ */
+export async function deleteOsceStation(id: string): Promise<void> {
+  try {
+    const supabase = createClient()
+    await supabase.from("osce_stations").delete().eq("id", id)
+  } catch (err) {
+    console.warn("Supabase deleteOsceStation failed:", err)
+  }
+
+  // Always delete locally too
+  const local = getLocalCustomStations()
+  const filtered = local.filter((s) => s.id !== id)
+  saveLocalCustomStations(filtered)
 }

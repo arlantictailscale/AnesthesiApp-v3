@@ -95,10 +95,14 @@ export default function OsceArenaPage() {
     setStartedAt(new Date().toISOString())
     
     // Add examiner initial welcome prompt
+    const initialInstruction = station.instructions_participant
+      ? `\n\nTugas Anda:\n${station.instructions_participant}\n\nSilakan mulai dengan memperkenalkan diri dan mengerjakan tugas Anda!`
+      : `\n\nSilakan mulai dengan memperkenalkan diri dan melakukan anamnesis/pemeriksaan!`
+
     setMessages([
       {
         role: "assistant",
-        content: `Halo Dokter, selamat datang di Station ${station.category}. Saya adalah Penguji Anda pada ujian hari ini. \n\nSkenario Anda adalah: \n"${station.scenario}"\n\nSilakan mulai kerjakan tugas pertama Anda: Sebutkan problem potensial dan aktual pada pasien ini!`
+        content: `Halo Dokter, selamat datang di Station ${station.category}. Saya adalah Penguji Anda pada ujian hari ini. \n\nSkenario Anda adalah: \n"${station.scenario}"${initialInstruction}`
       }
     ])
   }
