@@ -62,7 +62,21 @@ export async function listOsceStations(): Promise<OsceStation[]> {
       .order("title", { ascending: true })
 
     if (!error && data) {
-      dbStations = data as OsceStation[]
+      dbStations = data.map((row: any) => ({
+        id: row.id,
+        user_id: row.user_id,
+        title: row.title,
+        category: row.category,
+        duration_minutes: row.duration_minutes,
+        scenario: row.scenario,
+        instructions_participant: row.instructions_participant,
+        instructions_examiner: row.instructions_examiner,
+        rubric: row.rubric,
+        equipment: row.equipment,
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+        creator_email: row.creator_email || undefined,
+      })) as OsceStation[]
     }
   } catch (err) {
     console.warn("Supabase listOsceStations failed, falling back to localStorage & defaults:", err)
@@ -189,6 +203,7 @@ export async function createOsceStation(
 
     if (user) {
       newStation.user_id = user.id
+      newStation.creator_email = user.email || undefined
       const payload = {
         title: station.title,
         category: station.category,
@@ -199,6 +214,7 @@ export async function createOsceStation(
         rubric: station.rubric,
         equipment: station.equipment,
         user_id: user.id,
+        creator_email: user.email || null,
       }
       const { data, error } = await supabase
         .from("osce_stations")
@@ -244,6 +260,7 @@ export async function updateOsceStation(
     if (user) {
       const payload = {
         ...station,
+        creator_email: user.email || null,
         updated_at: new Date().toISOString(),
       }
       
@@ -319,4 +336,141 @@ export async function deleteOsceStation(id: string): Promise<void> {
   const local = getLocalCustomStations()
   const filtered = local.filter((s) => s.id !== id)
   saveLocalCustomStations(filtered)
+}
+
+// --- Ratings and Comments for Community Hub ---
+
+export interface OSCEComment {
+  id: string
+  user_id: string
+  user_email: string
+  station_id: string
+  comment: string
+  created_at: string
+}
+
+export interface OSCERatingsSummary {
+  average: number
+  count: number
+  userRating?: number
+}
+
+/**
+ * Submits or updates a rating (1-5) for an OSCE station
+ */
+export async function rateStation(stationId: string, rating: number): Promise<void> {
+  try {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      throw new Error("Anda harus masuk log untuk memberikan rating.")
+    }
+
+    const { error } = await supabase
+      .from("osce_ratings")
+      .upsert({
+        user_id: user.id,
+        station_id: stationId,
+        rating,
+      }, {
+        onConflict: "user_id,station_id"
+      })
+
+    if (error) throw new Error(error.message)
+  } catch (err) {
+    console.error("Failed to rate station:", err)
+    throw err
+  }
+}
+
+/**
+ * Gets the average rating and review count for an OSCE station
+ */
+export async function getStationRatings(stationId: string): Promise<OSCERatingsSummary> {
+  const defaultSummary: OSCERatingsSummary = { average: 0, count: 0 }
+  try {
+    const supabase = createClient()
+    const { data, error } = await supabase
+      .from("osce_ratings")
+      .select("rating, user_id")
+      .eq("station_id", stationId)
+
+    if (error) throw new Error(error.message)
+    if (!data || data.length === 0) return defaultSummary
+
+    const count = data.length
+    const total = data.reduce((acc: number, curr: any) => acc + curr.rating, 0)
+    const average = Number((total / count).toFixed(1))
+
+    let userRating: number | undefined = undefined
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      const found = data.find((r: any) => r.user_id === user.id)
+      if (found) userRating = found.rating
+    }
+
+    return { average, count, userRating }
+  } catch (err) {
+    console.warn("Failed to get station ratings, returning default:", err)
+    return defaultSummary
+  }
+}
+
+/**
+ * Adds a new comment to an OSCE station discussion
+ */
+export async function addStationComment(stationId: string, comment: string): Promise<OSCEComment> {
+  try {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      throw new Error("Anda harus masuk log untuk berkomentar.")
+    }
+
+    const payload = {
+      user_id: user.id,
+      user_email: user.email || "Anonim",
+      station_id: stationId,
+      comment,
+    }
+
+    const { data, error } = await supabase
+      .from("osce_comments")
+      .insert(payload)
+      .select("*")
+      .single()
+
+    if (error) throw new Error(error.message)
+    return {
+      id: data.id,
+      user_id: data.user_id,
+      user_email: data.user_email,
+      station_id: data.station_id,
+      comment: data.comment,
+      created_at: data.created_at,
+    }
+  } catch (err) {
+    console.error("Failed to add comment:", err)
+    throw err
+  }
+}
+
+/**
+ * Gets all comments for an OSCE station discussion
+ */
+export async function getStationComments(stationId: string): Promise<OSCEComment[]> {
+  try {
+    const supabase = createClient()
+    const { data, error } = await supabase
+      .from("osce_comments")
+      .select("*")
+      .eq("station_id", stationId)
+      .order("created_at", { ascending: false })
+
+    if (error) throw new Error(error.message)
+    return (data || []) as OSCEComment[]
+  } catch (err) {
+    console.warn("Failed to get comments, returning empty array:", err)
+    return []
+  }
 }

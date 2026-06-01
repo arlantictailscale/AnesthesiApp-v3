@@ -7,16 +7,29 @@ import { AppShell } from "@/components/app-shell"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { listOsceStations, listOsceAttempts, deleteOsceStation } from "@/lib/osce/storage"
+import { listOsceStations, listOsceAttempts, deleteOsceStation, getStationRatings } from "@/lib/osce/storage"
 import type { OsceStation, OsceAttempt } from "@/lib/osce/default-data"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
-  BookOpen, Play, CheckCircle2, History, TrendingUp, Award, Clock, HelpCircle, AlertTriangle, Plus, Edit2, Trash2
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { createClient } from "@/lib/supabase/client"
+import { OSCEDiscussion } from "@/components/osce-discussion"
+import {
+  BookOpen, Play, CheckCircle2, History, TrendingUp, Award, Clock, HelpCircle, AlertTriangle, Plus, Edit2, Trash2, Star, MessageSquare
 } from "lucide-react"
 
 export default function OscePrepDashboard() {
   const [stations, setStations] = useState<OsceStation[]>([])
   const [attempts, setAttempts] = useState<OsceAttempt[]>([])
   const [loading, setLoading] = useState(true)
+  const [currentUser, setCurrentUser] = useState<any>(null)
+  const [ratingsMap, setRatingsMap] = useState<Record<string, { average: number; count: number }>>({})
+  const [discussionStation, setDiscussionStation] = useState<OsceStation | null>(null)
 
   async function loadData() {
     try {
@@ -24,6 +37,28 @@ export default function OscePrepDashboard() {
       const attemptsList = await listOsceAttempts()
       setStations(stationsList)
       setAttempts(attemptsList)
+
+      // Get current logged-in user
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      setCurrentUser(user)
+
+      // Load ratings in parallel
+      const ratingsData = await Promise.all(
+        stationsList.map(async (s) => {
+          try {
+            const r = await getStationRatings(s.id)
+            return { id: s.id, average: r.average, count: r.count }
+          } catch {
+            return { id: s.id, average: 0, count: 0 }
+          }
+        })
+      )
+      const rMap: Record<string, { average: number; count: number }> = {}
+      ratingsData.forEach((item) => {
+        rMap[item.id] = { average: item.average, count: item.count }
+      })
+      setRatingsMap(rMap)
     } catch (err) {
       toast.error("Failed to load OSCE preparation data.")
     } finally {
@@ -60,6 +95,113 @@ export default function OscePrepDashboard() {
   const highestScore = completedAttempts.length > 0
     ? Math.max(...completedAttempts.map((a) => Math.round((a.total_score / a.max_score) * 100)))
     : 0
+
+  // Filter stations based on ownership
+  const myOrOfficialStations = stations.filter((s) => {
+    const isDefault = s.user_id === null
+    const isMine = s.creator_email && currentUser?.email && s.creator_email === currentUser.email
+    const isLocalOnly = !s.creator_email
+    return isDefault || isMine || isLocalOnly
+  })
+
+  const communityStations = stations.filter((s) => {
+    const isDefault = s.user_id === null
+    const isMine = s.creator_email && currentUser?.email && s.creator_email === currentUser.email
+    const isLocalOnly = !s.creator_email
+    return !isDefault && !isMine && !isLocalOnly
+  })
+
+  function renderStationCard(s: OsceStation) {
+    const isDefault = s.user_id === null
+    const isMine = s.creator_email && currentUser?.email && s.creator_email === currentUser.email
+    const rInfo = ratingsMap[s.id] || { average: 0, count: 0 }
+
+    return (
+      <Card key={s.id} className="border border-border bg-card hover:border-primary/40 transition-all p-5 flex flex-col gap-4 group">
+        <div className="flex justify-between items-start gap-3">
+          <div>
+            <div className="flex items-center gap-2 flex-wrap mb-1">
+              <Badge className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/20">
+                {s.category}
+              </Badge>
+              <span className="text-[10px] text-muted-foreground font-semibold">
+                {isDefault ? "Resmi Kolegium" : s.creator_email ? `Oleh: ${s.creator_email.split('@')[0]}` : "Kustom User"}
+              </span>
+            </div>
+            <h3 className="font-bold text-base text-foreground group-hover:text-primary transition-colors">
+              {s.title}
+            </h3>
+          </div>
+          <div className="flex flex-col items-end gap-1.5">
+            <Badge variant="outline" className="flex gap-1 py-0.5 px-2 text-xs font-semibold shrink-0">
+              <Clock className="h-3 w-3 mt-0.5 text-muted-foreground" /> {s.duration_minutes} Mins
+            </Badge>
+            <div className="flex items-center gap-1 text-xs text-yellow-500 font-semibold" title={`Average: ${rInfo.average} stars`}>
+              <Star className={`h-3.5 w-3.5 ${rInfo.count > 0 ? "fill-yellow-500 text-yellow-500" : "text-muted-foreground/30"}`} />
+              <span>{rInfo.count > 0 ? rInfo.average : "0.0"}</span>
+              <span className="text-[10px] text-muted-foreground font-normal">({rInfo.count})</span>
+            </div>
+          </div>
+        </div>
+
+        <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+          {s.scenario}
+        </p>
+
+        <div className="flex flex-wrap gap-1.5 py-1">
+          {s.equipment.slice(0, 4).map((eq) => (
+            <span key={eq} className="text-[10px] bg-muted/65 text-muted-foreground font-semibold px-2 py-0.5 rounded-full border border-border/50">
+              {eq}
+            </span>
+          ))}
+          {s.equipment.length > 4 && (
+            <span className="text-[10px] text-muted-foreground px-2 py-0.5 font-semibold">
+              +{s.equipment.length - 4} more
+            </span>
+          )}
+        </div>
+
+        <div className="border-t border-border pt-3 flex items-center justify-between mt-auto">
+          <span className="text-[11px] text-muted-foreground font-semibold flex items-center gap-1">
+            <HelpCircle className="h-3.5 w-3.5 text-primary" /> {s.rubric.length} Evaluation Aspects
+          </span>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setDiscussionStation(s)}
+              title="Diskusi & Ulasan"
+              className="h-8 w-8 text-muted-foreground hover:text-primary"
+            >
+              <MessageSquare className="h-4 w-4" />
+            </Button>
+            {!isDefault && (!s.creator_email || isMine) && (
+              <>
+                <Button asChild size="sm" variant="outline" className="h-8 text-xs font-semibold px-2.5 gap-1">
+                  <Link href={`/osce/create?edit=${s.id}`}>
+                    <Edit2 className="h-3 w-3 text-muted-foreground" /> Edit
+                  </Link>
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="destructive" 
+                  className="h-8 text-xs font-semibold px-2.5"
+                  onClick={() => handleDelete(s.id)}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </>
+            )}
+            <Button asChild size="sm" className="gap-1.5 font-bold text-xs h-8">
+              <Link href={`/osce/practice/${s.id}`}>
+                <Play className="h-3.5 w-3.5 fill-current" /> Mulai Simulasi
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </Card>
+    )
+  }
 
   return (
     <AppShell>
@@ -122,86 +264,44 @@ export default function OscePrepDashboard() {
 
         {/* Stations and Attempts Grid */}
         <div className="grid gap-6 md:grid-cols-3">
-          {/* Left Column: Stations List */}
+          {/* Left Column: Stations Tabs */}
           <div className="md:col-span-2 space-y-4">
-            <h2 className="text-lg font-bold tracking-tight flex items-center gap-1.5 border-b border-border pb-1">
-              Active Exam Stations ({stations.length})
-            </h2>
+            <Tabs defaultValue="my-stations" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 max-w-sm mb-4">
+                <TabsTrigger value="my-stations" className="text-xs font-semibold">Stasiun Saya & Resmi</TabsTrigger>
+                <TabsTrigger value="community" className="text-xs font-semibold gap-1">
+                  <BookOpen className="h-3.5 w-3.5" /> Community Hub
+                </TabsTrigger>
+              </TabsList>
 
-            {loading ? (
-              Array.from({ length: 2 }).map((_, i) => (
-                <div key={i} className="h-44 w-full animate-pulse bg-muted rounded-xl border" />
-              ))
-            ) : stations.length === 0 ? (
-              <Card className="p-8 text-center text-muted-foreground">No OSCE stations available.</Card>
-            ) : (
-              <div className="grid gap-4">
-                {stations.map((s) => (
-                  <Card key={s.id} className="border border-border bg-card hover:border-primary/40 transition-all p-5 flex flex-col gap-4 group">
-                    <div className="flex justify-between items-start gap-3">
-                      <div>
-                        <Badge className="mb-2 bg-primary/10 text-primary border-primary/20 hover:bg-primary/20">
-                          {s.category}
-                        </Badge>
-                        <h3 className="font-bold text-base text-foreground group-hover:text-primary transition-colors">
-                          {s.title}
-                        </h3>
-                      </div>
-                      <Badge variant="outline" className="flex gap-1 py-0.5 px-2 text-xs font-semibold shrink-0">
-                        <Clock className="h-3 w-3 mt-0.5 text-muted-foreground" /> {s.duration_minutes} Mins
-                      </Badge>
-                    </div>
+              <TabsContent value="my-stations" className="space-y-4 focus-visible:outline-none">
+                {loading ? (
+                  Array.from({ length: 2 }).map((_, i) => (
+                    <div key={i} className="h-44 w-full animate-pulse bg-muted rounded-xl border" />
+                  ))
+                ) : myOrOfficialStations.length === 0 ? (
+                  <Card className="p-8 text-center text-muted-foreground">Belum ada stasiun OSCE kustom milik Anda.</Card>
+                ) : (
+                  <div className="grid gap-4">
+                    {myOrOfficialStations.map(renderStationCard)}
+                  </div>
+                )}
+              </TabsContent>
 
-                    <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-                      {s.scenario}
-                    </p>
-
-                    <div className="flex flex-wrap gap-1.5 py-1">
-                      {s.equipment.slice(0, 4).map((eq) => (
-                        <span key={eq} className="text-[10px] bg-muted/65 text-muted-foreground font-semibold px-2 py-0.5 rounded-full border border-border/50">
-                          {eq}
-                        </span>
-                      ))}
-                      {s.equipment.length > 4 && (
-                        <span className="text-[10px] text-muted-foreground px-2 py-0.5 font-semibold">
-                          +{s.equipment.length - 4} more
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="border-t border-border pt-3 flex items-center justify-between mt-auto">
-                      <span className="text-[11px] text-muted-foreground font-semibold flex items-center gap-1">
-                        <HelpCircle className="h-3.5 w-3.5 text-primary" /> {s.rubric.length} Evaluation Aspects
-                      </span>
-                      <div className="flex items-center gap-2">
-                        {s.user_id !== null && (
-                          <>
-                            <Button asChild size="sm" variant="outline" className="h-8 text-xs font-semibold px-2.5 gap-1">
-                              <Link href={`/osce/create?edit=${s.id}`}>
-                                <Edit2 className="h-3 w-3 text-muted-foreground" /> Edit
-                              </Link>
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="destructive" 
-                              className="h-8 text-xs font-semibold px-2.5"
-                              onClick={() => handleDelete(s.id)}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </>
-                        )}
-                        <Button asChild size="sm" className="gap-1.5 font-bold text-xs h-8">
-                          <Link href={`/osce/practice/${s.id}`}>
-                            <Play className="h-3.5 w-3.5 fill-current" /> Mulai Simulasi
-                          </Link>
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            )}
+              <TabsContent value="community" className="space-y-4 focus-visible:outline-none">
+                {loading ? (
+                  Array.from({ length: 2 }).map((_, i) => (
+                    <div key={i} className="h-44 w-full animate-pulse bg-muted rounded-xl border" />
+                  ))
+                ) : communityStations.length === 0 ? (
+                  <Card className="p-8 text-center text-muted-foreground">Belum ada stasiun kustom dari pengguna lain di Community Hub.</Card>
+                ) : (
+                  <div className="grid gap-4">
+                    {communityStations.map(renderStationCard)}
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
           </div>
 
           {/* Right Column: History list */}
@@ -227,9 +327,8 @@ export default function OscePrepDashboard() {
                   if (pct >= 80) scoreColor = "text-emerald-500"
                   else if (pct >= 60) scoreColor = "text-yellow-600"
 
-                  const stationTitle = a.station_id === "builtin-obstetric-sc-appendicitis"
-                    ? "Sectio Caesarea & Appendiktomi"
-                    : "OSCE Custom Station"
+                  const matched = stations.find((st) => st.id === a.station_id)
+                  const stationTitle = matched ? matched.title : "OSCE Station"
 
                   return (
                     <Card key={a.id} className="p-3 border border-border bg-card hover:bg-muted/15 transition-all text-xs">
@@ -255,6 +354,26 @@ export default function OscePrepDashboard() {
             )}
           </div>
         </div>
+
+        {/* Discussion Dialog Popover */}
+        <Dialog open={!!discussionStation} onOpenChange={(open) => !open && setDiscussionStation(null)}>
+          <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                <MessageSquare className="h-5 w-5 text-primary" />
+                Diskusi & Ulasan: {discussionStation?.title}
+              </DialogTitle>
+              <DialogDescription>
+                Berikan rating, tanyakan materi, atau diskusikan stasiun ujian ini dengan penulis dan rekan sejawat lainnya.
+              </DialogDescription>
+            </DialogHeader>
+            {discussionStation && (
+              <div className="mt-4">
+                <OSCEDiscussion stationId={discussionStation.id} stationTitle={discussionStation.title} />
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </AppShell>
   )

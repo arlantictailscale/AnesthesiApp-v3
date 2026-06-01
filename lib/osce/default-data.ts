@@ -17,6 +17,7 @@ export interface OsceStation {
   rubric: RubricItem[]
   created_at?: string
   updated_at?: string
+  creator_email?: string
 }
 
 export interface OsceAttempt {

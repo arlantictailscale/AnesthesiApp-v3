@@ -10,8 +10,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { getOsceStation, saveOsceAttempt } from "@/lib/osce/storage"
 import type { OsceStation } from "@/lib/osce/default-data"
+import { OSCEDiscussion } from "@/components/osce-discussion"
 import {
-  ArrowLeft, Clock, Play, Send, CheckCircle2, RefreshCw, Loader2, AlertCircle, Award, Check
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
+  ArrowLeft, Clock, Play, Send, CheckCircle2, RefreshCw, Loader2, AlertCircle, Award, Check, MessageSquare
 } from "lucide-react"
 
 export default function OsceArenaPage() {
@@ -20,6 +28,7 @@ export default function OsceArenaPage() {
 
   const [station, setStation] = useState<OsceStation | null>(null)
   const [loading, setLoading] = useState(true)
+  const [discussionOpen, setDiscussionOpen] = useState(false)
 
   // Simulation state
   const [started, setStarted] = useState(false)
@@ -320,6 +329,9 @@ export default function OsceArenaPage() {
             </div>
 
             <div className="border-t border-border pt-4 flex justify-end gap-3">
+              <Button onClick={() => setDiscussionOpen(true)} variant="outline" className="gap-1.5 font-semibold text-xs">
+                <MessageSquare className="h-3.5 w-3.5 text-primary" /> Diskusi & Rating
+              </Button>
               <Button onClick={() => window.location.reload()} variant="outline" className="gap-1.5 font-semibold text-xs">
                 <RefreshCw className="h-3.5 w-3.5" /> Ulangi Ujian
               </Button>
@@ -453,6 +465,24 @@ export default function OsceArenaPage() {
             </p>
           </div>
         )}
+
+        {/* Discussion Dialog Popover */}
+        <Dialog open={discussionOpen} onOpenChange={setDiscussionOpen}>
+          <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                <MessageSquare className="h-5 w-5 text-primary" />
+                Diskusi & Ulasan: {station.title}
+              </DialogTitle>
+              <DialogDescription>
+                Berikan rating, tanyakan materi, atau diskusikan stasiun ujian ini dengan penulis dan rekan sejawat lainnya.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="mt-4">
+              <OSCEDiscussion stationId={station.id} stationTitle={station.title} />
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </AppShell>
   )
