@@ -30,22 +30,16 @@ export async function updateSession(request: NextRequest) {
 
   const { pathname } = request.nextUrl
 
-  // Redirect /dashboard or successful auth redirects to /cases
-  if (user && (pathname === "/login" || pathname === "/signup" || pathname === "/dashboard")) {
+  // Redirect successful auth redirects to /dashboard
+  if (user && (pathname === "/login" || pathname === "/signup")) {
     const url = request.nextUrl.clone()
-    url.pathname = "/cases"
+    url.pathname = "/dashboard"
     url.search = ""
     return NextResponse.redirect(url)
   }
 
-  if (!user && pathname === "/dashboard") {
-    const url = request.nextUrl.clone()
-    url.pathname = "/login"
-    url.searchParams.set("next", "/cases")
-    return NextResponse.redirect(url)
-  }
-
   const isProtected =
+    pathname.startsWith("/dashboard") ||
     pathname.startsWith("/cases") ||
     pathname.startsWith("/cbt") ||
     pathname.startsWith("/osce") ||

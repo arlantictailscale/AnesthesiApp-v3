@@ -27,7 +27,7 @@ export default function LoginPage() {
       return
     }
     toast.success("Welcome back")
-    router.push("/cases")
+    router.push("/dashboard")
     router.refresh()
   }
 
