@@ -168,6 +168,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   {email}
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/profile" className="flex items-center w-full cursor-pointer">
+                    <User className="mr-2 h-4 w-4" /> My Profile
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut}>
                   <LogOut className="mr-2 h-4 w-4" /> Sign out
                 </DropdownMenuItem>
@@ -273,13 +279,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </div>
                 {email && (
                   <div className="border-t pt-4 flex flex-col gap-2">
-                    <div className="flex items-center gap-3 px-3 py-2 rounded-md bg-muted/50">
-                      <User className="h-4 w-4 text-muted-foreground" />
+                    <Link
+                      href="/profile"
+                      className="flex items-center gap-3 px-3 py-2 rounded-md bg-muted/50 hover:bg-muted transition-colors cursor-pointer group"
+                    >
+                      <User className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
                       <div className="min-w-0 flex-1">
                         <p className="text-xs text-muted-foreground truncate font-medium">Logged in as</p>
-                        <p className="text-sm font-semibold truncate text-foreground">{email}</p>
+                        <p className="text-sm font-semibold truncate text-foreground group-hover:text-primary transition-colors">{email}</p>
                       </div>
-                    </div>
+                    </Link>
                     <Button
                       variant="ghost"
                       size="sm"

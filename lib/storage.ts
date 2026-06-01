@@ -175,3 +175,93 @@ export function clearDraft() {
   if (typeof window === "undefined") return
   localStorage.removeItem(DRAFT_KEY)
 }
+
+// --- User Profile ---
+
+export interface UserProfile {
+  id: string
+  email: string
+  full_name: string | null
+  title_role: string | null
+  department: string | null
+  bio: string | null
+  avatar_url: string | null
+  updated_at: string
+}
+
+export async function getUserProfile(userId: string): Promise<UserProfile | null> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", userId)
+    .maybeSingle()
+
+  if (error) {
+    console.error("Failed to fetch user profile:", error.message)
+    throw new Error(error.message)
+  }
+
+  if (!data) {
+    // If profile row doesn't exist, create it as a fallback
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user && user.id === userId) {
+      const { data: inserted, error: insertError } = await supabase
+        .from("profiles")
+        .insert({ id: userId, email: user.email ?? "" })
+        .select("*")
+        .single()
+      if (insertError) {
+        console.error("Failed to auto-create profile:", insertError.message)
+        return null
+      }
+      return inserted as UserProfile
+    }
+    return null
+  }
+
+  return data as UserProfile
+}
+
+export async function updateUserProfile(profile: Partial<UserProfile> & { id: string }): Promise<UserProfile> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from("profiles")
+    .update(profile)
+    .eq("id", profile.id)
+    .select("*")
+    .single()
+
+  if (error) {
+    console.error("Failed to update user profile:", error.message)
+    throw new Error(error.message)
+  }
+
+  return data as UserProfile
+}
+
+export async function uploadAvatar(userId: string, file: File): Promise<string> {
+  const supabase = createClient()
+  const fileExt = file.name.split(".").pop()
+  const fileName = `${userId}/avatar-${Date.now()}.${fileExt}`
+  const filePath = fileName
+
+  const { data, error } = await supabase.storage
+    .from("avatars")
+    .upload(filePath, file, {
+      cacheControl: "3600",
+      upsert: true,
+    })
+
+  if (error) {
+    console.error("Failed to upload avatar:", error.message)
+    throw new Error(error.message)
+  }
+
+  const { data: { publicUrl } } = supabase.storage
+    .from("avatars")
+    .getPublicUrl(filePath)
+
+  return publicUrl
+}
+
