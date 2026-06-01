@@ -19,7 +19,8 @@ import { drugSchema } from "@/lib/schema"
 import { 
   Search, Plus, Edit, Trash2, Clock, Activity, 
   Calculator, AlertTriangle, AlertCircle, Info, BookOpen, 
-  ShieldAlert, ChevronRight, CornerDownRight, X, ArrowLeft
+  ShieldAlert, ChevronRight, CornerDownRight, X, ArrowLeft,
+  Brain
 } from "lucide-react"
 
 const CATEGORIES = [
