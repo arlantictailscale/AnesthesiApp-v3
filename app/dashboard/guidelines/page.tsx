@@ -60,8 +60,8 @@ export default function GuidelinesLibraryPage() {
     category: "Airway Management",
     summary: "",
     full_content: "",
-    file_url: "",
-    image_url: ""
+    file_urls: [],
+    image_urls: []
   })
 
   async function loadGuidelines() {
@@ -108,37 +108,76 @@ export default function GuidelinesLibraryPage() {
       category: "Airway Management",
       summary: "",
       full_content: "",
-      file_url: "",
-      image_url: ""
+      file_urls: [],
+      image_urls: []
     })
   }
 
-  // Upload handler for PDFs/Documents
-  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>, field: "file_url" | "image_url") {
-    const file = e.target.files?.[0]
-    if (!file) return
+  // Multiple files & images upload handler
+  async function handleMultipleUploads(
+    e: React.ChangeEvent<HTMLInputElement>,
+    type: "image" | "file"
+  ) {
+    const files = e.target.files
+    if (!files || files.length === 0) return
 
-    // Max 10MB for PDFs, 5MB for images
-    const maxSize = field === "file_url" ? 10 * 1024 * 1024 : 5 * 1024 * 1024
-    if (file.size > maxSize) {
-      toast.error(`File is too large. Max size is ${field === "file_url" ? "10MB" : "5MB"}.`)
-      return
-    }
-
-    if (field === "file_url") setUploadingFile(true)
+    if (type === "file") setUploadingFile(true)
     else setUploadingImage(true)
 
     try {
-      const publicUrl = await uploadGuidelineFile(file)
-      setFormData(prev => ({ ...prev, [field]: publicUrl }))
-      toast.success(`${field === "file_url" ? "PDF Document" : "Algorithm Image"} uploaded successfully!`)
+      const newUploads: { name: string; url: string }[] = []
+      const newImages: string[] = []
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i]
+        const maxSize = type === "file" ? 10 * 1024 * 1024 : 5 * 1024 * 1024
+        if (file.size > maxSize) {
+          toast.error(`File "${file.name}" is too large. Max size is ${type === "file" ? "10MB" : "5MB"}.`)
+          continue
+        }
+
+        const publicUrl = await uploadGuidelineFile(file)
+        if (type === "file") {
+          newUploads.push({ name: file.name, url: publicUrl })
+        } else {
+          newImages.push(publicUrl)
+        }
+      }
+
+      if (type === "file") {
+        setFormData(prev => ({
+          ...prev,
+          file_urls: [...(prev.file_urls || []), ...newUploads]
+        }))
+        toast.success("Documents uploaded successfully!")
+      } else {
+        setFormData(prev => ({
+          ...prev,
+          image_urls: [...(prev.image_urls || []), ...newImages]
+        }))
+        toast.success("Images uploaded successfully!")
+      }
     } catch (err) {
       console.error(err)
-      toast.error(err instanceof Error ? err.message : "Failed to upload file. Defaulting to local mock.")
+      toast.error(err instanceof Error ? err.message : "Failed to upload files.")
     } finally {
-      if (field === "file_url") setUploadingFile(false)
+      if (type === "file") setUploadingFile(false)
       else setUploadingImage(false)
     }
+  }
+
+  function handleRemoveImage(index: number) {
+    setFormData(prev => ({
+      ...prev,
+      image_urls: (prev.image_urls || []).filter((_, i) => i !== index)
+    }))
+  }
+
+  function handleRemoveFile(index: number) {
+    setFormData(prev => ({
+      ...prev,
+      file_urls: (prev.file_urls || []).filter((_, i) => i !== index)
+    }))
   }
 
   // Create guideline submit
@@ -171,8 +210,8 @@ export default function GuidelinesLibraryPage() {
       category: guide.category,
       summary: guide.summary,
       full_content: guide.full_content,
-      file_url: guide.file_url || "",
-      image_url: guide.image_url || ""
+      file_urls: guide.file_urls || [],
+      image_urls: guide.image_urls || []
     })
     setIsEditOpen(true)
   }
@@ -476,28 +515,30 @@ export default function GuidelinesLibraryPage() {
                     </CardContent>
                   </Card>
 
-                  {/* Inline algorithm chart/image module */}
-                  {activeGuideline.image_url && (
-                    <div className="space-y-2">
+                  {/* Inline algorithm charts/images module */}
+                  {activeGuideline.image_urls && activeGuideline.image_urls.length > 0 && (
+                    <div className="space-y-3">
                       <h3 className="text-sm font-bold text-foreground uppercase tracking-wide flex items-center gap-1.5 border-b border-border pb-1">
-                        <ImageIcon className="h-4 w-4 text-primary" /> Guideline Flowchart / Algorithm
+                        <ImageIcon className="h-4 w-4 text-primary" /> Guideline Flowcharts / Algorithms ({activeGuideline.image_urls.length})
                       </h3>
-                      <div className="relative group max-w-lg overflow-hidden border border-border bg-muted rounded-xl flex items-center justify-center aspect-[16/10] shadow-sm">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={activeGuideline.image_url}
-                          alt="Algorithm Flowchart"
-                          className="max-h-full max-w-full object-contain cursor-zoom-in transition-all group-hover:scale-102"
-                          onClick={() => setZoomImageUrl(activeGuideline.image_url!)}
-                        />
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          className="absolute bottom-2 right-2 opacity-90 gap-1.5 text-xs font-semibold"
-                          onClick={() => setZoomImageUrl(activeGuideline.image_url!)}
-                        >
-                          <ZoomIn className="h-3.5 w-3.5" /> View Flowchart
-                        </Button>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {activeGuideline.image_urls.map((url, idx) => (
+                          <div key={idx} className="relative group overflow-hidden border border-border bg-muted rounded-xl flex items-center justify-center aspect-[16/10] shadow-sm hover:border-primary/50 transition-colors">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={url}
+                              alt={`Algorithm Flowchart ${idx + 1}`}
+                              className="max-h-full max-w-full object-contain cursor-zoom-in transition-all group-hover:scale-102"
+                              onClick={() => setZoomImageUrl(url)}
+                            />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                              <ZoomIn className="h-6 w-6 text-white" />
+                            </div>
+                            <span className="absolute bottom-2 left-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded backdrop-blur-xs font-semibold">
+                              Chart #{idx + 1}
+                            </span>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   )}
@@ -512,28 +553,34 @@ export default function GuidelinesLibraryPage() {
                     </div>
                   </div>
 
-                  {/* Attached PDF card */}
-                  {activeGuideline.file_url && (
-                    <div className="space-y-2 border-t border-border pt-4">
+                  {/* Attached Files List */}
+                  {activeGuideline.file_urls && activeGuideline.file_urls.length > 0 && (
+                    <div className="space-y-3 border-t border-border pt-4">
                       <h3 className="text-sm font-bold text-foreground uppercase tracking-wide flex items-center gap-1.5 border-b border-border pb-1">
-                        <FileUp className="h-4 w-4 text-primary" /> Guideline PDF Reference Document
+                        <FileUp className="h-4 w-4 text-primary" /> Guideline Reference Documents ({activeGuideline.file_urls.length})
                       </h3>
-                      <Card className="flex items-center justify-between p-4 border border-border bg-muted/5 max-w-md">
-                        <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded bg-red-500/10 text-red-500 flex items-center justify-center shrink-0">
-                            <FileText className="h-5 w-5" />
-                          </div>
-                          <div className="min-w-0">
-                            <p className="font-semibold text-xs truncate max-w-[200px]">Official Reference File</p>
-                            <p className="text-[10px] text-muted-foreground">PDF Document Format</p>
-                          </div>
-                        </div>
-                        <Button asChild size="sm" variant="outline" className="gap-1.5 h-8 font-semibold text-xs">
-                          <a href={activeGuideline.file_url} target="_blank" rel="noopener noreferrer">
-                            <Download className="h-3.5 w-3.5" /> Open / Download
-                          </a>
-                        </Button>
-                      </Card>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {activeGuideline.file_urls.map((fileObj, idx) => (
+                          <Card key={idx} className="flex items-center justify-between p-3.5 border border-border bg-muted/5">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="h-9 w-9 rounded bg-red-500/10 text-red-500 flex items-center justify-center shrink-0">
+                                <FileText className="h-4 w-4" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="font-semibold text-xs truncate pr-2" title={fileObj.name}>
+                                  {fileObj.name}
+                                </p>
+                                <p className="text-[10px] text-muted-foreground">PDF Document Format</p>
+                              </div>
+                            </div>
+                            <Button asChild size="sm" variant="outline" className="gap-1 h-7 px-2.5 font-semibold text-xs shrink-0">
+                              <a href={fileObj.url} target="_blank" rel="noopener noreferrer">
+                                <Download className="h-3 w-3" /> <span className="hidden sm:inline">Open</span>
+                              </a>
+                            </Button>
+                          </Card>
+                        ))}
+                      </div>
                     </div>
                   )}
 
@@ -629,84 +676,90 @@ export default function GuidelinesLibraryPage() {
 
               {/* File / Image uploads */}
               <div className="grid gap-4 sm:grid-cols-2 border border-border p-3 rounded-lg bg-muted/20">
-                {/* Algorithm Image Upload */}
-                <div className="space-y-2">
-                  <Label className="text-xs font-semibold">Algorithm Chart / Image</Label>
-                  {formData.image_url ? (
-                    <div className="relative aspect-video rounded border border-border bg-card flex items-center justify-center overflow-hidden">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={formData.image_url} alt="Algorithm Thumbnail" className="max-h-full max-w-full object-contain" />
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="icon"
-                        className="absolute top-1 right-1 h-6 w-6 rounded-full shadow-md"
-                        onClick={() => setFormData(prev => ({ ...prev, image_url: "" }))}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <label className="flex flex-col items-center justify-center w-full h-24 border border-dashed border-muted-foreground/30 rounded cursor-pointer bg-card hover:bg-muted/10 transition-all">
-                      <div className="flex flex-col items-center justify-center text-muted-foreground text-center px-2">
+                {/* Algorithm Images Upload */}
+                <div className="space-y-2 col-span-2 sm:col-span-1">
+                  <Label className="text-xs font-semibold animate-pulse-slow">Algorithm Charts / Images</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {formData.image_urls && formData.image_urls.map((url, index) => (
+                      <div key={index} className="relative aspect-video rounded border border-border bg-card flex items-center justify-center overflow-hidden group">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={url} alt={`Thumbnail ${index + 1}`} className="max-h-full max-w-full object-contain" />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-1 right-1 h-5 w-5 rounded-full shadow-md opacity-95"
+                          onClick={() => handleRemoveImage(index)}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                    
+                    <label className="flex flex-col items-center justify-center aspect-video border border-dashed border-muted-foreground/30 rounded cursor-pointer bg-card hover:bg-muted/10 transition-all min-h-[70px]">
+                      <div className="flex flex-col items-center justify-center text-muted-foreground text-center px-1">
                         {uploadingImage ? (
                           <Loader2 className="h-4 w-4 animate-spin text-primary" />
                         ) : (
-                          <Upload className="h-4 w-4 mb-1" />
+                          <Plus className="h-4 w-4 mb-1 text-primary" />
                         )}
-                        <span className="text-[10px] font-semibold">{uploadingImage ? "Uploading..." : "Upload Flowchart"}</span>
+                        <span className="text-[10px] font-semibold">{uploadingImage ? "Uploading..." : "Add Image"}</span>
                         <span className="text-[8px] text-muted-foreground/60">(PNG, JPG, max 5MB)</span>
                       </div>
                       <input
                         type="file"
                         accept="image/*"
+                        multiple
                         className="hidden"
                         disabled={uploadingImage}
-                        onChange={(e) => handleFileUpload(e, "image_url")}
+                        onChange={(e) => handleMultipleUploads(e, "image")}
                       />
                     </label>
-                  )}
+                  </div>
                 </div>
 
-                {/* PDF Document Upload */}
-                <div className="space-y-2">
-                  <Label className="text-xs font-semibold">Official Guideline PDF</Label>
-                  {formData.file_url ? (
-                    <div className="relative h-24 rounded border border-border bg-card flex items-center justify-center p-2">
-                      <div className="flex items-center gap-1.5 text-xs text-red-500 font-semibold truncate">
-                        <FileText className="h-4 w-4 shrink-0" />
-                        <span className="truncate max-w-[120px]">Uploaded PDF</span>
+                {/* PDF Documents Upload */}
+                <div className="space-y-2 col-span-2 sm:col-span-1">
+                  <Label className="text-xs font-semibold">Official Guideline PDFs</Label>
+                  <div className="space-y-2">
+                    {formData.file_urls && formData.file_urls.map((fileObj, index) => (
+                      <div key={index} className="relative flex items-center justify-between p-2 rounded border border-border bg-card text-xs">
+                        <div className="flex items-center gap-1.5 min-w-0 pr-6">
+                          <FileText className="h-4 w-4 text-red-500 shrink-0" />
+                          <span className="truncate font-medium" title={fileObj.name}>{fileObj.name}</span>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          className="h-5 w-5 rounded-full shadow-md shrink-0 absolute right-1.5"
+                          onClick={() => handleRemoveFile(index)}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
                       </div>
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="icon"
-                        className="absolute top-1 right-1 h-6 w-6 rounded-full shadow-md"
-                        onClick={() => setFormData(prev => ({ ...prev, file_url: "" }))}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <label className="flex flex-col items-center justify-center w-full h-24 border border-dashed border-muted-foreground/30 rounded cursor-pointer bg-card hover:bg-muted/10 transition-all">
+                    ))}
+
+                    <label className="flex flex-col items-center justify-center w-full h-16 border border-dashed border-muted-foreground/30 rounded cursor-pointer bg-card hover:bg-muted/10 transition-all">
                       <div className="flex flex-col items-center justify-center text-muted-foreground text-center px-2">
                         {uploadingFile ? (
                           <Loader2 className="h-4 w-4 animate-spin text-primary" />
                         ) : (
-                          <FileUp className="h-4 w-4 mb-1" />
+                          <Plus className="h-4 w-4 mb-0.5 text-primary" />
                         )}
-                        <span className="text-[10px] font-semibold">{uploadingFile ? "Uploading..." : "Upload Document"}</span>
+                        <span className="text-[10px] font-semibold">{uploadingFile ? "Uploading..." : "Add PDF Document"}</span>
                         <span className="text-[8px] text-muted-foreground/60">(PDF only, max 10MB)</span>
                       </div>
                       <input
                         type="file"
                         accept="application/pdf"
+                        multiple
                         className="hidden"
                         disabled={uploadingFile}
-                        onChange={(e) => handleFileUpload(e, "file_url")}
+                        onChange={(e) => handleMultipleUploads(e, "file")}
                       />
                     </label>
-                  )}
+                  </div>
                 </div>
               </div>
 
@@ -798,84 +851,90 @@ export default function GuidelinesLibraryPage() {
 
               {/* File / Image uploads */}
               <div className="grid gap-4 sm:grid-cols-2 border border-border p-3 rounded-lg bg-muted/20">
-                {/* Algorithm Image Upload */}
-                <div className="space-y-2">
-                  <Label className="text-xs font-semibold">Algorithm Chart / Image</Label>
-                  {formData.image_url ? (
-                    <div className="relative aspect-video rounded border border-border bg-card flex items-center justify-center overflow-hidden">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={formData.image_url} alt="Algorithm Thumbnail" className="max-h-full max-w-full object-contain" />
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="icon"
-                        className="absolute top-1 right-1 h-6 w-6 rounded-full shadow-md"
-                        onClick={() => setFormData(prev => ({ ...prev, image_url: "" }))}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <label className="flex flex-col items-center justify-center w-full h-24 border border-dashed border-muted-foreground/30 rounded cursor-pointer bg-card hover:bg-muted/10 transition-all">
-                      <div className="flex flex-col items-center justify-center text-muted-foreground text-center px-2">
+                {/* Algorithm Images Upload */}
+                <div className="space-y-2 col-span-2 sm:col-span-1">
+                  <Label className="text-xs font-semibold animate-pulse-slow">Algorithm Charts / Images</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {formData.image_urls && formData.image_urls.map((url, index) => (
+                      <div key={index} className="relative aspect-video rounded border border-border bg-card flex items-center justify-center overflow-hidden group">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={url} alt={`Thumbnail ${index + 1}`} className="max-h-full max-w-full object-contain" />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-1 right-1 h-5 w-5 rounded-full shadow-md opacity-95"
+                          onClick={() => handleRemoveImage(index)}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                    
+                    <label className="flex flex-col items-center justify-center aspect-video border border-dashed border-muted-foreground/30 rounded cursor-pointer bg-card hover:bg-muted/10 transition-all min-h-[70px]">
+                      <div className="flex flex-col items-center justify-center text-muted-foreground text-center px-1">
                         {uploadingImage ? (
                           <Loader2 className="h-4 w-4 animate-spin text-primary" />
                         ) : (
-                          <Upload className="h-4 w-4 mb-1" />
+                          <Plus className="h-4 w-4 mb-1 text-primary" />
                         )}
-                        <span className="text-[10px] font-semibold">{uploadingImage ? "Uploading..." : "Upload Flowchart"}</span>
+                        <span className="text-[10px] font-semibold">{uploadingImage ? "Uploading..." : "Add Image"}</span>
                         <span className="text-[8px] text-muted-foreground/60">(PNG, JPG, max 5MB)</span>
                       </div>
                       <input
                         type="file"
                         accept="image/*"
+                        multiple
                         className="hidden"
                         disabled={uploadingImage}
-                        onChange={(e) => handleFileUpload(e, "image_url")}
+                        onChange={(e) => handleMultipleUploads(e, "image")}
                       />
                     </label>
-                  )}
+                  </div>
                 </div>
 
-                {/* PDF Document Upload */}
-                <div className="space-y-2">
-                  <Label className="text-xs font-semibold">Official Guideline PDF</Label>
-                  {formData.file_url ? (
-                    <div className="relative h-24 rounded border border-border bg-card flex items-center justify-center p-2">
-                      <div className="flex items-center gap-1.5 text-xs text-red-500 font-semibold truncate">
-                        <FileText className="h-4 w-4 shrink-0" />
-                        <span className="truncate max-w-[120px]">Uploaded PDF</span>
+                {/* PDF Documents Upload */}
+                <div className="space-y-2 col-span-2 sm:col-span-1">
+                  <Label className="text-xs font-semibold">Official Guideline PDFs</Label>
+                  <div className="space-y-2">
+                    {formData.file_urls && formData.file_urls.map((fileObj, index) => (
+                      <div key={index} className="relative flex items-center justify-between p-2 rounded border border-border bg-card text-xs">
+                        <div className="flex items-center gap-1.5 min-w-0 pr-6">
+                          <FileText className="h-4 w-4 text-red-500 shrink-0" />
+                          <span className="truncate font-medium" title={fileObj.name}>{fileObj.name}</span>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          className="h-5 w-5 rounded-full shadow-md shrink-0 absolute right-1.5"
+                          onClick={() => handleRemoveFile(index)}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
                       </div>
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="icon"
-                        className="absolute top-1 right-1 h-6 w-6 rounded-full shadow-md"
-                        onClick={() => setFormData(prev => ({ ...prev, file_url: "" }))}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <label className="flex flex-col items-center justify-center w-full h-24 border border-dashed border-muted-foreground/30 rounded cursor-pointer bg-card hover:bg-muted/10 transition-all">
+                    ))}
+
+                    <label className="flex flex-col items-center justify-center w-full h-16 border border-dashed border-muted-foreground/30 rounded cursor-pointer bg-card hover:bg-muted/10 transition-all">
                       <div className="flex flex-col items-center justify-center text-muted-foreground text-center px-2">
                         {uploadingFile ? (
                           <Loader2 className="h-4 w-4 animate-spin text-primary" />
                         ) : (
-                          <FileUp className="h-4 w-4 mb-1" />
+                          <Plus className="h-4 w-4 mb-0.5 text-primary" />
                         )}
-                        <span className="text-[10px] font-semibold">{uploadingFile ? "Uploading..." : "Upload Document"}</span>
+                        <span className="text-[10px] font-semibold">{uploadingFile ? "Uploading..." : "Add PDF Document"}</span>
                         <span className="text-[8px] text-muted-foreground/60">(PDF only, max 10MB)</span>
                       </div>
                       <input
                         type="file"
                         accept="application/pdf"
+                        multiple
                         className="hidden"
                         disabled={uploadingFile}
-                        onChange={(e) => handleFileUpload(e, "file_url")}
+                        onChange={(e) => handleMultipleUploads(e, "file")}
                       />
                     </label>
-                  )}
+                  </div>
                 </div>
               </div>
 

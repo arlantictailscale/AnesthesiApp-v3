@@ -31,8 +31,8 @@ export const builtInGuidelines: AnesthesiaGuideline[] = [
      - If both face mask ventilation and SGA fail to maintain oxygenation:
      - Declare a **CICV Emergency**.
      - Perform emergency invasive airway access immediately (cricothyroidotomy, scalpel-bougie technique, or jet ventilation).`,
-    file_url: "",
-    image_url: "",
+    file_urls: [],
+    image_urls: [],
   },
   {
     id: "builtin-acls",
@@ -69,8 +69,8 @@ export const builtInGuidelines: AnesthesiaGuideline[] = [
 #### 4. Reversible Causes (H's & T's):
 - **H's**: Hypovolemia, Hypoxia, Hydrogen ion (acidosis), Hypo-/Hyperkalemia, Hypothermia.
 - **T's**: Tension pneumothorax, Tamponade (cardiac), Toxins, Thrombosis (pulmonary), Thrombosis (coronary).`,
-    file_url: "",
-    image_url: "",
+    file_urls: [],
+    image_urls: [],
   },
   {
     id: "builtin-malignant-hyperthermia",
@@ -124,8 +124,8 @@ export const builtInGuidelines: AnesthesiaGuideline[] = [
 6. **Treat Cardiac Arrhythmias**:
    - Use standard antiarrhythmics (amiodarone, beta-blockers, or lidocaine) if needed.
    - **Contraindicated**: *Do NOT administer Calcium Channel Blockers (e.g., verapamil, diltiazem) to patients receiving dantrolene*, as this can cause hyperkalemia and myocardial depression.`,
-    file_url: "",
-    image_url: "",
+    file_urls: [],
+    image_urls: [],
   },
   {
     id: "builtin-last-protocol",
@@ -169,7 +169,7 @@ export const builtInGuidelines: AnesthesiaGuideline[] = [
      - **Epinephrine**: Use small, titrated doses (< 1 mcg/kg or 10-100 mcg boluses). Avoid large 1 mg boluses as high epinephrine impairs resuscitation and reduces lipid efficacy.
      - **Meds to Avoid**: Avoid Vasopressin, Calcium Channel Blockers, Beta-Blockers, and local anesthetics (lidocaine, procainamide).
      - **Amiodarone** is the preferred antiarrhythmic.`,
-    file_url: "",
-    image_url: "",
+    file_urls: [],
+    image_urls: [],
   },
 ]

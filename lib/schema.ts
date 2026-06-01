@@ -144,8 +144,11 @@ export const guidelineSchema = z.object({
   category: z.string().min(1, "Category is required"),
   summary: z.string().min(1, "Summary is required"),
   full_content: z.string().min(1, "Full content is required"),
-  file_url: z.string().optional().default(""),
-  image_url: z.string().optional().default(""),
+  file_urls: z.array(z.object({
+    name: z.string(),
+    url: z.string(),
+  })).default([]),
+  image_urls: z.array(z.string()).default([]),
 })
 
 export type GuidelineData = z.infer<typeof guidelineSchema>

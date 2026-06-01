@@ -93,13 +93,19 @@ export async function listGuidelines(): Promise<AnesthesiaGuideline[]> {
   // Sort alphabetically by title
   allGuidelines.sort((a, b) => a.title.localeCompare(b.title))
 
-  return allGuidelines.filter((guide) => {
-    const normTitle = guide.title.trim().toLowerCase()
-    if (seenIds.has(guide.id) || seenTitles.has(normTitle)) return false
-    seenIds.add(guide.id)
-    seenTitles.add(normTitle)
-    return true
-  })
+  return allGuidelines
+    .map((g: any) => ({
+      ...g,
+      file_urls: Array.isArray(g.file_urls) ? g.file_urls : (g.file_url ? [{ name: "Official Reference File", url: g.file_url }] : []),
+      image_urls: Array.isArray(g.image_urls) ? g.image_urls : (g.image_url ? [g.image_url] : []),
+    }))
+    .filter((guide) => {
+      const normTitle = guide.title.trim().toLowerCase()
+      if (seenIds.has(guide.id) || seenTitles.has(normTitle)) return false
+      seenIds.add(guide.id)
+      seenTitles.add(normTitle)
+      return true
+    })
 }
 
 /**
