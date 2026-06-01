@@ -377,7 +377,7 @@ export default function DrugLibraryPage() {
                           setShowMobileDetails(true)
                         }
                       }}
-                      className={`flex flex-col text-left p-3.5 rounded-lg border transition-all relative overflow-hidden group cursor-pointer w-full h-auto ${
+                      className={`flex flex-col text-left p-3.5 rounded-lg border transition-all relative overflow-hidden group cursor-pointer w-full h-auto shrink-0 ${
                         isSelected 
                           ? "bg-primary/5 border-primary text-foreground ring-1 ring-primary/30" 
                           : "bg-background border-border hover:bg-muted/30 text-foreground"
