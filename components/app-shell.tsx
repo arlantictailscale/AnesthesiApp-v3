@@ -56,7 +56,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isDrugs = pathname?.startsWith("/dashboard/drugs")
   const isGuidelines = pathname?.startsWith("/dashboard/guidelines")
   const isResearch = pathname?.startsWith("/dashboard/research")
-  const isCases = (pathname === "/dashboard" || pathname?.startsWith("/cases")) && !isCbt && !isDrugs && !isGuidelines && !isResearch
+  const isOsce = pathname?.startsWith("/dashboard/osce")
+  const isCases = (pathname === "/dashboard" || pathname?.startsWith("/cases")) && !isCbt && !isDrugs && !isGuidelines && !isResearch && !isOsce
   const isNew = pathname?.startsWith("/cases/new")
 
   return (
@@ -91,6 +92,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               size="sm"
             >
               <Link href="/dashboard/cbt">CBT Prep</Link>
+            </Button>
+            <Button
+              asChild
+              variant={isOsce ? "secondary" : "ghost"}
+              size="sm"
+            >
+              <Link href="/dashboard/osce">OSCE Prep</Link>
             </Button>
             <Button
               asChild
