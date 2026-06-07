@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { getSession, getUserProfile, updateUserProfile, uploadAvatar, type UserProfile } from "@/lib/storage"
+import { createClient } from "@/lib/supabase/client"
 import {
   User,
   Mail,
@@ -19,7 +20,14 @@ import {
   Save,
   Loader2,
   Upload,
-  CheckCircle2
+  CheckCircle2,
+  KeyRound,
+  ShieldCheck,
+  Link2,
+  Trash2,
+  ShieldAlert,
+  QrCode,
+  Laptop
 } from "lucide-react"
 
 export default function ProfilePage() {
@@ -27,6 +35,9 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
+  
+  // Tab control state
+  const [activeTab, setActiveTab] = useState<"profile" | "security">("profile")
 
   // Profile data state
   const [profile, setProfile] = useState<UserProfile | null>(null)
@@ -36,6 +47,26 @@ export default function ProfilePage() {
   const [department, setDepartment] = useState("")
   const [bio, setBio] = useState("")
   const [avatarUrl, setAvatarUrl] = useState("")
+
+  // Security Management state
+  const [newEmail, setNewEmail] = useState("")
+  const [updatingEmail, setUpdatingEmail] = useState(false)
+  const [newPassword, setNewPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [updatingPassword, setUpdatingPassword] = useState(false)
+
+  // MFA state
+  const [mfaLoading, setMfaLoading] = useState(false)
+  const [mfaFactors, setMfaFactors] = useState<any[]>([])
+  const [enrollingMfa, setEnrollingMfa] = useState(false)
+  const [mfaSecret, setMfaSecret] = useState("")
+  const [mfaQrCode, setMfaQrCode] = useState("")
+  const [mfaFactorId, setMfaFactorId] = useState("")
+  const [mfaOtp, setMfaOtp] = useState("")
+  const [verifyingMfa, setVerifyingMfa] = useState(false)
+
+  // Identities state (OAuth providers)
+  const [identities, setIdentities] = useState<any[]>([])
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -61,8 +92,23 @@ export default function ProfilePage() {
           setBio(userProfile.bio || "")
           setAvatarUrl(userProfile.avatar_url || "")
         }
+
+        // Load security details
+        const supabase = createClient()
+        
+        // Load identities
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user && user.identities) {
+          setIdentities(user.identities)
+        }
+
+        // Load MFA factors
+        const { data: mfaData, error: mfaError } = await supabase.auth.mfa.listFactors()
+        if (!mfaError && mfaData) {
+          setMfaFactors(mfaData.all || [])
+        }
       } catch (err) {
-        console.error("Failed to load user profile", err)
+        console.error("Failed to load user profile & security details", err)
         toast.error("Failed to load profile details")
       } finally {
         setLoading(false)
@@ -71,6 +117,22 @@ export default function ProfilePage() {
 
     loadProfileData()
   }, [])
+
+  // Refreshes MFA factors list
+  async function refreshMfaFactors() {
+    setMfaLoading(true)
+    try {
+      const supabase = createClient()
+      const { data, error } = await supabase.auth.mfa.listFactors()
+      if (!error && data) {
+        setMfaFactors(data.all || [])
+      }
+    } catch (err) {
+      console.error("MFA list error:", err)
+    } finally {
+      setMfaLoading(false)
+    }
+  }
 
   // Save profile edits
   async function handleSaveProfile(e: React.FormEvent) {
@@ -94,6 +156,161 @@ export default function ProfilePage() {
       toast.error(err.message || "Failed to save profile")
     } finally {
       setSaving(false)
+    }
+  }
+
+  // Update email address
+  async function handleUpdateEmail(e: React.FormEvent) {
+    e.preventDefault()
+    if (!newEmail.trim()) {
+      toast.error("Please enter a valid email address")
+      return
+    }
+
+    setUpdatingEmail(true)
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.auth.updateUser({ email: newEmail.trim() })
+      if (error) {
+        toast.error(error.message)
+      } else {
+        toast.success("Verification link sent! Please confirm the change in your new email.")
+        setNewEmail("")
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update email")
+    } finally {
+      setUpdatingEmail(false)
+    }
+  }
+
+  // Update password
+  async function handleUpdatePassword(e: React.FormEvent) {
+    e.preventDefault()
+    if (newPassword.length < 6) {
+      toast.error("Password must be at least 6 characters.")
+      return
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error("Passwords do not match.")
+      return
+    }
+
+    setUpdatingPassword(true)
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.auth.updateUser({ password: newPassword })
+      if (error) {
+        toast.error(error.message)
+      } else {
+        toast.success("Password updated successfully")
+        setNewPassword("")
+        setConfirmPassword("")
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update password")
+    } finally {
+      setUpdatingPassword(false)
+    }
+  }
+
+  // Enroll MFA Factor
+  async function handleStartMfaEnroll() {
+    setMfaLoading(true)
+    try {
+      const supabase = createClient()
+      const { data, error } = await supabase.auth.mfa.enroll({
+        factorType: "totp",
+        issuer: "AnesthesiApp",
+        friendlyName: email
+      })
+
+      if (error) {
+        toast.error(error.message)
+      } else if (data) {
+        setMfaFactorId(data.id)
+        setMfaSecret(data.totp.secret)
+        setMfaQrCode(data.totp.qr_code)
+        setEnrollingMfa(true)
+      }
+    } catch (err: any) {
+      toast.error(err.message || "MFA enrollment failed")
+    } finally {
+      setMfaLoading(false)
+    }
+  }
+
+  // Verify and activate MFA factor
+  async function handleVerifyMfa(e: React.FormEvent) {
+    e.preventDefault()
+    if (mfaOtp.length < 6) {
+      toast.error("Please enter the 6-digit confirmation code")
+      return
+    }
+
+    setVerifyingMfa(true)
+    try {
+      const supabase = createClient()
+      
+      // Challenge the factor
+      const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
+        factorId: mfaFactorId
+      })
+
+      if (challengeError) {
+        toast.error(challengeError.message)
+        setVerifyingMfa(false)
+        return
+      }
+
+      // Verify the challenge
+      const { data: verifyData, error: verifyError } = await supabase.auth.mfa.verify({
+        factorId: mfaFactorId,
+        challengeId: challengeData.id,
+        code: mfaOtp.trim()
+      })
+
+      if (verifyError) {
+        toast.error(verifyError.message)
+      } else {
+        toast.success("MFA successfully enabled!")
+        setEnrollingMfa(false)
+        setMfaOtp("")
+        setMfaSecret("")
+        setMfaQrCode("")
+        setMfaFactorId("")
+        await refreshMfaFactors()
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to verify MFA OTP")
+    } finally {
+      setVerifyingMfa(false)
+    }
+  }
+
+  // Disable MFA Factor
+  async function handleDisableMfa(factorId: string) {
+    if (!confirm("Are you sure you want to disable Multi-Factor Authentication? This decreases account security.")) {
+      return
+    }
+
+    setMfaLoading(true)
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.auth.mfa.unenroll({
+        factorId
+      })
+
+      if (error) {
+        toast.error(error.message)
+      } else {
+        toast.success("MFA successfully disabled")
+        await refreshMfaFactors()
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to disable MFA")
+    } finally {
+      setMfaLoading(false)
     }
   }
 
@@ -161,199 +378,547 @@ export default function ProfilePage() {
         
         {/* Page Header */}
         <div className="border-b pb-5">
-          <h1 className="text-3xl font-extrabold tracking-tight text-foreground md:text-4xl">My Profile</h1>
+          <h1 className="text-3xl font-extrabold tracking-tight text-foreground md:text-4xl">Settings</h1>
           <p className="text-sm text-muted-foreground mt-1.5">
-            Manage your personal credentials, department info, and profile avatar.
+            Manage your personal profile details, security settings, and connected integrations.
           </p>
         </div>
 
-        {/* Profile Grid */}
-        <div className="grid gap-6 md:grid-cols-3">
-          
-          {/* Left Column: Profile Picture Card */}
-          <Card className="border border-border/80 shadow-xs h-fit md:col-span-1">
-            <CardHeader className="text-center pb-2">
-              <CardTitle className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Profile Photo</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col items-center gap-4 py-6">
-              
-              {/* Photo Area */}
-              <div className="relative group size-32 rounded-full overflow-hidden border-2 border-primary/20 shadow-xs bg-muted flex items-center justify-center">
-                {avatarUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={avatarUrl}
-                    alt={fullName || "User avatar"}
-                    className="size-full object-cover"
-                  />
-                ) : (
-                  <div className="text-3xl font-extrabold text-primary bg-primary/10 size-full flex items-center justify-center">
-                    {nameInitials}
-                  </div>
-                )}
+        {/* Tab Navigation */}
+        <div className="flex border-b border-border gap-6 text-sm font-semibold mb-2">
+          <button
+            type="button"
+            onClick={() => setActiveTab("profile")}
+            className={`pb-3 border-b-2 transition-colors cursor-pointer ${
+              activeTab === "profile"
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Profile Details
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("security")}
+            className={`pb-3 border-b-2 transition-colors cursor-pointer ${
+              activeTab === "security"
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Account Security
+          </button>
+        </div>
 
-                {/* Upload Overlay on Hover */}
-                <button
+        {activeTab === "profile" ? (
+          /* ================================================================= */
+          /* PROFILE DETAILS TAB                                               */
+          /* ================================================================= */
+          <div className="grid gap-6 md:grid-cols-3">
+            
+            {/* Left Column: Profile Picture Card */}
+            <Card className="border border-border/80 shadow-xs h-fit md:col-span-1">
+              <CardHeader className="text-center pb-2">
+                <CardTitle className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Profile Photo</CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-col items-center gap-4 py-6">
+                
+                {/* Photo Area */}
+                <div className="relative group size-32 rounded-full overflow-hidden border-2 border-primary/20 shadow-xs bg-muted flex items-center justify-center">
+                  {avatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={avatarUrl}
+                      alt={fullName || "User avatar"}
+                      className="size-full object-cover"
+                    />
+                  ) : (
+                    <div className="text-3xl font-extrabold text-primary bg-primary/10 size-full flex items-center justify-center">
+                      {nameInitials}
+                    </div>
+                  )}
+
+                  {/* Upload Overlay on Hover */}
+                  <button
+                    type="button"
+                    onClick={handleUploadClick}
+                    disabled={uploading}
+                    className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white text-[10px] font-bold transition-opacity cursor-pointer disabled:pointer-events-none"
+                  >
+                    <Camera className="h-5 w-5 mb-1 animate-pulse" />
+                    Update Photo
+                  </button>
+
+                  {/* Loading indicator */}
+                  {uploading && (
+                    <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
+                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Hidden file input */}
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  accept="image/*"
+                  className="hidden"
+                />
+
+                <div className="text-center">
+                  <h3 className="font-bold text-base truncate max-w-[200px]">{fullName || "Anesthesiologist"}</h3>
+                  <p className="text-xs text-muted-foreground font-medium truncate max-w-[200px]">{email}</p>
+                </div>
+
+                <Button
                   type="button"
+                  variant="outline"
+                  size="sm"
                   onClick={handleUploadClick}
                   disabled={uploading}
-                  className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white text-[10px] font-bold transition-opacity cursor-pointer disabled:pointer-events-none"
+                  className="w-full gap-2 text-xs font-bold"
                 >
-                  <Camera className="h-5 w-5 mb-1 animate-pulse" />
-                  Update Photo
-                </button>
+                  <Upload className="h-3.5 w-3.5" /> Upload Image
+                </Button>
+                <span className="text-[10px] text-muted-foreground block text-center">
+                  JPG, PNG or WEBP. Max 2MB.
+                </span>
+              </CardContent>
+            </Card>
 
-                {/* Loading indicator */}
-                {uploading && (
-                  <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
-                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            {/* Right Column: Details Form Card */}
+            <Card className="border border-border/80 shadow-xs md:col-span-2">
+              <CardHeader>
+                <CardTitle className="text-lg font-bold flex items-center gap-2">
+                  <User className="h-5 w-5 text-primary" />
+                  Profile Credentials
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Fill in your clinical details to personalize your contributions.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSaveProfile} className="space-y-4">
+                  
+                  {/* Email Field (ReadOnly in Profile tab) */}
+                  <div className="grid gap-2">
+                    <Label htmlFor="email" className="flex items-center gap-1.5 font-bold text-xs">
+                      <Mail className="h-3.5 w-3.5 text-muted-foreground" /> Email Address
+                    </Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={email}
+                      disabled
+                      className="bg-muted text-muted-foreground text-xs font-semibold"
+                    />
+                    <span className="text-[10px] text-muted-foreground">
+                      Email address can be changed under the Account Security tab.
+                    </span>
                   </div>
-                )}
-              </div>
 
-              {/* Hidden file input */}
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileChange}
-                accept="image/*"
-                className="hidden"
-              />
+                  {/* Full Name */}
+                  <div className="grid gap-2">
+                    <Label htmlFor="fullName" className="flex items-center gap-1.5 font-bold text-xs">
+                      <User className="h-3.5 w-3.5 text-muted-foreground" /> Full Name
+                    </Label>
+                    <Input
+                      id="fullName"
+                      placeholder="e.g. Dr. Jane Doe, Sp.An"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      className="text-xs font-medium"
+                      required
+                    />
+                  </div>
 
-              <div className="text-center">
-                <h3 className="font-bold text-base truncate max-w-[200px]">{fullName || "Anesthesiologist"}</h3>
-                <p className="text-xs text-muted-foreground font-medium truncate max-w-[200px]">{email}</p>
-              </div>
+                  {/* Title / Role */}
+                  <div className="grid gap-2">
+                    <Label htmlFor="titleRole" className="flex items-center gap-1.5 font-bold text-xs">
+                      <Briefcase className="h-3.5 w-3.5 text-muted-foreground" /> Medical Title / Role
+                    </Label>
+                    <Input
+                      id="titleRole"
+                      placeholder="e.g. Senior Anesthesiology Resident"
+                      value={titleRole}
+                      onChange={(e) => setTitleRole(e.target.value)}
+                      className="text-xs font-medium"
+                    />
+                  </div>
 
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleUploadClick}
-                disabled={uploading}
-                className="w-full gap-2 text-xs font-bold"
-              >
-                <Upload className="h-3.5 w-3.5" /> Upload Image
-              </Button>
-              <span className="text-[10px] text-muted-foreground block text-center">
-                JPG, PNG or WEBP. Max 2MB.
-              </span>
-            </CardContent>
-          </Card>
+                  {/* Department */}
+                  <div className="grid gap-2">
+                    <Label htmlFor="department" className="flex items-center gap-1.5 font-bold text-xs">
+                      <MapPin className="h-3.5 w-3.5 text-muted-foreground" /> Clinical Department
+                    </Label>
+                    <Input
+                      id="department"
+                      placeholder="e.g. Department of Anesthesiology and Intensive Care"
+                      value={department}
+                      onChange={(e) => setDepartment(e.target.value)}
+                      className="text-xs font-medium"
+                    />
+                  </div>
 
-          {/* Right Column: Details Form Card */}
-          <Card className="border border-border/80 shadow-xs md:col-span-2">
-            <CardHeader>
-              <CardTitle className="text-lg font-bold flex items-center gap-2">
-                <User className="h-5 w-5 text-primary" />
-                Profile Credentials
-              </CardTitle>
-              <CardDescription className="text-xs">
-                Fill in your clinical details to personalize your contributions.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSaveProfile} className="space-y-4">
-                
-                {/* Email Field (Disabled) */}
-                <div className="grid gap-2">
-                  <Label htmlFor="email" className="flex items-center gap-1.5 font-bold text-xs">
-                    <Mail className="h-3.5 w-3.5 text-muted-foreground" /> Email Address
-                  </Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={email}
-                    disabled
-                    className="bg-muted text-muted-foreground text-xs font-semibold"
-                  />
-                  <span className="text-[10px] text-muted-foreground">
-                    Email address is tied to your credentials and cannot be changed.
-                  </span>
-                </div>
+                  {/* Biography */}
+                  <div className="grid gap-2">
+                    <Label htmlFor="bio" className="flex items-center gap-1.5 font-bold text-xs">
+                      <FileText className="h-3.5 w-3.5 text-muted-foreground" /> Professional Biography
+                    </Label>
+                    <Textarea
+                      id="bio"
+                      placeholder="Describe your clinical focus, research interests, or hospital affiliation..."
+                      rows={4}
+                      value={bio}
+                      onChange={(e) => setBio(e.target.value)}
+                      className="text-xs font-medium resize-none leading-relaxed"
+                    />
+                  </div>
 
-                {/* Full Name */}
-                <div className="grid gap-2">
-                  <Label htmlFor="fullName" className="flex items-center gap-1.5 font-bold text-xs">
-                    <User className="h-3.5 w-3.5 text-muted-foreground" /> Full Name
-                  </Label>
-                  <Input
-                    id="fullName"
-                    placeholder="e.g. Dr. Jane Doe, Sp.An"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    className="text-xs font-medium"
-                    required
-                  />
-                </div>
+                  {/* Save Button */}
+                  <div className="border-t pt-4 flex justify-end">
+                    <Button
+                      type="submit"
+                      disabled={saving}
+                      className="gap-2 bg-primary font-bold text-xs shadow-xs min-w-[120px]"
+                    >
+                      {saving ? (
+                        <>
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-3.5 w-3.5" /> Save Changes
+                        </>
+                      )}
+                    </Button>
+                  </div>
 
-                {/* Title / Role */}
-                <div className="grid gap-2">
-                  <Label htmlFor="titleRole" className="flex items-center gap-1.5 font-bold text-xs">
-                    <Briefcase className="h-3.5 w-3.5 text-muted-foreground" /> Medical Title / Role
-                  </Label>
-                  <Input
-                    id="titleRole"
-                    placeholder="e.g. Senior Anesthesiology Resident"
-                    value={titleRole}
-                    onChange={(e) => setTitleRole(e.target.value)}
-                    className="text-xs font-medium"
-                  />
-                </div>
+                </form>
+              </CardContent>
+            </Card>
 
-                {/* Department */}
-                <div className="grid gap-2">
-                  <Label htmlFor="department" className="flex items-center gap-1.5 font-bold text-xs">
-                    <MapPin className="h-3.5 w-3.5 text-muted-foreground" /> Clinical Department
-                  </Label>
-                  <Input
-                    id="department"
-                    placeholder="e.g. Department of Anesthesiology and Intensive Care"
-                    value={department}
-                    onChange={(e) => setDepartment(e.target.value)}
-                    className="text-xs font-medium"
-                  />
-                </div>
+          </div>
+        ) : (
+          /* ================================================================= */
+          /* ACCOUNT SECURITY TAB                                              */
+          /* ================================================================= */
+          <div className="grid gap-6 md:grid-cols-3">
+            
+            {/* Left Side: Overview & Linked Accounts */}
+            <div className="flex flex-col gap-6 md:col-span-1">
+              
+              {/* Security Overview */}
+              <Card className="border border-border/80 shadow-xs">
+                <CardHeader>
+                  <CardTitle className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Security Overview</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600">
+                      <ShieldCheck className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-xs text-foreground">Verified Email</h4>
+                      <p className="text-[10px] text-muted-foreground font-medium">Your login identity is confirmed.</p>
+                    </div>
+                  </div>
 
-                {/* Biography */}
-                <div className="grid gap-2">
-                  <Label htmlFor="bio" className="flex items-center gap-1.5 font-bold text-xs">
-                    <FileText className="h-3.5 w-3.5 text-muted-foreground" /> Professional Biography
-                  </Label>
-                  <Textarea
-                    id="bio"
-                    placeholder="Describe your clinical focus, research interests, or hospital affiliation..."
-                    rows={4}
-                    value={bio}
-                    onChange={(e) => setBio(e.target.value)}
-                    className="text-xs font-medium resize-none leading-relaxed"
-                  />
-                </div>
+                  <div className="flex items-center gap-3">
+                    <div className={`flex h-10 w-10 items-center justify-center rounded-full ${mfaFactors.length > 0 ? "bg-emerald-500/10 text-emerald-600" : "bg-amber-500/10 text-amber-600"}`}>
+                      <Laptop className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-xs text-foreground">Multi-Factor Auth</h4>
+                      <p className="text-[10px] text-muted-foreground font-medium">
+                        {mfaFactors.length > 0 ? "2FA Protection is active" : "Account is vulnerable (2FA disabled)"}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
-                {/* Save Button */}
-                <div className="border-t pt-4 flex justify-end">
-                  <Button
-                    type="submit"
-                    disabled={saving}
-                    className="gap-2 bg-primary font-bold text-xs shadow-xs min-w-[120px]"
-                  >
-                    {saving ? (
-                      <>
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" /> Saving...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="h-3.5 w-3.5" /> Save Changes
-                      </>
-                    )}
-                  </Button>
-                </div>
+              {/* Linked OAuth Accounts */}
+              <Card className="border border-border/80 shadow-xs">
+                <CardHeader>
+                  <CardTitle className="text-sm font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                    <Link2 className="h-4 w-4" /> Connected Accounts
+                  </CardTitle>
+                  <CardDescription className="text-[10px]">
+                    Social accounts connected to your profile.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {identities.length > 0 ? (
+                    identities.map((identity) => (
+                      <div key={identity.id} className="flex items-center justify-between border-b pb-2 last:border-b-0 last:pb-0">
+                        <div className="flex items-center gap-2">
+                          {identity.provider === "google" ? (
+                            <svg className="h-4 w-4 text-foreground" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512">
+                              <path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"></path>
+                            </svg>
+                          ) : (
+                            <Mail className="h-4 w-4 text-muted-foreground" />
+                          )}
+                          <span className="text-xs font-bold text-foreground capitalize">{identity.provider}</span>
+                        </div>
+                        <span className="text-[10px] bg-emerald-500/10 text-emerald-600 rounded-full px-2 py-0.5 font-bold">Connected</span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-[10px] text-muted-foreground">No social connections found.</p>
+                  )}
+                </CardContent>
+              </Card>
 
-              </form>
-            </CardContent>
-          </Card>
+            </div>
 
-        </div>
+            {/* Right Side: Security Management Forms */}
+            <div className="flex flex-col gap-6 md:col-span-2">
+              
+              {/* Change Email Form */}
+              <Card className="border border-border/80 shadow-xs">
+                <CardHeader>
+                  <CardTitle className="text-base font-bold flex items-center gap-1.5">
+                    <Mail className="h-4 w-4 text-primary" /> Update Email Address
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    Initiates a secure request to update your registered email identity.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleUpdateEmail} className="space-y-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="currentEmail" className="text-xs font-bold text-muted-foreground">Current Email Address</Label>
+                      <Input
+                        id="currentEmail"
+                        type="email"
+                        value={email}
+                        disabled
+                        className="bg-muted text-muted-foreground text-xs font-medium"
+                      />
+                    </div>
+                    
+                    <div className="grid gap-2">
+                      <Label htmlFor="newEmail" className="text-xs font-bold text-foreground">New Email Address</Label>
+                      <Input
+                        id="newEmail"
+                        type="email"
+                        placeholder="new.email@hospital.org"
+                        value={newEmail}
+                        onChange={(e) => setNewEmail(e.target.value)}
+                        className="text-xs font-medium"
+                        required
+                        disabled={updatingEmail}
+                      />
+                    </div>
+
+                    <div className="flex justify-end pt-2 border-t">
+                      <Button
+                        type="submit"
+                        disabled={updatingEmail}
+                        className="bg-primary font-bold text-xs shadow-xs min-w-[120px]"
+                      >
+                        {updatingEmail ? (
+                          <>
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" /> Verifying...
+                          </>
+                        ) : (
+                          "Request Email Update"
+                        )}
+                      </Button>
+                    </div>
+                  </form>
+                </CardContent>
+              </Card>
+
+              {/* Change Password Form */}
+              <Card className="border border-border/80 shadow-xs">
+                <CardHeader>
+                  <CardTitle className="text-base font-bold flex items-center gap-1.5">
+                    <KeyRound className="h-4 w-4 text-primary" /> Update Passphrase
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    Choose a strong, unique password to secure your case logger database.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleUpdatePassword} className="space-y-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="newPassword" className="text-xs font-bold text-foreground">New Password</Label>
+                      <Input
+                        id="newPassword"
+                        type="password"
+                        placeholder="••••••••"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        className="text-xs font-medium"
+                        required
+                        disabled={updatingPassword}
+                      />
+                    </div>
+
+                    <div className="grid gap-2">
+                      <Label htmlFor="confirmPassword" className="text-xs font-bold text-foreground">Confirm New Password</Label>
+                      <Input
+                        id="confirmPassword"
+                        type="password"
+                        placeholder="••••••••"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        className="text-xs font-medium"
+                        required
+                        disabled={updatingPassword}
+                      />
+                    </div>
+
+                    <div className="flex justify-end pt-2 border-t">
+                      <Button
+                        type="submit"
+                        disabled={updatingPassword}
+                        className="bg-primary font-bold text-xs shadow-xs min-w-[120px]"
+                      >
+                        {updatingPassword ? (
+                          <>
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" /> Saving...
+                          </>
+                        ) : (
+                          "Change Password"
+                        )}
+                      </Button>
+                    </div>
+                  </form>
+                </CardContent>
+              </Card>
+
+              {/* Multi-Factor Authentication (MFA) */}
+              <Card className="border border-border/80 shadow-xs">
+                <CardHeader>
+                  <CardTitle className="text-base font-bold flex items-center gap-1.5">
+                    <ShieldCheck className="h-5 w-5 text-primary" /> Two-Factor Authentication (2FA)
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    Verify logins with a temporary 6-digit passcode from an authenticator app (like Google Authenticator).
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {mfaLoading ? (
+                    <div className="flex justify-center py-4">
+                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    </div>
+                  ) : enrollingMfa ? (
+                    /* MFA Enrollment Wizard */
+                    <form onSubmit={handleVerifyMfa} className="space-y-4 p-4 rounded-lg border bg-muted/20">
+                      <div className="flex items-start gap-4">
+                        <div className="flex flex-col gap-2 flex-1">
+                          <h4 className="font-bold text-xs">1. Link Authenticator App</h4>
+                          <p className="text-[10px] text-muted-foreground leading-normal">
+                            Scan this QR code with your authenticator app, or manually copy-paste the secret key below:
+                          </p>
+                          <div className="p-2 border rounded bg-background w-fit select-all font-mono text-[10px] break-all">
+                            {mfaSecret}
+                          </div>
+                        </div>
+                        {/* Display SVG QR code if present */}
+                        {mfaQrCode && (
+                          <div 
+                            className="bg-white p-2 border rounded shadow-xs w-28 h-28 flex items-center justify-center"
+                            dangerouslySetInnerHTML={{ __html: mfaQrCode }}
+                          />
+                        )}
+                      </div>
+
+                      <div className="border-t pt-4">
+                        <h4 className="font-bold text-xs mb-2">2. Enter verification code</h4>
+                        <div className="flex flex-col gap-2">
+                          <Label htmlFor="mfaOtp" className="text-[10px] font-bold text-muted-foreground uppercase">6-digit Code</Label>
+                          <div className="flex gap-3">
+                            <Input
+                              id="mfaOtp"
+                              type="text"
+                              maxLength={6}
+                              placeholder="123456"
+                              value={mfaOtp}
+                              onChange={(e) => setMfaOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                              className="text-center font-mono text-lg tracking-wider max-w-[150px]"
+                              disabled={verifyingMfa}
+                              required
+                            />
+                            <Button
+                              type="submit"
+                              disabled={verifyingMfa}
+                              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs"
+                            >
+                              {verifyingMfa ? <Loader2 className="h-4 w-4 animate-spin" /> : "Verify & Enable"}
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              onClick={() => setEnrollingMfa(false)}
+                              disabled={verifyingMfa}
+                              className="text-xs"
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </form>
+                  ) : mfaFactors.length > 0 ? (
+                    /* MFA Active State */
+                    <div className="space-y-4">
+                      {mfaFactors.map((factor) => (
+                        <div key={factor.id} className="flex items-center justify-between p-4 border border-emerald-200 bg-emerald-500/5 rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600">
+                              <ShieldCheck className="h-6 w-6" />
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-xs text-foreground">TOTP Authenticator Active</h4>
+                              <p className="text-[10px] text-muted-foreground">Added on {new Date(factor.created_at).toLocaleDateString()}</p>
+                            </div>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDisableMfa(factor.id)}
+                            className="font-bold text-xs"
+                          >
+                            Disable 2FA
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    /* MFA Disabled State */
+                    <div className="flex flex-col gap-4 items-center justify-center py-6 text-center p-4 border border-dashed rounded-lg bg-muted/20">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/10 text-amber-600">
+                        <ShieldAlert className="h-6 w-6 animate-pulse" />
+                      </div>
+                      <div className="space-y-1">
+                        <h4 className="font-bold text-xs text-foreground">MFA is Currently Disabled</h4>
+                        <p className="text-[10px] text-muted-foreground leading-normal max-w-sm">
+                          Protect your patients' private clinical case files with a secondary dynamic authentication code.
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        onClick={handleStartMfaEnroll}
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs"
+                      >
+                        Set up Two-Factor Authentication
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+            </div>
+
+          </div>
+        )}
 
       </div>
     </AppShell>
