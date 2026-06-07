@@ -10,6 +10,17 @@ import { Empty, EmptyHeader, EmptyTitle, EmptyDescription, EmptyContent } from "
 import { deleteCase, listCases } from "@/lib/storage"
 import type { StoredCase } from "@/lib/schema"
 import { ClipboardList, Plus, Trash2, Calendar, User as UserIcon, MapPin, Loader2 } from "lucide-react"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 export default function DashboardPage() {
   const [cases, setCases] = useState<StoredCase[] | null>(null)
@@ -39,7 +50,6 @@ export default function DashboardPage() {
   }, [cases])
 
   async function handleDelete(id: string) {
-    if (!confirm("Delete this case? This cannot be undone.")) return
     try {
       await deleteCase(id)
       toast.success("Case deleted")
@@ -159,7 +169,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  <div className="mt-auto flex items-center justify-between border-t border-border pt-3">
+                   <div className="mt-auto flex items-center justify-between border-t border-border pt-3">
                     {isProcessing ? (
                       <Button disabled variant="ghost" size="sm" className="text-amber-500 font-medium">
                         Processing...
@@ -173,15 +183,37 @@ export default function DashboardPage() {
                         <Link href={`/cases/${c.id}`}>View</Link>
                       </Button>
                     )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => handleDelete(c.id)}
-                    >
-                      <Trash2 className="mr-1 h-3.5 w-3.5" />
-                      Delete
-                    </Button>
+                    
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="mr-1 h-3.5 w-3.5" />
+                          Delete
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete the anesthesia case
+                            for <span className="font-semibold text-foreground">{isProcessing ? "this case" : isFailed ? "this failed case" : c.patient_name}</span>.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleDelete(c.id)}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </Card>
               )
