@@ -150,7 +150,7 @@ export default function ResearchLibraryPage() {
         </div>
 
         {/* Search, Filter and Sort Section */}
-        <Card className="border border-border shadow-xs bg-card p-4">
+        <Card className="border border-border shadow-xs bg-card p-4 min-w-0">
           <div className="flex flex-col gap-4">
             {/* Search and Sort Row */}
             <div className="flex flex-col sm:flex-row gap-3">
@@ -276,8 +276,8 @@ export default function ResearchLibraryPage() {
               else if (c.post_op_room === "Low Care") roomBadgeStyle = "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
 
               return (
-                <Card key={c.id} className="flex flex-col border border-border bg-card shadow-xs hover:border-primary/40 transition-colors p-5 relative group">
-                  <div className="flex justify-between items-start gap-2 mb-3">
+                <Card key={c.id} className="flex min-w-0 flex-col border border-border bg-card shadow-xs hover:border-primary/40 transition-colors p-5 relative group">
+                  <div className="flex min-w-0 justify-between items-start gap-2 mb-3">
                     <div className="min-w-0">
                       <h3 className="font-bold text-sm truncate pr-2 group-hover:text-primary transition-colors">
                         {isOwner ? c.patient_name : "Patient [Anonymized]"}
@@ -298,7 +298,7 @@ export default function ResearchLibraryPage() {
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-2 text-xs text-muted-foreground flex-1 mb-4 leading-normal">
+                  <div className="flex min-w-0 flex-col gap-2 text-xs text-muted-foreground flex-1 mb-4 leading-normal">
                     <div className="flex gap-2 items-start min-w-0">
                       <Stethoscope className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                       <div className="min-w-0">
