@@ -17,7 +17,7 @@ export async function signUp(
   const redirectTo =
     (typeof window !== "undefined"
       ? process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ??
-        `${window.location.origin}/auth/callback`
+        `${window.location.origin}/auth/callback?next=/welcome`
       : undefined)
 
   const { data, error } = await supabase.auth.signUp({
