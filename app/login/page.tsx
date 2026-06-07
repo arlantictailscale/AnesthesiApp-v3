@@ -67,6 +67,7 @@ export default function LoginPage() {
       const supabase = createClient()
       const { data, error } = await supabase.auth.signInWithPasskey()
       if (error) {
+        console.error("Passkey sign-in failed:", error)
         toast.error(error.message || "Failed to sign in with passkey")
         setLoading(false)
         return
@@ -84,6 +85,7 @@ export default function LoginPage() {
       router.push("/dashboard")
       router.refresh()
     } catch (err: any) {
+      console.error("Passkey sign-in caught error:", err)
       toast.error(err.message || "An error occurred during passkey sign-in")
     } finally {
       setLoading(false)

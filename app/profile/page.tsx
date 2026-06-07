@@ -255,6 +255,7 @@ export default function ProfilePage() {
       const supabase = createClient()
       const { data, error } = await supabase.auth.registerPasskey()
       if (error) {
+        console.error("Passkey registration failed:", error)
         toast.error(error.message || "Failed to register passkey")
       } else if (data) {
         toast.success("Passkey registered successfully!")
@@ -267,6 +268,7 @@ export default function ProfilePage() {
         await loadPasskeys()
       }
     } catch (err: any) {
+      console.error("Passkey registration caught error:", err)
       toast.error(err.message || "An error occurred during passkey registration")
     } finally {
       setRegisteringPasskey(false)

@@ -2,6 +2,20 @@ import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
 
 export async function updateSession(request: NextRequest) {
+  // Enforce HTTPS in production to guarantee a secure context for WebAuthn/Passkeys
+  const xForwardedProto = request.headers.get("x-forwarded-proto")
+  const host = request.headers.get("host")
+  if (
+    process.env.NODE_ENV === "production" &&
+    xForwardedProto === "http" &&
+    host &&
+    !host.includes("localhost")
+  ) {
+    const secureUrl = new URL(request.url)
+    secureUrl.protocol = "https:"
+    return NextResponse.redirect(secureUrl.toString(), 301)
+  }
+
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
