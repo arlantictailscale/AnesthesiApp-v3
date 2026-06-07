@@ -25,6 +25,7 @@ import {
   getSession,
   loadDraft,
   saveDraft,
+  updateCase,
 } from "@/lib/storage"
 import { Stepper } from "./stepper"
 import { AiPopulateDialog } from "./ai-populate-dialog"
@@ -154,7 +155,7 @@ const DEFAULT_VALUES: Partial<CaseData> = {
   is_shared: true,
 }
 
-export function CaseWizard() {
+export function CaseWizard({ initialData, caseId }: { initialData?: CaseData; caseId?: string } = {}) {
   const router = useRouter()
   const [step, setStep] = useState(0)
   const [submitting, setSubmitting] = useState(false)
@@ -163,18 +164,22 @@ export function CaseWizard() {
   const methods = useForm<CaseData>({
     resolver: zodResolver(caseSchema) as never,
     mode: "onTouched",
-    defaultValues: DEFAULT_VALUES as CaseData,
+    defaultValues: initialData ?? (DEFAULT_VALUES as CaseData),
   })
 
-  // Load draft on mount
+  // Load draft on mount (only for new cases)
   useEffect(() => {
-    const draft = loadDraft()
-    if (draft) {
-      methods.reset({ ...(DEFAULT_VALUES as CaseData), ...draft })
-      toast.info("Draft restored")
+    if (!caseId) {
+      const draft = loadDraft()
+      if (draft) {
+        methods.reset({ ...(DEFAULT_VALUES as CaseData), ...draft })
+        toast.info("Draft restored")
+      }
+    } else if (initialData) {
+      methods.reset(initialData)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [caseId, initialData])
 
   // Auto-calc BMI
   const weight = useWatch({ control: methods.control, name: "weight_kg" })
@@ -236,10 +241,16 @@ export function CaseWizard() {
     }
     setSubmitting(true)
     try {
-      const rec = await createCase(session.userId, parsed.data)
-      clearDraft()
-      toast.success("Case saved")
-      router.replace(`/cases/${rec.id}`)
+      if (caseId) {
+        await updateCase(caseId, parsed.data)
+        toast.success("Case updated")
+        router.replace(`/cases/${caseId}`)
+      } else {
+        const rec = await createCase(session.userId, parsed.data)
+        clearDraft()
+        toast.success("Case saved")
+        router.replace(`/cases/${rec.id}`)
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to save case")
     } finally {
@@ -254,16 +265,23 @@ export function CaseWizard() {
       <div className="flex flex-col gap-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-xl font-semibold tracking-tight">New case</h1>
+            <h1 className="text-xl font-semibold tracking-tight">
+              {caseId ? "Edit case" : "New case"}
+            </h1>
             <p className="text-sm text-muted-foreground">
-              Fill the 7 steps manually, or let AI pre-fill from a free-text description.
+              {caseId 
+                ? "Update clinical parameters and verify case details." 
+                : "Fill the 7 steps manually, or let AI pre-fill from a free-text description."
+              }
             </p>
           </div>
-          <AiPopulateDialog
-            onPopulated={(count) => {
-              if (count > 0) setAiPopulated(true)
-            }}
-          />
+          {!caseId && (
+            <AiPopulateDialog
+              onPopulated={(count) => {
+                if (count > 0) setAiPopulated(true)
+              }}
+            />
+          )}
         </div>
 
         <Card className="p-4 md:p-6">
@@ -292,9 +310,20 @@ export function CaseWizard() {
               <ArrowLeft className="h-4 w-4" /> Back
             </Button>
             <div className="flex items-center gap-2">
-              <Button type="button" variant="outline" onClick={handleSaveDraft} className="gap-1">
-                <Save className="h-4 w-4" /> Save draft
-              </Button>
+              {caseId ? (
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => router.push(`/cases/${caseId}`)} 
+                  disabled={submitting}
+                >
+                  Cancel
+                </Button>
+              ) : (
+                <Button type="button" variant="outline" onClick={handleSaveDraft} className="gap-1">
+                  <Save className="h-4 w-4" /> Save draft
+                </Button>
+              )}
               {!isLastStep && (
                 <Button type="button" variant="outline" onClick={goNext} className="gap-1">
                   Next <ArrowRight className="h-4 w-4" />
@@ -308,7 +337,10 @@ export function CaseWizard() {
                   className="gap-1"
                 >
                   <Check className="h-4 w-4" />
-                  {submitting ? "Saving…" : "Submit case"}
+                  {submitting 
+                    ? (caseId ? "Saving changes…" : "Saving…") 
+                    : (caseId ? "Save changes" : "Submit case")
+                  }
                 </Button>
               )}
             </div>

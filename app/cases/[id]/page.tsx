@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
 import { getCase, getSession, updateCase } from "@/lib/storage"
 import type { StoredCase } from "@/lib/schema"
-import { ArrowLeft, FileText, Globe, Lock, Loader2 } from "lucide-react"
+import { ArrowLeft, FileText, Globe, Lock, Loader2, Pencil } from "lucide-react"
 
 type Section = {
   title: string
@@ -282,27 +282,34 @@ export default function CaseDetailPage() {
             </div>
           </div>
 
-          {/* Share option toggle for the owner */}
+          {/* Action buttons for the owner */}
           {isOwner && (
-            <Button
-              variant={isShared ? "outline" : "default"}
-              size="sm"
-              disabled={sharingLoading}
-              onClick={handleToggleSharing}
-              className="gap-2 shrink-0 font-semibold"
-            >
-              {sharingLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : isShared ? (
-                <>
-                  <Lock className="h-4 w-4" /> Make Case Private
-                </>
-              ) : (
-                <>
-                  <Globe className="h-4 w-4" /> Share for Research
-                </>
-              )}
-            </Button>
+            <div className="flex items-center gap-2 shrink-0">
+              <Button asChild variant="outline" size="sm" className="gap-2 font-semibold">
+                <Link href={`/cases/${c.id}/edit`}>
+                  <Pencil className="h-4 w-4" /> Edit Case
+                </Link>
+              </Button>
+              <Button
+                variant={isShared ? "outline" : "default"}
+                size="sm"
+                disabled={sharingLoading}
+                onClick={handleToggleSharing}
+                className="gap-2 font-semibold"
+              >
+                {sharingLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : isShared ? (
+                  <>
+                    <Lock className="h-4 w-4" /> Make Case Private
+                  </>
+                ) : (
+                  <>
+                    <Globe className="h-4 w-4" /> Share for Research
+                  </>
+                )}
+              </Button>
+            </div>
           )}
         </div>
 
