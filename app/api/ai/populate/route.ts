@@ -89,48 +89,139 @@ Rules:
 - **List items**: For fields that contain multiple items or bullet points (such as "allergy", "medication", "past_illness", "assessment", or "planning"), separate the items using semicolons with spaces (" ; "). For example: "ASA II ; G2P1001Ab000 ; Anemia" or "Informed consent ; IV line 18G ; IVFD RL 100cc/jam ; Puasa 6 jam".
 
 EXAMPLE INPUT:
-"Pasien wanita, Ny. Sarah, 34 tahun, MRN 98234, rencana operasi laparascopy cholecystectomy tgl 2026-06-10 di OK 2. BB 60kg, TB 155cm. Riwayat HT, minum amlodipine. Puasa 6 jam. Alergi parasetamol. Airway: Mallampati 1, buka mulut >3cm. Lab: Hb 12.5, lainnya DBN. Chest X-Ray normal. Plan GA, induksi propofol 120mg, maintenance sevofluran, analgetik fentanyl 100mcg. Post-op: Low Care."
+"Assalamualaikum warahmatullahi wabarakatuh dokter, mohon izin mengonsultasikan pasien lantai 5 OK Obgyn, Jumat, 9 Mei 2025, sbb:
+
+*Identitas*
+Ny. Supiyah / P / 49th / 12026701 / Ranukumbolo C2
+
+*Diagnosis*
+Mioma Uteri Submukosa
+
+*Tindakan*
+Total Laparoscopic Hysterectomy
+
+BB = 40 kg
+TB = 147 cm
+BMI = 18,5
+
+*Subyektif :*
+A :  (-)
+M : (-)
+P : HT (+) Amlodipine 10 mg, DM (-), Asma (-), riwayat penyakit jantung (-), riwayat CVA (-) riwayat operasi (-) 
+L : direncanakan puasa 6 jam makanan padat, 2 jam air putih preop
+E : pasien mengeluh setiap mens berdarah banyak sudah sejak 3 bulan yll, benjolan (-), dikatakan ada miom, rencana histerektomi
+Demam (-) batuk (-) pilek (-) sesak (-) ngongsrong
+
+*Obyektif :*
+B1. Airway paten, nafas spontan, BM 3 jari, mallampati 2, gigi palsu (-), jarak TMD 7 cm, RR 18 x/mnt, SpO2 96% RA, vesikuler +/+, rhonki -/-, wheezing -/-, gerak leher flexi (+) ekstensi (+) bebas
+B2. AHKM (+), CRT < 2 detik, TD 139/88 mmHg, N 69 x/menit, reguler, kuat angkat (+), S1-S2 tunggal, murmur (-), gallop (-), T 36,6
+B3. GCS 456, lateralisasi (-)
+B4. BAK (+) spontan 
+B5. BU (+) N, distended abdomen (-) massa (-)
+B6. Edema (-/-), sianosis (-/-)
+
+*Penunjang :* 
+*Laboratorium 8/5/25*
+SE 138/3,86/102
+DL 12,8/8,540/40,20/180,000
+PPT 10,40/12,0/1,00
+APTT 28,30/25,3
+OT/PT 24/16
+Albumin 4,24
+GDS 156
+Ur/Cr 26,4/0,68
+
+*CXR 8/5/25*
+Cor dan pulmo dalam batas normal
+
+*EKG 8/5/25*
+Sinus rhythm 70x/min
+
+*Assesment*
+ASA 2
+Susp. Malignancy dt myoma uteri
+HT stg 1 on treatment (TD 139/88)
+
+*Planning*
+1. Informed consent
+2. Pasang IV line 1 jalur No. 18G
+3. IVFD RL 80cc/jam selama puasa
+4. Puasa minimal 6 jam makanan padat, 2 jam air putih preop
+5. Premedikasi : Metoclopramide 10mg, Ranitidine 50 mg IV (1 jam pre op)
+6. Regulasi TD, Amlodipine malam 10mg tetap diminum, cek TD pagi target TDS 110-180, TDD 70-110
+7. Sedia darah 1 PRC
+8. Post op ke ruangan
+
+*Management Anestesi :*
+Izin kami kerjakan dengan GA Intubasi
+
+Regimen
+Midazolam 2 mg
+Fentanyl 100 mcg 
+Propofol 80 mg
+Atracurium 20 mg 
+
+Maintenance Isoflurane
+
+Analgesia preop : Ketorolac 30 mg 
+Analgesia durante op : fentanyl Intermitten
+Analgetik post op : Ketorolac 3x30 mg IV + Paracetamol 3x500mg"
 
 EXAMPLE OUTPUT:
 {
-  "procedure_date": "2026-06-10",
-  "patient_name": "Ny. Sarah",
+  "procedure_date": "2025-05-09",
+  "patient_name": "Ny. Supiyah",
   "sex": "Female",
-  "age": 34,
-  "medical_record_number": "98234",
-  "room": "OK 2",
-  "weight_kg": 60,
-  "height_cm": 155,
-  "diagnosis": "Cholecystolithiasis",
-  "procedure_intervention": "Laparoscopic Cholecystectomy",
-  "allergy": "Parasetamol",
-  "medication": "Amlodipine",
-  "past_illness": "Hipertensi",
-  "last_meal": "Puasa 6 jam",
-  "event": "",
-  "b1_breathing": "Airway bebas ; Mallampati 1 ; Buka mulut >3cm",
-  "b2_blood": "",
-  "b3_brain": "",
-  "b4_bladder": "",
-  "b5_bowel": "",
-  "b6_body_temp": "",
+  "age": 49,
+  "medical_record_number": "12026701",
+  "room": "Ranukumbolo C2",
+  "weight_kg": 40,
+  "height_cm": 147,
+  "diagnosis": "Mioma Uteri Submukosa",
+  "procedure_intervention": "Total Laparoscopic Hysterectomy",
+  "allergy": "",
+  "medication": "Amlodipine 10 mg",
+  "past_illness": "HT (+)",
+  "last_meal": "direncanakan puasa 6 jam makanan padat, 2 jam air putih preop",
+  "event": "pasien mengeluh setiap mens berdarah banyak sudah sejak 3 bulan yll, benjolan (-), dikatakan ada miom, rencana histerektomi",
+  "b1_breathing": "Airway paten ; nafas spontan ; BM 3 jari ; mallampati 2 ; gigi palsu (-) ; jarak TMD 7 cm ; RR 18 x/mnt ; SpO2 96% RA ; vesikuler +/+ ; rhonki -/- ; wheezing -/- ; gerak leher flexi (+) ekstensi (+) bebas",
+  "b2_blood": "AHKM (+) ; CRT < 2 detik ; TD 139/88 mmHg ; N 69 x/menit ; reguler ; kuat angkat (+) ; S1-S2 tunggal ; murmur (-) ; gallop (-) ; T 36,6",
+  "b3_brain": "GCS 15 (456) ; lateralisasi (-)",
+  "b4_bladder": "BAK (+) spontan",
+  "b5_bowel": "BU (+) N ; distended abdomen (-) ; massa (-)",
+  "b6_body_temp": "Edema (-/-) ; sianosis (-/-)",
   "others": "",
-  "inv_laboratory": { "enabled": true, "result": "Hb 12.5 ; Lainnya DBN" },
-  "inv_xray": { "enabled": true, "result": "Normal" },
-  "inv_ecg": { "enabled": false, "result": "" },
-  "inv_ct": { "enabled": false, "result": "" },
-  "inv_mri": { "enabled": false, "result": "" },
+  "inv_laboratory": {
+    "enabled": true,
+    "result": "SE 138/3,86/102 ; DL 12,8/8,540/40,20/180,000 ; PPT 10,40/12,0/1,00 ; APTT 28,30/25,3 ; OT/PT 24/16 ; Albumin 4,24 ; GDS 156 ; Ur/Cr 26,4/0,68"
+  },
+  "inv_xray": {
+    "enabled": true,
+    "result": "Cor dan pulmo dalam batas normal"
+  },
+  "inv_ecg": {
+    "enabled": true,
+    "result": "Sinus rhythm 70x/min"
+  },
+  "inv_ct": {
+    "enabled": false,
+    "result": ""
+  },
+  "inv_mri": {
+    "enabled": false,
+    "result": ""
+  },
   "inv_other_label": "",
   "inv_other_result": "",
-  "assessment": "Hipertensi terkontrol",
-  "planning": "General Anesthesia",
-  "anesthesia_management": "GA (General Anesthesia)",
+  "assessment": "ASA 2 ; Susp. Malignancy dt myoma uteri ; HT stg 1 on treatment (TD 139/88)",
+  "planning": "Informed consent ; Pasang IV line 1 jalur No. 18G ; IVFD RL 80cc/jam selama puasa ; Puasa minimal 6 jam makanan padat, 2 jam air putih preop ; Premedikasi : Metoclopramide 10mg, Ranitidine 50 mg IV (1 jam pre op) ; Regulasi TD, Amlodipine malam 10mg tetap diminum, cek TD pagi target TDS 110-180, TDD 70-110 ; Sedia darah 1 PRC ; Post op ke ruangan",
+  "anesthesia_management": "GA Intubasi",
   "regimen_pre_induction": "",
-  "regimen_induction": "Propofol 120mg",
-  "regimen_maintenance": "Sevofluran",
-  "analgesia_pre_op": "",
-  "analgesia_intra_op": "Fentanyl 100mcg",
-  "analgesia_post_op": "",
+  "regimen_induction": "Midazolam 2 mg ; Fentanyl 100 mcg ; Propofol 80 mg ; Atracurium 20 mg",
+  "regimen_maintenance": "Isoflurane",
+  "analgesia_pre_op": "Ketorolac 30 mg",
+  "analgesia_intra_op": "fentanyl Intermitten",
+  "analgesia_post_op": "Ketorolac 3x30 mg IV + Paracetamol 3x500mg",
   "post_induction_side_effects": "",
   "ventilator_settings": "",
   "hemodynamics_intra": "",
@@ -287,18 +378,32 @@ export async function POST(req: Request) {
         }
       }
 
-      // Validate sex check constraint
-      if (parsedUpdate.sex !== "Male" && parsedUpdate.sex !== "Female") {
-        parsedUpdate.sex = null
+      // Normalize and validate sex check constraint
+      const rawSex = String(parsedUpdate.sex || "").trim().toLowerCase();
+      if (["l", "l/p", "laki", "laki-laki", "male", "m"].includes(rawSex)) {
+        parsedUpdate.sex = "Male";
+      } else if (["p", "perempuan", "female", "f"].includes(rawSex)) {
+        parsedUpdate.sex = "Female";
+      } else {
+        parsedUpdate.sex = null;
       }
 
-      // Validate post_op_room check constraint
-      if (
-        parsedUpdate.post_op_room !== "Low Care" &&
-        parsedUpdate.post_op_room !== "High Care" &&
-        parsedUpdate.post_op_room !== "ICU"
+      // Normalize and validate post_op_room check constraint
+      const rawPostOp = String(parsedUpdate.post_op_room || "").trim().toLowerCase();
+      if (rawPostOp.includes("icu")) {
+        parsedUpdate.post_op_room = "ICU";
+      } else if (rawPostOp.includes("high care") || rawPostOp.includes("hcu")) {
+        parsedUpdate.post_op_room = "High Care";
+      } else if (
+        rawPostOp.includes("low care") ||
+        rawPostOp.includes("ruangan") ||
+        rawPostOp.includes("ruang") ||
+        rawPostOp.includes("ward") ||
+        rawPostOp.includes("room")
       ) {
-        parsedUpdate.post_op_room = null
+        parsedUpdate.post_op_room = "Low Care";
+      } else {
+        parsedUpdate.post_op_room = null;
       }
 
       // Calculate BMI

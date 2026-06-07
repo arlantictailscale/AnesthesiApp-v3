@@ -1,6 +1,14 @@
 export const AI_MODELS = [
   // Free models (sorted by price: all $0)
   {
+    id: "google/gemini-2.5-flash",
+    label: "Gemini 2.5 Flash (Direct)",
+    tier: "free",
+    price: 0,
+    priceLabel: "Free",
+    description: "Google Gemini 2.5 Flash, fast and highly accurate clinical data extraction"
+  },
+  {
     id: "nvidia/nemotron-3-ultra-550b-a55b:free",
     label: "Nemotron-3 Ultra 550B (free)",
     tier: "free",
@@ -230,4 +238,4 @@ export const AI_MODELS = [
 
 export type AiModelId = (typeof AI_MODELS)[number]["id"]
 
-export const DEFAULT_AI_MODEL: AiModelId = "openrouter/owl-alpha"
+export const DEFAULT_AI_MODEL: AiModelId = "google/gemini-2.5-flash"
