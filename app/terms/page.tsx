@@ -1,7 +1,13 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Logo } from "@/components/logo"
 import { ArrowLeft, ShieldCheck, Scale, FileText } from "lucide-react"
+
+export const metadata: Metadata = {
+  title: "Terms of Service",
+  description: "Read AnesthesiApp's Terms of Service, including our strict medical disclaimer, patient anonymization policies, and user agreements.",
+}
 
 export default function TermsOfServicePage() {
   return (

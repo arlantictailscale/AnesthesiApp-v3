@@ -1,7 +1,13 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Logo } from "@/components/logo"
 import { ArrowLeft, ShieldAlert, Key, HelpCircle } from "lucide-react"
+
+export const metadata: Metadata = {
+  title: "Privacy Policy",
+  description: "Read AnesthesiApp's Privacy Policy. Learn how we anonymize patient case logs, secure your data via Supabase Row-Level Security (RLS), and handle Google OAuth authentication.",
+}
 
 export default function PrivacyPolicyPage() {
   return (
