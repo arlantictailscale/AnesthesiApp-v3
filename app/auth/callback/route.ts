@@ -6,13 +6,18 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get('code')
   const next = searchParams.get('next') ?? '/'
 
+  // Resolve the true origin when behind a reverse proxy (e.g. Nginx, Cloudflare)
+  const forwardedHost = request.headers.get('x-forwarded-host')
+  const forwardedProto = request.headers.get('x-forwarded-proto') || 'https'
+  const trueOrigin = forwardedHost ? `${forwardedProto}://${forwardedHost}` : origin
+
   if (code) {
     const supabase = await createClient()
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error) {
-      return NextResponse.redirect(`${origin}${next}`)
+      return NextResponse.redirect(`${trueOrigin}${next}`)
     }
   }
 
-  return NextResponse.redirect(`${origin}/auth/error`)
+  return NextResponse.redirect(`${trueOrigin}/auth/error`)
 }
