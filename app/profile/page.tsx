@@ -11,6 +11,16 @@ import { Textarea } from "@/components/ui/textarea"
 import { getSession, getUserProfile, updateUserProfile, uploadAvatar, type UserProfile } from "@/lib/storage"
 import { createClient } from "@/lib/supabase/client"
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
   User,
   Mail,
   Camera,
@@ -70,6 +80,11 @@ export default function ProfilePage() {
 
   // Recovery session state
   const [isRecoverySession, setIsRecoverySession] = useState(false)
+
+  // Dialog confirmation states
+  const [confirmDisableOpen, setConfirmDisableOpen] = useState(false)
+  const [confirmResetOpen, setConfirmResetOpen] = useState(false)
+  const [disableFactorId, setDisableFactorId] = useState<string | null>(null)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -335,17 +350,15 @@ export default function ProfilePage() {
     }
   }
 
-  // Disable MFA Factor
-  async function handleDisableMfa(factorId: string) {
-    if (!confirm("Are you sure you want to disable Multi-Factor Authentication? This decreases account security.")) {
-      return
-    }
-
+  // Disable MFA Factor Action (called from AlertDialog confirmation)
+  async function handleDisableMfaAction() {
+    if (!disableFactorId) return
+    setConfirmDisableOpen(false)
     setMfaLoading(true)
     try {
       const supabase = createClient()
       const { error } = await supabase.auth.mfa.unenroll({
-        factorId
+        factorId: disableFactorId
       })
 
       if (error) {
@@ -360,15 +373,13 @@ export default function ProfilePage() {
       toast.error(err.message || "Failed to disable MFA")
     } finally {
       setMfaLoading(false)
+      setDisableFactorId(null)
     }
   }
 
   // Reset MFA factors using recovery-bypassed database RPC function
-  async function handleResetMfa() {
-    if (!confirm("Are you sure you want to reset your Two-Factor Authentication? This will delete all active authenticator factors.")) {
-      return
-    }
-
+  async function handleResetMfaAction() {
+    setConfirmResetOpen(false)
     setMfaLoading(true)
     try {
       const supabase = createClient()
@@ -981,7 +992,7 @@ export default function ProfilePage() {
                               type="button"
                               variant="destructive"
                               size="sm"
-                              onClick={handleResetMfa}
+                              onClick={() => setConfirmResetOpen(true)}
                               className="font-bold text-xs bg-amber-600 hover:bg-amber-700 text-white border-none"
                             >
                               Reset 2FA/MFA
@@ -991,7 +1002,10 @@ export default function ProfilePage() {
                               type="button"
                               variant="destructive"
                               size="sm"
-                              onClick={() => handleDisableMfa(factor.id)}
+                              onClick={() => {
+                                setDisableFactorId(factor.id)
+                                setConfirmDisableOpen(true)
+                              }}
                               className="font-bold text-xs"
                             >
                               Disable 2FA
@@ -1030,6 +1044,53 @@ export default function ProfilePage() {
           </>
         )}
 
+        {/* Confirm Disable MFA Alert Dialog */}
+        <AlertDialog open={confirmDisableOpen} onOpenChange={setConfirmDisableOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-destructive flex items-center gap-2 font-bold text-lg">
+                <ShieldAlert className="h-5 w-5 text-destructive animate-pulse" />
+                Disable Two-Factor Authentication?
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-sm leading-relaxed pt-2">
+                Are you sure you want to disable Multi-Factor Authentication (2FA)? This will significantly decrease your account security and make your medical records and logged case logs vulnerable.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="mt-4">
+              <AlertDialogCancel>Keep 2FA Enabled</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDisableMfaAction}
+                className="bg-destructive hover:bg-destructive/90 text-destructive-foreground font-bold"
+              >
+                Yes, Disable 2FA
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Confirm Reset MFA Alert Dialog (Recovery Flow) */}
+        <AlertDialog open={confirmResetOpen} onOpenChange={setConfirmResetOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-destructive flex items-center gap-2 font-bold text-lg">
+                <ShieldAlert className="h-5 w-5 text-destructive animate-pulse" />
+                Reset Two-Factor Authentication?
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-sm leading-relaxed pt-2">
+                This will remove the current TOTP authenticator device from your account. You will need to setup a new authenticator device on your next normal sign-in.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="mt-4">
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleResetMfaAction}
+                className="bg-destructive hover:bg-destructive/90 text-destructive-foreground font-bold"
+              >
+                Reset Authenticator
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </AppShell>
   )
