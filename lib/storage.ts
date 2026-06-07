@@ -306,3 +306,21 @@ export async function uploadAvatar(userId: string, file: File): Promise<string> 
   return publicUrl
 }
 
+export async function sendPasswordResetEmail(email: string): Promise<{ error?: string }> {
+  const supabase = createClient()
+  const redirectTo =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/auth/callback?next=/profile?recovery=true`
+      : undefined
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+    redirectTo,
+  })
+
+  if (error) {
+    console.error("resetPasswordForEmail error:", error)
+    return { error: error.message }
+  }
+  return {}
+}
+

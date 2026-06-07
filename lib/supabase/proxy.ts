@@ -33,9 +33,15 @@ export async function updateSession(request: NextRequest) {
   // Check if they need 2FA
   let needs2FA = false
   if (user) {
-    const { data: aalData, error: aalError } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
-    if (!aalError && aalData) {
-      needs2FA = aalData.currentLevel === "aal1" && aalData.nextLevel === "aal2"
+    const { data: { session } } = await supabase.auth.getSession()
+    const amrMethods = session ? getAmrFromToken(session.access_token) : []
+    const isRecovery = amrMethods.includes("recovery")
+
+    if (!isRecovery) {
+      const { data: aalData, error: aalError } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+      if (!aalError && aalData) {
+        needs2FA = aalData.currentLevel === "aal1" && aalData.nextLevel === "aal2"
+      }
     }
   }
 
@@ -87,4 +93,33 @@ export async function updateSession(request: NextRequest) {
   }
 
   return supabaseResponse
+}
+
+function getAmrFromToken(token: string): string[] {
+  try {
+    const parts = token.split(".")
+    if (parts.length !== 3) return []
+    const base64Url = parts[1]
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/")
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
+    )
+    const payload = JSON.parse(jsonPayload)
+    const amr = payload.amr
+    if (Array.isArray(amr)) {
+      return amr.map((item: any) => {
+        if (typeof item === "string") return item
+        if (item && typeof item === "object" && typeof item.method === "string") {
+          return item.method
+        }
+        return ""
+      }).filter(Boolean)
+    }
+  } catch (e) {
+    console.error("Error decoding token AMR:", e)
+  }
+  return []
 }

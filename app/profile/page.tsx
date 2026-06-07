@@ -68,6 +68,9 @@ export default function ProfilePage() {
   // Identities state (OAuth providers)
   const [identities, setIdentities] = useState<any[]>([])
 
+  // Recovery session state
+  const [isRecoverySession, setIsRecoverySession] = useState(false)
+
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -106,6 +109,48 @@ export default function ProfilePage() {
         const { data: mfaData, error: mfaError } = await supabase.auth.mfa.listFactors()
         if (!mfaError && mfaData) {
           setMfaFactors(mfaData.all || [])
+        }
+
+        // Automatically switch to security tab if recovery or security tab requested
+        if (typeof window !== "undefined") {
+          const searchParams = new URLSearchParams(window.location.search)
+          if (searchParams.get("tab") === "security" || searchParams.get("recovery") === "true") {
+            setActiveTab("security")
+          }
+        }
+
+        // Check if current session is recovery
+        const { data: { session: currentSession } } = await supabase.auth.getSession()
+        if (currentSession) {
+          try {
+            const parts = currentSession.access_token.split(".")
+            if (parts.length === 3) {
+              const base64Url = parts[1]
+              const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/")
+              const jsonPayload = decodeURIComponent(
+                atob(base64)
+                  .split("")
+                  .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+                  .join("")
+              )
+              const payload = JSON.parse(jsonPayload)
+              const amr = payload.amr
+              if (Array.isArray(amr)) {
+                const methods = amr.map((item: any) => {
+                  if (typeof item === "string") return item
+                  if (item && typeof item === "object" && typeof item.method === "string") {
+                    return item.method
+                  }
+                  return ""
+                }).filter(Boolean)
+                if (methods.includes("recovery")) {
+                  setIsRecoverySession(true)
+                }
+              }
+            }
+          } catch (e) {
+            console.error("Error parsing recovery AMR in profile:", e)
+          }
         }
       } catch (err) {
         console.error("Failed to load user profile & security details", err)
@@ -309,6 +354,29 @@ export default function ProfilePage() {
       }
     } catch (err: any) {
       toast.error(err.message || "Failed to disable MFA")
+    } finally {
+      setMfaLoading(false)
+    }
+  }
+
+  // Reset MFA factors using recovery-bypassed database RPC function
+  async function handleResetMfa() {
+    if (!confirm("Are you sure you want to reset your Two-Factor Authentication? This will delete all active authenticator factors.")) {
+      return
+    }
+
+    setMfaLoading(true)
+    try {
+      const supabase = createClient()
+      const { data, error } = await supabase.rpc("reset_user_mfa")
+      if (error) {
+        toast.error(error.message)
+      } else {
+        toast.success("MFA factors successfully reset!")
+        await refreshMfaFactors()
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to reset MFA factors")
     } finally {
       setMfaLoading(false)
     }
@@ -604,7 +672,20 @@ export default function ProfilePage() {
           /* ================================================================= */
           /* ACCOUNT SECURITY TAB                                              */
           /* ================================================================= */
-          <div className="grid gap-6 md:grid-cols-3">
+          <>
+            {isRecoverySession && (
+              <div className="mb-6 flex items-start gap-3 p-4 border border-amber-200 bg-amber-500/5 rounded-lg text-amber-800 dark:text-amber-300">
+                <ShieldAlert className="h-5 w-5 mt-0.5 text-amber-600 shrink-0" />
+                <div className="space-y-1">
+                  <h4 className="font-bold text-xs">Recovery Session Active</h4>
+                  <p className="text-[11px] leading-relaxed opacity-90">
+                    You logged in using a password recovery link. If you lost your 2FA authenticator device, you can reset it below to regain normal access. We also highly recommend updating your passphrase to a secure password.
+                  </p>
+                </div>
+              </div>
+            )}
+            
+            <div className="grid gap-6 md:grid-cols-3">
             
             {/* Left Side: Overview & Linked Accounts */}
             <div className="flex flex-col gap-6 md:col-span-1">
@@ -889,15 +970,27 @@ export default function ProfilePage() {
                               <p className="text-[10px] text-muted-foreground">Added on {new Date(factor.created_at).toLocaleDateString()}</p>
                             </div>
                           </div>
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleDisableMfa(factor.id)}
-                            className="font-bold text-xs"
-                          >
-                            Disable 2FA
-                          </Button>
+                          {isRecoverySession ? (
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              onClick={handleResetMfa}
+                              className="font-bold text-xs bg-amber-600 hover:bg-amber-700 text-white border-none"
+                            >
+                              Reset 2FA/MFA
+                            </Button>
+                          ) : (
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleDisableMfa(factor.id)}
+                              className="font-bold text-xs"
+                            >
+                              Disable 2FA
+                            </Button>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -928,6 +1021,7 @@ export default function ProfilePage() {
             </div>
 
           </div>
+          </>
         )}
 
       </div>
