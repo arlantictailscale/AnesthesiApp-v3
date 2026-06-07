@@ -1,6 +1,7 @@
-import { NextResponse } from "next/server"
+import { NextResponse, after } from "next/server"
 import { AI_MODELS, DEFAULT_AI_MODEL, type AiModelId } from "@/lib/ai-models"
 import { callAiModel } from "@/lib/ai"
+import { createClient } from "@/lib/supabase/server"
 
 export const runtime = "nodejs"
 export const maxDuration = 60
@@ -118,38 +119,91 @@ export async function POST(req: Request) {
 
   const origin = req.headers.get("origin") ?? "https://anesthesiapp.local"
 
-  let content: string
-  try {
-    const aiResult = await callAiModel({
-      model,
-      temperature: 0.2,
-      jsonMode: true,
-      origin,
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: description },
-      ],
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  // Insert a shell record with status = 'processing'
+  const { data: caseRow, error: insertError } = await supabase
+    .from("anesthesia_cases")
+    .insert({
+      user_id: user.id,
+      status: "processing",
+      patient_name: "AI Populating...",
     })
-    content = aiResult.content
-  } catch (err: any) {
-    console.error("[v0] AI call failed:", err)
-    return NextResponse.json({ error: err.message || "Failed to call AI model" }, { status: 502 })
-  }
+    .select("id")
+    .single()
 
-  if (!content) {
-    return NextResponse.json({ error: "Empty response from model" }, { status: 502 })
-  }
-
-  let parsed: unknown
-  try {
-    parsed = extractJson(content)
-  } catch (err) {
-    console.error("[v0] Failed to parse model JSON:", content)
+  if (insertError || !caseRow) {
+    console.error("[v0] Initial case insert failed:", insertError)
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Failed to parse JSON" },
-      { status: 502 },
+      { error: insertError?.message || "Failed to create draft case" },
+      { status: 500 },
     )
   }
 
-  return NextResponse.json({ data: parsed, model })
+  after(async () => {
+    try {
+      const aiResult = await callAiModel({
+        model,
+        temperature: 0.2,
+        jsonMode: true,
+        origin,
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: description },
+        ],
+      })
+      const content = aiResult.content
+      if (!content) {
+        throw new Error("Empty response from AI model")
+      }
+
+      let parsed: any
+      try {
+        parsed = extractJson(content)
+      } catch (err) {
+        console.error("[v0] Failed to parse model JSON:", content)
+        throw err
+      }
+
+      let bmi = null
+      if (
+        typeof parsed.weight_kg === "number" &&
+        typeof parsed.height_cm === "number" &&
+        parsed.height_cm > 0
+      ) {
+        const heightM = parsed.height_cm / 100
+        bmi = Number((parsed.weight_kg / (heightM * heightM)).toFixed(1))
+      }
+
+      const { error: updateError } = await supabase
+        .from("anesthesia_cases")
+        .update({
+          ...parsed,
+          bmi,
+          status: "completed",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", caseRow.id)
+
+      if (updateError) {
+        console.error("[v0] Failed to save AI populated case to DB:", updateError)
+        await supabase
+          .from("anesthesia_cases")
+          .update({ status: "failed" })
+          .eq("id", caseRow.id)
+      }
+    } catch (err: any) {
+      console.error("[v0] Background AI populate failed:", err)
+      await supabase
+        .from("anesthesia_cases")
+        .update({ status: "failed" })
+        .eq("id", caseRow.id)
+    }
+  })
+
+  return NextResponse.json({ success: true, caseId: caseRow.id })
 }

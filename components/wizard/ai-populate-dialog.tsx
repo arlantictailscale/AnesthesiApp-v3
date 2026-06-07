@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useFormContext } from "react-hook-form"
+import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Sparkles, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -27,134 +27,13 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { AI_MODELS, DEFAULT_AI_MODEL, type AiModelId } from "@/lib/ai-models"
-import type { CaseData } from "@/lib/schema"
 
-type RawAiData = Partial<Record<keyof CaseData, unknown>>
-
-const INVESTIGATION_KEYS = [
-  "inv_laboratory",
-  "inv_xray",
-  "inv_ecg",
-  "inv_ct",
-  "inv_mri",
-] as const
-
-const NUMERIC_KEYS: (keyof CaseData)[] = ["age", "weight_kg", "height_cm"]
-
-const STRING_KEYS: (keyof CaseData)[] = [
-  "procedure_date",
-  "patient_name",
-  "medical_record_number",
-  "room",
-  "diagnosis",
-  "procedure_intervention",
-  "allergy",
-  "medication",
-  "past_illness",
-  "last_meal",
-  "event",
-  "b1_breathing",
-  "b2_blood",
-  "b3_brain",
-  "b4_bladder",
-  "b5_bowel",
-  "b6_body_temp",
-  "others",
-  "inv_other_label",
-  "inv_other_result",
-  "assessment",
-  "planning",
-  "anesthesia_management",
-  "regimen_pre_induction",
-  "regimen_induction",
-  "regimen_maintenance",
-  "analgesia_pre_op",
-  "analgesia_intra_op",
-  "analgesia_post_op",
-  "post_induction_side_effects",
-  "ventilator_settings",
-  "hemodynamics_intra",
-  "duration_surgery",
-  "bleeding",
-  "transfusion",
-  "urine_output",
-  "fluid_balance",
-  "hemodynamics_post",
-  "lab_results_post",
-]
-
-export function AiPopulateDialog({
-  onPopulated,
-}: {
-  onPopulated?: (count: number) => void
-}) {
-  const form = useFormContext<CaseData>()
+export function AiPopulateDialog() {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [description, setDescription] = useState("")
   const [model, setModel] = useState<AiModelId>(DEFAULT_AI_MODEL)
   const [loading, setLoading] = useState(false)
-
-  function applyToForm(data: RawAiData) {
-    let appliedCount = 0
-
-    // Strings
-    for (const key of STRING_KEYS) {
-      const v = data[key]
-      if (typeof v === "string" && v.trim()) {
-        form.setValue(key as never, v as never, { shouldDirty: true })
-        appliedCount++
-      }
-    }
-
-    // Sex enum
-    if (data.sex === "Male" || data.sex === "Female") {
-      form.setValue("sex", data.sex, { shouldDirty: true })
-      appliedCount++
-    }
-
-    // Post-op room enum
-    const room = data.post_op_room
-    if (room === "Low Care" || room === "High Care" || room === "ICU") {
-      form.setValue("post_op_room", room, { shouldDirty: true })
-      appliedCount++
-    }
-
-    // Numbers
-    for (const key of NUMERIC_KEYS) {
-      const v = data[key]
-      if (typeof v === "number" && Number.isFinite(v)) {
-        form.setValue(key as never, v as never, { shouldDirty: true })
-        appliedCount++
-      } else if (typeof v === "string" && v.trim() !== "") {
-        const n = Number(v)
-        if (Number.isFinite(n)) {
-          form.setValue(key as never, n as never, { shouldDirty: true })
-          appliedCount++
-        }
-      }
-    }
-
-    // Investigations
-    for (const key of INVESTIGATION_KEYS) {
-      const inv = data[key]
-      if (inv && typeof inv === "object") {
-        const enabled = (inv as { enabled?: unknown }).enabled === true
-        const result = typeof (inv as { result?: unknown }).result === "string"
-          ? ((inv as { result?: string }).result as string)
-          : ""
-        if (enabled || result.trim()) {
-          form.setValue(
-            key as never,
-            { enabled: enabled || !!result.trim(), result } as never,
-            { shouldDirty: true },
-          )
-          appliedCount++
-        }
-      }
-    }
-
-    return appliedCount
-  }
 
   async function handleGenerate() {
     const trimmed = description.trim()
@@ -169,14 +48,13 @@ export function AiPopulateDialog({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ description: trimmed, model }),
       })
-      const json = (await res.json()) as { data?: RawAiData; error?: string }
-      if (!res.ok || !json.data) {
+      const json = (await res.json()) as { success?: boolean; error?: string }
+      if (!res.ok || !json.success) {
         throw new Error(json.error || `Request failed (${res.status})`)
       }
-      const applied = applyToForm(json.data)
-      toast.success(`AI populated ${applied} field${applied === 1 ? "" : "s"}`)
-      onPopulated?.(applied)
+      toast.success("AI population started in the background. The case will appear in your cases list shortly.")
       setOpen(false)
+      router.push("/cases")
     } catch (err) {
       console.error("[v0] AI populate error:", err)
       toast.error(err instanceof Error ? err.message : "AI populate failed")

@@ -33,7 +33,8 @@ import {
   Award,
   ChevronRight,
   BookOpenText,
-  UserCheck
+  UserCheck,
+  Loader2
 } from "lucide-react"
 
 export default function DashboardPage() {
@@ -108,6 +109,18 @@ export default function DashboardPage() {
 
     loadDashboardData()
   }, [])
+
+  useEffect(() => {
+    if (!myCases || !myCases.some((c) => c.status === "processing")) return
+    const interval = setInterval(() => {
+      listCases()
+        .then((rows) => {
+          setMyCases(rows)
+        })
+        .catch(console.error)
+    }, 3000)
+    return () => clearInterval(interval)
+  }, [myCases])
 
   function handleDrugSearchSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -268,27 +281,47 @@ export default function DashboardPage() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border/60">
-                        {myCases.slice(0, 3).map((c) => (
-                          <tr key={c.id} className="hover:bg-muted/30 transition-colors group">
-                            <td className="py-3 pr-2">
-                              <span className="font-bold text-foreground block group-hover:text-primary transition-colors">
-                                {c.patient_name}
-                              </span>
-                              <span className="text-[10px] text-muted-foreground font-medium uppercase">
-                                MRN {c.medical_record_number}
-                              </span>
-                            </td>
-                            <td className="py-3 pr-2 hidden sm:table-cell max-w-[150px] truncate font-medium text-muted-foreground">
-                              {c.diagnosis}
-                            </td>
-                            <td className="py-3 pr-2 max-w-[150px] truncate font-medium text-foreground">
-                              {c.procedure_intervention}
-                            </td>
-                            <td className="py-3 text-right whitespace-nowrap font-medium text-muted-foreground">
-                              {new Date(c.procedure_date).toLocaleDateString()}
-                            </td>
-                          </tr>
-                        ))}
+                        {myCases.slice(0, 3).map((c) => {
+                          const isProcessing = c.status === "processing"
+                          const isFailed = c.status === "failed"
+
+                          return (
+                            <tr key={c.id} className="hover:bg-muted/30 transition-colors group">
+                              <td className="py-3 pr-2">
+                                <span className="font-bold text-foreground block group-hover:text-primary transition-colors flex items-center gap-1.5">
+                                  {isProcessing && (
+                                    <Loader2 className="h-3 w-3 animate-spin text-amber-500 shrink-0" />
+                                  )}
+                                  {isProcessing ? (
+                                    <span className="text-amber-600 dark:text-amber-400">AI Populating...</span>
+                                  ) : isFailed ? (
+                                    <span className="text-destructive">AI Population Failed</span>
+                                  ) : (
+                                    c.patient_name
+                                  )}
+                                </span>
+                                <span className="text-[10px] text-muted-foreground font-medium uppercase">
+                                  {isProcessing ? "Extracting..." : isFailed ? "Failed" : `MRN ${c.medical_record_number}`}
+                                </span>
+                              </td>
+                              <td className="py-3 pr-2 hidden sm:table-cell max-w-[150px] truncate font-medium text-muted-foreground">
+                                {isProcessing ? "Processing..." : isFailed ? "—" : c.diagnosis}
+                              </td>
+                              <td className="py-3 pr-2 max-w-[150px] truncate font-medium text-foreground">
+                                {isProcessing ? "Processing..." : isFailed ? "—" : c.procedure_intervention}
+                              </td>
+                              <td className="py-3 text-right whitespace-nowrap font-medium text-muted-foreground">
+                                {isProcessing ? (
+                                  <span className="text-amber-500 font-semibold">Processing</span>
+                                ) : isFailed ? (
+                                  <span className="text-destructive font-semibold">Failed</span>
+                                ) : (
+                                  new Date(c.procedure_date).toLocaleDateString()
+                                )}
+                              </td>
+                            </tr>
+                          )
+                        })}
                       </tbody>
                     </table>
                   </div>

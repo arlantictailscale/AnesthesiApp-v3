@@ -9,7 +9,7 @@ import { Card } from "@/components/ui/card"
 import { Empty, EmptyHeader, EmptyTitle, EmptyDescription, EmptyContent } from "@/components/ui/empty"
 import { deleteCase, listCases } from "@/lib/storage"
 import type { StoredCase } from "@/lib/schema"
-import { ClipboardList, Plus, Trash2, Calendar, User as UserIcon, MapPin } from "lucide-react"
+import { ClipboardList, Plus, Trash2, Calendar, User as UserIcon, MapPin, Loader2 } from "lucide-react"
 
 export default function DashboardPage() {
   const [cases, setCases] = useState<StoredCase[] | null>(null)
@@ -27,6 +27,16 @@ export default function DashboardPage() {
   useEffect(() => {
     load()
   }, [])
+
+  useEffect(() => {
+    if (!cases || !cases.some((c) => c.status === "processing")) return
+    const interval = setInterval(() => {
+      listCases().then((rows) => {
+        setCases(rows)
+      }).catch(console.error)
+    }, 3000)
+    return () => clearInterval(interval)
+  }, [cases])
 
   async function handleDelete(id: string) {
     if (!confirm("Delete this case? This cannot be undone.")) return
@@ -80,51 +90,102 @@ export default function DashboardPage() {
           </Empty>
         ) : (
           <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {cases.map((c) => (
-              <Card key={c.id} className="flex min-w-0 flex-col gap-3 p-5">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <h3 className="truncate font-semibold">{c.patient_name}</h3>
-                    <p className="truncate text-xs text-muted-foreground">
-                      MRN {c.medical_record_number}
-                    </p>
-                  </div>
-                  <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                    {c.sex} · {c.age}y
-                  </span>
-                </div>
+            {cases.map((c) => {
+              const isProcessing = c.status === "processing"
+              const isFailed = c.status === "failed"
 
-                <div className="flex flex-col gap-1.5 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Calendar className="h-3.5 w-3.5 shrink-0" />
-                    <span className="truncate">{c.procedure_date}</span>
+              return (
+                <Card
+                  key={c.id}
+                  className={`flex min-w-0 flex-col gap-3 p-5 transition-all duration-300 ${
+                    isProcessing
+                      ? "animate-pulse border-amber-500/30 bg-amber-500/[0.01]"
+                      : isFailed
+                      ? "border-destructive/30 bg-destructive/[0.01]"
+                      : ""
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <h3 className="truncate font-semibold flex items-center gap-1.5">
+                        {isProcessing && (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin text-amber-500 shrink-0" />
+                        )}
+                        {isProcessing ? (
+                          <span className="text-amber-600 dark:text-amber-400 font-medium">AI Populating...</span>
+                        ) : isFailed ? (
+                          <span className="text-destructive font-medium">AI Population Failed</span>
+                        ) : (
+                          c.patient_name
+                        )}
+                      </h3>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {isProcessing ? "Extracting MRN..." : isFailed ? "Failed to parse notes" : `MRN ${c.medical_record_number}`}
+                      </p>
+                    </div>
+                    {isProcessing ? (
+                      <span className="shrink-0 rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-600 dark:text-amber-400">
+                        Processing
+                      </span>
+                    ) : isFailed ? (
+                      <span className="shrink-0 rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive">
+                        Failed
+                      </span>
+                    ) : (
+                      <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                        {c.sex} · {c.age}y
+                      </span>
+                    )}
                   </div>
-                  <div className="flex items-center gap-2 min-w-0">
-                    <MapPin className="h-3.5 w-3.5 shrink-0" />
-                    <span className="truncate">Room {c.room}</span>
-                  </div>
-                  <div className="flex items-center gap-2 min-w-0">
-                    <UserIcon className="h-3.5 w-3.5 shrink-0" />
-                    <span className="truncate">{c.diagnosis}</span>
-                  </div>
-                </div>
 
-                <div className="mt-auto flex items-center justify-between border-t border-border pt-3">
-                  <Button asChild variant="ghost" size="sm">
-                    <Link href={`/cases/${c.id}`}>View</Link>
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-destructive hover:text-destructive"
-                    onClick={() => handleDelete(c.id)}
-                  >
-                    <Trash2 className="mr-1 h-3.5 w-3.5" />
-                    Delete
-                  </Button>
-                </div>
-              </Card>
-            ))}
+                  <div className="flex flex-col gap-1.5 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Calendar className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">
+                        {isProcessing ? "Parsing date..." : isFailed ? "—" : c.procedure_date}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <MapPin className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">
+                        {isProcessing ? "Parsing room..." : isFailed ? "—" : `Room ${c.room}`}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <UserIcon className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">
+                        {isProcessing ? "Parsing clinical details..." : isFailed ? "—" : c.diagnosis}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mt-auto flex items-center justify-between border-t border-border pt-3">
+                    {isProcessing ? (
+                      <Button disabled variant="ghost" size="sm" className="text-amber-500 font-medium">
+                        Processing...
+                      </Button>
+                    ) : isFailed ? (
+                      <Button variant="ghost" size="sm" asChild>
+                        <Link href={`/cases/${c.id}/edit`}>Edit Manually</Link>
+                      </Button>
+                    ) : (
+                      <Button asChild variant="ghost" size="sm">
+                        <Link href={`/cases/${c.id}`}>View</Link>
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => handleDelete(c.id)}
+                    >
+                      <Trash2 className="mr-1 h-3.5 w-3.5" />
+                      Delete
+                    </Button>
+                  </div>
+                </Card>
+              )
+            })}
           </div>
         )}
       </div>

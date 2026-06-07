@@ -142,6 +142,20 @@ export default function CaseDetailPage() {
     }
   }, [params?.id])
 
+  useEffect(() => {
+    if (!params?.id || !c || c.status !== "processing") return
+    const interval = setInterval(() => {
+      getCase(params.id)
+        .then((row) => {
+          if (row && row.status !== "processing") {
+            setC(row)
+          }
+        })
+        .catch(console.error)
+    }, 2000)
+    return () => clearInterval(interval)
+  }, [params?.id, c])
+
   async function handleToggleSharing() {
     if (!c || sharingLoading) return
     setSharingLoading(true)
@@ -176,6 +190,47 @@ export default function CaseDetailPage() {
           </EmptyHeader>
           <Button onClick={() => router.replace("/cases")}>Back to dashboard</Button>
         </Empty>
+      </AppShell>
+    )
+  }
+
+  if (c.status === "processing") {
+    return (
+      <AppShell>
+        <div className="flex h-[60vh] flex-col items-center justify-center gap-4 text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-amber-500" />
+          <h2 className="text-xl font-semibold text-amber-600 dark:text-amber-400">AI is populating this case...</h2>
+          <p className="text-sm text-muted-foreground max-w-xs">
+            We are extracting clinical details from your description in the background. This page will update automatically.
+          </p>
+          <Button variant="outline" size="sm" onClick={() => router.replace("/cases")}>
+            Back to cases
+          </Button>
+        </div>
+      </AppShell>
+    )
+  }
+
+  if (c.status === "failed") {
+    return (
+      <AppShell>
+        <div className="flex h-[60vh] flex-col items-center justify-center gap-4 text-center">
+          <div className="rounded-full bg-destructive/10 p-3 text-destructive animate-bounce">
+            <FileText className="h-8 w-8" />
+          </div>
+          <h2 className="text-xl font-semibold text-destructive">AI Population Failed</h2>
+          <p className="text-sm text-muted-foreground max-w-xs">
+            The AI model was unable to parse the clinical description. You can fill in the case parameters manually.
+          </p>
+          <div className="flex items-center gap-2">
+            <Button size="sm" asChild>
+              <Link href={`/cases/${c.id}/edit`}>Edit Manually</Link>
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => router.replace("/cases")}>
+              Back to cases
+            </Button>
+          </div>
+        </div>
       </AppShell>
     )
   }

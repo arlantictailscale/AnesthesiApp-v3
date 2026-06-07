@@ -97,11 +97,17 @@ export type Step5Data = z.infer<typeof step5Schema>
 export type Step6Data = z.infer<typeof step6Schema>
 export type Step7Data = z.infer<typeof step7Schema>
 
-export type StoredCase = CaseData & {
+export type StoredCase = (Partial<CaseData> & {
   id: string
   user_id: string
   created_at: string
-}
+  status: 'processing' | 'failed'
+}) | (CaseData & {
+  id: string
+  user_id: string
+  created_at: string
+  status?: 'completed'
+})
 
 export const STEP_TITLES = [
   "General & Patient",

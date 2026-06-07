@@ -313,11 +313,7 @@ export function CaseWizard({ initialData, caseId }: { initialData?: CaseData; ca
             </p>
           </div>
           {!caseId && (
-            <AiPopulateDialog
-              onPopulated={(count) => {
-                if (count > 0) setAiPopulated(true)
-              }}
-            />
+            <AiPopulateDialog />
           )}
         </div>
 
