@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { DEFAULT_AI_MODEL } from "@/lib/ai-models"
+import { callAiModel } from "@/lib/ai"
 
 export const runtime = "nodejs"
 export const maxDuration = 60
@@ -51,11 +52,6 @@ function extractJson(text: string): any {
 }
 
 export async function POST(req: Request) {
-  const apiKey = process.env.OPENROUTER_API_KEY
-  if (!apiKey) {
-    return NextResponse.json({ error: "OPENROUTER_API_KEY is not configured" }, { status: 500 })
-  }
-
   let body: {
     chatHistory: { role: "user" | "assistant" | "system"; content: string }[]
     rubric: any[]
@@ -85,44 +81,24 @@ ${chatHistory.map((m) => `${m.role.toUpperCase()}: ${m.content}`).join("\n\n")}
 
   const origin = req.headers.get("origin") ?? "https://anesthesiapp.local"
 
-  let res: Response
+  let content: string
   try {
-    res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": origin,
-        "X-Title": "AnesthesiApp OSCE Scorer",
-      },
-      body: JSON.stringify({
-        model: DEFAULT_AI_MODEL,
-        temperature: 0.2,
-        response_format: { type: "json_object" },
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-      }),
+    const aiResult = await callAiModel({
+      model: DEFAULT_AI_MODEL,
+      temperature: 0.2,
+      jsonMode: true,
+      origin,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
     })
-  } catch (err) {
-    console.error("[OSCE Scorer] OpenRouter fetch failed:", err)
-    return NextResponse.json({ error: "Failed to reach OpenRouter" }, { status: 502 })
+    content = aiResult.content
+  } catch (err: any) {
+    console.error("[OSCE Scorer] AI call failed:", err)
+    return NextResponse.json({ error: err.message || "Failed to call AI model" }, { status: 502 })
   }
 
-  if (!res.ok) {
-    const errText = await res.text()
-    console.error("[OSCE Scorer] OpenRouter error:", res.status, errText)
-    return NextResponse.json(
-      { error: `OpenRouter ${res.status}: ${errText.slice(0, 300)}` },
-      { status: 502 },
-    )
-  }
-
-  const payload = (await res.json()) as {
-    choices?: { message?: { content?: string } }[]
-  }
-  const content = payload.choices?.[0]?.message?.content ?? ""
   if (!content) {
     return NextResponse.json({ error: "Empty response from scoring model" }, { status: 502 })
   }

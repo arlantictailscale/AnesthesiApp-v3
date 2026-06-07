@@ -822,10 +822,20 @@ export default function ProfilePage() {
                         </div>
                         {/* Display SVG QR code if present */}
                         {mfaQrCode && (
-                          <div 
-                            className="bg-white p-2 border rounded shadow-xs w-28 h-28 flex items-center justify-center"
-                            dangerouslySetInnerHTML={{ __html: mfaQrCode }}
-                          />
+                          <div className="bg-white p-2 border rounded shadow-xs w-28 h-28 flex items-center justify-center">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img 
+                              src={
+                                mfaQrCode.startsWith("<svg")
+                                  ? `data:image/svg+xml;utf-8,${encodeURIComponent(mfaQrCode)}`
+                                  : mfaQrCode.startsWith("data:image/svg+xml;utf-8,")
+                                    ? `data:image/svg+xml;utf-8,${encodeURIComponent(mfaQrCode.substring("data:image/svg+xml;utf-8,".length))}`
+                                    : mfaQrCode
+                              } 
+                              alt="MFA QR Code" 
+                              className="w-full h-full object-contain"
+                            />
+                          </div>
                         )}
                       </div>
 

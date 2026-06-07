@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { DEFAULT_AI_MODEL } from "@/lib/ai-models"
+import { callAiModel } from "@/lib/ai"
 
 export const runtime = "nodejs"
 export const maxDuration = 60
@@ -26,11 +27,6 @@ Your Roleplay Guidelines:
 `.trim()
 
 export async function POST(req: Request) {
-  const apiKey = process.env.OPENROUTER_API_KEY
-  if (!apiKey) {
-    return NextResponse.json({ error: "OPENROUTER_API_KEY is not configured" }, { status: 500 })
-  }
-
   let body: {
     messages?: { role: "user" | "assistant" | "system"; content: string }[]
     scenario: string
@@ -58,43 +54,22 @@ export async function POST(req: Request) {
 
   const origin = req.headers.get("origin") ?? "https://anesthesiapp.local"
 
-  let res: Response
+  let reply: string
   try {
-    res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": origin,
-        "X-Title": "AnesthesiApp OSCE Examiner",
-      },
-      body: JSON.stringify({
-        model: DEFAULT_AI_MODEL,
-        temperature: 0.7,
-        messages: [
-          { role: "system", content: systemPrompt },
-          ...messages,
-        ],
-      }),
+    const aiResult = await callAiModel({
+      model: DEFAULT_AI_MODEL,
+      temperature: 0.7,
+      origin,
+      messages: [
+        { role: "system", content: systemPrompt },
+        ...messages,
+      ],
     })
-  } catch (err) {
-    console.error("[OSCE Chat] OpenRouter fetch failed:", err)
-    return NextResponse.json({ error: "Failed to reach OpenRouter" }, { status: 502 })
+    reply = aiResult.content
+  } catch (err: any) {
+    console.error("[OSCE Chat] AI call failed:", err)
+    return NextResponse.json({ error: err.message || "Failed to call AI model" }, { status: 502 })
   }
-
-  if (!res.ok) {
-    const errText = await res.text()
-    console.error("[OSCE Chat] OpenRouter error:", res.status, errText)
-    return NextResponse.json(
-      { error: `OpenRouter ${res.status}: ${errText.slice(0, 300)}` },
-      { status: 502 },
-    )
-  }
-
-  const payload = (await res.json()) as {
-    choices?: { message?: { content?: string } }[]
-  }
-  const reply = payload.choices?.[0]?.message?.content ?? ""
 
   return NextResponse.json({ reply })
 }
