@@ -225,6 +225,20 @@ export async function POST(req: Request) {
         }
       }
 
+      // Validate sex check constraint
+      if (parsedUpdate.sex !== "Male" && parsedUpdate.sex !== "Female") {
+        parsedUpdate.sex = null
+      }
+
+      // Validate post_op_room check constraint
+      if (
+        parsedUpdate.post_op_room !== "Low Care" &&
+        parsedUpdate.post_op_room !== "High Care" &&
+        parsedUpdate.post_op_room !== "ICU"
+      ) {
+        parsedUpdate.post_op_room = null
+      }
+
       // Calculate BMI
       let bmi = null
       const w = parsedUpdate["weight_kg"]
