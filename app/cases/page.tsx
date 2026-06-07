@@ -119,8 +119,8 @@ export default function DashboardPage() {
                           c.patient_name
                         )}
                       </h3>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {isProcessing ? "Extracting MRN..." : isFailed ? "Failed to parse notes" : `MRN ${c.medical_record_number}`}
+                      <p className="truncate text-xs text-muted-foreground" title={isFailed ? c.error_message : undefined}>
+                        {isProcessing ? "Extracting MRN..." : isFailed ? (c.error_message || "Failed to parse notes") : `MRN ${c.medical_record_number}`}
                       </p>
                     </div>
                     {isProcessing ? (

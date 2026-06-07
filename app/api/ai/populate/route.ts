@@ -169,21 +169,76 @@ export async function POST(req: Request) {
         throw err
       }
 
-      let bmi = null
-      if (
-        typeof parsed.weight_kg === "number" &&
-        typeof parsed.height_cm === "number" &&
-        parsed.height_cm > 0
-      ) {
-        const heightM = parsed.height_cm / 100
-        bmi = Number((parsed.weight_kg / (heightM * heightM)).toFixed(1))
+      // Defensive parsing and coercion of LLM values
+      const parsedUpdate: Record<string, any> = {}
+
+      // String columns
+      const stringKeys = [
+        "procedure_date", "patient_name", "sex", "medical_record_number", "room",
+        "diagnosis", "procedure_intervention", "allergy", "medication", "past_illness",
+        "last_meal", "event", "b1_breathing", "b2_blood", "b3_brain", "b4_bladder",
+        "b5_bowel", "b6_body_temp", "others", "inv_other_label", "inv_other_result",
+        "assessment", "planning", "anesthesia_management", "regimen_pre_induction",
+        "regimen_induction", "regimen_maintenance", "analgesia_pre_op", "analgesia_intra_op",
+        "analgesia_post_op", "post_induction_side_effects", "ventilator_settings",
+        "hemodynamics_intra", "duration_surgery", "bleeding", "transfusion", "urine_output",
+        "fluid_balance", "post_op_room", "hemodynamics_post", "lab_results_post"
+      ]
+
+      for (const key of stringKeys) {
+        if (key in parsed) {
+          const val = parsed[key]
+          if (val === null || val === undefined) {
+            parsedUpdate[key] = ""
+          } else {
+            parsedUpdate[key] = String(val).trim()
+          }
+        }
       }
+
+      // Numeric columns
+      const numericKeys = ["age", "weight_kg", "height_cm"]
+      for (const key of numericKeys) {
+        if (key in parsed) {
+          const val = parsed[key]
+          if (val === null || val === undefined || val === "") {
+            parsedUpdate[key] = null
+          } else {
+            const num = Number(val)
+            parsedUpdate[key] = Number.isFinite(num) ? num : null
+          }
+        }
+      }
+
+      // JSONB investigations columns
+      const jsonbKeys = ["inv_laboratory", "inv_xray", "inv_ecg", "inv_ct", "inv_mri"]
+      for (const key of jsonbKeys) {
+        if (key in parsed) {
+          const val = parsed[key]
+          if (val && typeof val === "object") {
+            const enabled = (val as any).enabled === true || (val as any).enabled === "true"
+            const result = typeof (val as any).result === "string" ? (val as any).result.trim() : ""
+            parsedUpdate[key] = { enabled, result }
+          } else {
+            parsedUpdate[key] = { enabled: false, result: "" }
+          }
+        }
+      }
+
+      // Calculate BMI
+      let bmi = null
+      const w = parsedUpdate["weight_kg"]
+      const h = parsedUpdate["height_cm"]
+      if (typeof w === "number" && typeof h === "number" && h > 0) {
+        const heightM = h / 100
+        bmi = Number((w / (heightM * heightM)).toFixed(1))
+      }
+      parsedUpdate["bmi"] = bmi
 
       const { error: updateError } = await supabase
         .from("anesthesia_cases")
         .update({
-          ...parsed,
-          bmi,
+          ...parsedUpdate,
           status: "completed",
           updated_at: new Date().toISOString(),
         })
@@ -193,14 +248,15 @@ export async function POST(req: Request) {
         console.error("[v0] Failed to save AI populated case to DB:", updateError)
         await supabase
           .from("anesthesia_cases")
-          .update({ status: "failed" })
+          .update({ status: "failed", error_message: updateError.message })
           .eq("id", caseRow.id)
       }
     } catch (err: any) {
       console.error("[v0] Background AI populate failed:", err)
+      const errMsg = err instanceof Error ? err.message : String(err)
       await supabase
         .from("anesthesia_cases")
-        .update({ status: "failed" })
+        .update({ status: "failed", error_message: errMsg })
         .eq("id", caseRow.id)
     }
   })

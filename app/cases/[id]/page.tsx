@@ -220,7 +220,7 @@ export default function CaseDetailPage() {
           </div>
           <h2 className="text-xl font-semibold text-destructive">AI Population Failed</h2>
           <p className="text-sm text-muted-foreground max-w-xs">
-            The AI model was unable to parse the clinical description. You can fill in the case parameters manually.
+            {c.error_message || "The AI model was unable to parse the clinical description."} You can fill in the case parameters manually.
           </p>
           <div className="flex items-center gap-2">
             <Button size="sm" asChild>
