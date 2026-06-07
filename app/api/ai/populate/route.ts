@@ -78,6 +78,8 @@ Rules:
 - Do not invent clinical details; only use what is supported by the input.
 - Keep values concise and clinically phrased (e.g., "ASA II", "GCS 15", "BP 120/80, HR 82, SpO2 99% RA").
 - Dates must be ISO YYYY-MM-DD. If only a relative date is given (e.g., "today"), leave it empty.
+- **Language**: Preserve the original language of the input description (e.g., if the clinical notes are in Indonesian, extract and output the values in Indonesian). Do NOT translate the content to English if the input is in another language.
+- **List items**: For fields that contain multiple items or bullet points (such as "allergy", "medication", "past_illness", "assessment", or "planning"), separate the items using semicolons with spaces (" ; "). For example: "ASA II ; G2P1001Ab000 ; Anemia" or "Informed consent ; IV line 18G ; IVFD RL 100cc/jam ; Puasa 6 jam".
 
 ${FIELD_SCHEMA_DOC}`
 
