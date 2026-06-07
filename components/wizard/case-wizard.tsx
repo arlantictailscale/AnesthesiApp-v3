@@ -221,6 +221,43 @@ export function CaseWizard({ initialData, caseId }: { initialData?: CaseData; ca
     window.scrollTo({ top: 0, behavior: "smooth" })
   }
 
+  async function handleStepClick(targetStep: number) {
+    if (targetStep === step) return
+
+    // If in Edit Mode (caseId is present), allow jumping anywhere freely
+    if (caseId) {
+      setStep(targetStep)
+      window.scrollTo({ top: 0, behavior: "smooth" })
+      return
+    }
+
+    // For new cases:
+    // If jumping backward, go freely
+    if (targetStep < step) {
+      setStep(targetStep)
+      window.scrollTo({ top: 0, behavior: "smooth" })
+      return
+    }
+
+    // If jumping forward, validate the current step fields first
+    const fields = STEP_FIELDS[step]
+    const valid = await methods.trigger(fields as never)
+    if (!valid) {
+      toast.error("Please fix the errors on the current step first.")
+      return
+    }
+
+    const values = methods.getValues()
+    const parsed = currentStepSchema.safeParse(values)
+    if (!parsed.success) {
+      toast.error("Please complete the required fields on this step.")
+      return
+    }
+
+    setStep(targetStep)
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }
+
   function handleSaveDraft() {
     saveDraft(methods.getValues())
     toast.success("Draft saved")
@@ -285,7 +322,7 @@ export function CaseWizard({ initialData, caseId }: { initialData?: CaseData; ca
         </div>
 
         <Card className="p-4 md:p-6">
-          <Stepper current={step} />
+          <Stepper current={step} onChangeStep={handleStepClick} />
         </Card>
 
         <Card className="p-4 md:p-6">

@@ -3,7 +3,13 @@
 import { Check } from "lucide-react"
 import { STEP_TITLES } from "@/lib/schema"
 
-export function Stepper({ current }: { current: number }) {
+export function Stepper({ 
+  current, 
+  onChangeStep 
+}: { 
+  current: number
+  onChangeStep?: (step: number) => void 
+}) {
   const pct = ((current + 1) / STEP_TITLES.length) * 100
   return (
     <div className="flex flex-col gap-3">
@@ -24,7 +30,11 @@ export function Stepper({ current }: { current: number }) {
           const isDone = i < current
           const isCurrent = i === current
           return (
-            <li key={t} className="flex min-w-0 flex-1 items-center gap-2">
+            <li 
+              key={t} 
+              onClick={() => onChangeStep?.(i)}
+              className="flex min-w-0 flex-1 items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity select-none"
+            >
               <div
                 className={
                   "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-medium " +
