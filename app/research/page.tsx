@@ -12,7 +12,8 @@ import { listSharedCases, getSession } from "@/lib/storage"
 import type { StoredCase } from "@/lib/schema"
 import {
   Search, ClipboardList, Filter, X, ArrowUpDown, ArrowRight,
-  Shield, Calendar, MapPin, User as UserIcon, Activity, Stethoscope
+  Shield, Calendar, MapPin, User as UserIcon, Activity, Stethoscope,
+  Download
 } from "lucide-react"
 
 export default function ResearchLibraryPage() {
@@ -91,20 +92,192 @@ export default function ResearchLibraryPage() {
     setSortBy("newest")
   }
 
+  function handleExportToExcel() {
+    if (sortedCases.length === 0) {
+      toast.error("No cases available to export.")
+      return
+    }
+
+    // Define CSV headers
+    const headers = [
+      "ID",
+      "Patient Name",
+      "MRN",
+      "Procedure Date",
+      "Room",
+      "Sex",
+      "Age",
+      "Weight (kg)",
+      "Height (cm)",
+      "BMI",
+      "Diagnosis",
+      "Procedure & Intervention",
+      "Allergies",
+      "Medications",
+      "Past Illnesses",
+      "Last Meal",
+      "Event Details",
+      "B1 Breathing",
+      "B2 Cardiovascular",
+      "B3 Neurological",
+      "B4 Renal/Bladder",
+      "B5 Abdomen/Bowel",
+      "B6 Temp/Skin",
+      "Other B-Symptoms",
+      "Lab Results",
+      "X-Ray Results",
+      "ECG Results",
+      "CT Scan Results",
+      "MRI Results",
+      "Other Investigation Label",
+      "Other Investigation Result",
+      "Clinical Assessment",
+      "Anesthesia Planning",
+      "Anesthesia Management",
+      "Pre-Induction",
+      "Induction",
+      "Maintenance",
+      "Analgesia Pre-Op",
+      "Analgesia Intra-Op",
+      "Analgesia Post-Op",
+      "Post-Induction Side Effects",
+      "Ventilator Settings",
+      "Intra-Op Hemodynamics",
+      "Surgery Duration",
+      "Bleeding",
+      "Transfusion",
+      "Urine Output",
+      "Fluid Balance",
+      "Post-Op Room",
+      "Post-Op Hemodynamics",
+      "Post-Op Lab Results",
+      "Created At"
+    ]
+
+    // Helper to sanitize CSV field: escape quotes and handle commas
+    const escapeCsvField = (val: unknown) => {
+      if (val === undefined || val === null) return ""
+      let text = ""
+      if (typeof val === "object") {
+        const obj = val as any
+        if (obj && typeof obj.enabled === "boolean") {
+          text = obj.enabled ? (obj.result?.trim() ? obj.result : "Performed") : "Not Performed"
+        } else {
+          text = JSON.stringify(obj)
+        }
+      } else {
+        text = String(val)
+      }
+      const escaped = text.replace(/"/g, '""')
+      if (escaped.includes(",") || escaped.includes("\n") || escaped.includes("\r") || escaped.includes('"')) {
+        return `"${escaped}"`
+      }
+      return escaped
+    }
+
+    const csvRows = []
+    csvRows.push("\ufeff" + headers.join(","))
+
+    sortedCases.forEach((c) => {
+      const isOwner = currentUserId !== null && c.user_id === currentUserId
+      const displayName = isOwner ? c.patient_name : "Patient [Anonymized]"
+
+      const row = [
+        c.id,
+        displayName,
+        c.medical_record_number,
+        c.procedure_date,
+        c.room,
+        c.sex,
+        c.age,
+        c.weight_kg,
+        c.height_cm,
+        c.bmi,
+        c.diagnosis,
+        c.procedure_intervention,
+        c.allergy,
+        c.medication,
+        c.past_illness,
+        c.last_meal,
+        c.event,
+        c.b1_breathing,
+        c.b2_blood,
+        c.b3_brain,
+        c.b4_bladder,
+        c.b5_bowel,
+        c.b6_body_temp,
+        c.others,
+        c.inv_laboratory,
+        c.inv_xray,
+        c.inv_ecg,
+        c.inv_ct,
+        c.inv_mri,
+        c.inv_other_label,
+        c.inv_other_result,
+        c.assessment,
+        c.planning,
+        c.anesthesia_management,
+        c.regimen_pre_induction,
+        c.regimen_induction,
+        c.regimen_maintenance,
+        c.analgesia_pre_op,
+        c.analgesia_intra_op,
+        c.analgesia_post_op,
+        c.post_induction_side_effects,
+        c.ventilator_settings,
+        c.hemodynamics_intra,
+        c.duration_surgery,
+        c.bleeding,
+        c.transfusion,
+        c.urine_output,
+        c.fluid_balance,
+        c.post_op_room,
+        c.hemodynamics_post,
+        c.lab_results_post,
+        c.created_at
+      ]
+
+      csvRows.push(row.map(escapeCsvField).join(","))
+    })
+
+    const csvContent = csvRows.join("\n")
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.setAttribute("href", url)
+    const dateStr = new Date().toISOString().slice(0, 10)
+    link.setAttribute("download", `AnesthesiApp_Research_Export_${dateStr}.csv`)
+    link.style.visibility = "hidden"
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    toast.success(`Successfully exported ${sortedCases.length} cases to Excel/CSV.`)
+  }
+
   return (
     <AppShell>
       <div className="flex flex-col gap-6">
         {/* Page Header */}
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight md:text-3xl flex items-center gap-2">
-              <ClipboardList className="h-7 w-7 text-primary" />
-              Clinical Research Case Library
-            </h1>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold tracking-tight md:text-3xl flex items-center gap-2">
+                <ClipboardList className="h-7 w-7 text-primary" />
+                Clinical Research Case Library
+              </h1>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Browse and analyze cases shared by peers to gain insights, study outcomes, and enhance clinical preparation.
+            </p>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Browse and analyze cases shared by peers to gain insights, study outcomes, and enhance clinical preparation.
-          </p>
+          <Button
+            onClick={handleExportToExcel}
+            className="w-full sm:w-auto gap-2 font-semibold shadow-xs"
+            variant="outline"
+          >
+            <Download className="h-4 w-4" />
+            Export to Excel
+          </Button>
         </div>
 
         {/* Dashboard Analytics summary */}
