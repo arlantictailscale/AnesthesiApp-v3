@@ -43,7 +43,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let active = true
-    getSession().then((s) => {
+    getSession().then(async (s) => {
       if (!active) return
       if (!s) {
         router.replace("/login")
@@ -51,6 +51,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       }
       setEmail(s.email)
       setReady(true)
+
+      // Background self-healing check to sync MFA metadata status
+      try {
+        const { createClient } = await import("@/lib/supabase/client")
+        const supabase = createClient()
+        const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+        if (active && aalData) {
+          const hasMfaEnrolled = aalData.nextLevel === "aal2"
+          const { data: { user } } = await supabase.auth.getUser()
+          if (user) {
+            const metadataEnrolled = user.user_metadata?.mfa_enrolled === true
+            if (hasMfaEnrolled !== metadataEnrolled) {
+              await supabase.auth.updateUser({ data: { mfa_enrolled: hasMfaEnrolled } })
+            }
+          }
+        }
+      } catch (err) {
+        console.error("MFA metadata sync check failed:", err)
+      }
     })
     return () => {
       active = false

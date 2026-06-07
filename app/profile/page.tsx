@@ -86,6 +86,11 @@ export default function ProfilePage() {
   const [confirmResetOpen, setConfirmResetOpen] = useState(false)
   const [disableFactorId, setDisableFactorId] = useState<string | null>(null)
 
+  // Verification before disable states
+  const [disableOtpOpen, setDisableOtpOpen] = useState(false)
+  const [disableOtp, setDisableOtp] = useState("")
+  const [verifyingDisableOtp, setVerifyingDisableOtp] = useState(false)
+
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -354,26 +359,94 @@ export default function ProfilePage() {
   async function handleDisableMfaAction() {
     if (!disableFactorId) return
     setConfirmDisableOpen(false)
-    setMfaLoading(true)
+    
+    // Check if session is currently at AAL2
     try {
       const supabase = createClient()
-      const { error } = await supabase.auth.mfa.unenroll({
+      const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+      if (aalData && aalData.currentLevel === "aal2") {
+        setMfaLoading(true)
+        const { error } = await supabase.auth.mfa.unenroll({
+          factorId: disableFactorId
+        })
+        setMfaLoading(false)
+
+        if (error) {
+          toast.error(error.message)
+        } else {
+          // Update user metadata to reflect MFA is disabled
+          await supabase.auth.updateUser({ data: { mfa_enrolled: false } })
+          toast.success("MFA successfully disabled")
+          await refreshMfaFactors()
+          setDisableFactorId(null)
+        }
+      } else {
+        // Session is AAL1, prompt for OTP verification to upgrade first
+        setDisableOtp("")
+        setDisableOtpOpen(true)
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to check session level")
+      setDisableFactorId(null)
+    }
+  }
+
+  // Verify OTP code, upgrade session to AAL2, and disable MFA
+  async function handleVerifyOtpBeforeDisable(e: React.FormEvent) {
+    e.preventDefault()
+    if (!disableFactorId || disableOtp.length < 6) {
+      toast.error("Please enter the 6-digit confirmation code")
+      return
+    }
+
+    setVerifyingDisableOtp(true)
+    try {
+      const supabase = createClient()
+      
+      // Challenge the factor
+      const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
         factorId: disableFactorId
       })
 
-      if (error) {
-        toast.error(error.message)
+      if (challengeError) {
+        toast.error(challengeError.message)
+        setVerifyingDisableOtp(false)
+        return
+      }
+
+      // Verify the challenge to upgrade session to AAL2
+      const { data: verifyData, error: verifyError } = await supabase.auth.mfa.verify({
+        factorId: disableFactorId,
+        challengeId: challengeData.id,
+        code: disableOtp.trim()
+      })
+
+      if (verifyError) {
+        toast.error(verifyError.message)
+        setVerifyingDisableOtp(false)
+        return
+      }
+
+      // Session is upgraded to AAL2. Now safe to unenroll!
+      const { error: unenrollError } = await supabase.auth.mfa.unenroll({
+        factorId: disableFactorId
+      })
+
+      if (unenrollError) {
+        toast.error(unenrollError.message)
       } else {
         // Update user metadata to reflect MFA is disabled
         await supabase.auth.updateUser({ data: { mfa_enrolled: false } })
         toast.success("MFA successfully disabled")
+        setDisableOtpOpen(false)
+        setDisableOtp("")
+        setDisableFactorId(null)
         await refreshMfaFactors()
       }
     } catch (err: any) {
-      toast.error(err.message || "Failed to disable MFA")
+      toast.error(err.message || "Failed to verify code and disable MFA")
     } finally {
-      setMfaLoading(false)
-      setDisableFactorId(null)
+      setVerifyingDisableOtp(false)
     }
   }
 
@@ -1091,6 +1164,46 @@ export default function ProfilePage() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Verify OTP before Disable Dialog */}
+        <Dialog open={disableOtpOpen} onOpenChange={setDisableOtpOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 font-bold text-lg">
+                <ShieldCheck className="h-5 w-5 text-primary" />
+                Confirm Security Verification
+              </DialogTitle>
+              <DialogDescription className="text-sm leading-relaxed">
+                Enter the 6-digit verification code from your authenticator app to authorize disabling Two-Factor Authentication.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleVerifyOtpBeforeDisable} className="space-y-4 py-2">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="disableOtp" className="text-[10px] font-bold text-muted-foreground uppercase">6-digit Code</Label>
+                <div className="flex gap-3">
+                  <Input
+                    id="disableOtp"
+                    type="text"
+                    maxLength={6}
+                    placeholder="123456"
+                    value={disableOtp}
+                    onChange={(e) => setDisableOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                    className="text-center font-mono text-lg tracking-wider max-w-[150px]"
+                    disabled={verifyingDisableOtp}
+                    required
+                  />
+                  <Button
+                    type="submit"
+                    disabled={verifyingDisableOtp}
+                    className="bg-primary font-bold text-xs"
+                  >
+                    {verifyingDisableOtp ? <Loader2 className="h-4 w-4 animate-spin" /> : "Verify & Disable"}
+                  </Button>
+                </div>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
     </AppShell>
   )
