@@ -62,7 +62,8 @@ function formatValue(k: string, v: React.ReactNode): React.ReactNode {
   }
 
   if (k === "Assessment") {
-    const lines = text.split(/\s*;\s*/).map((l) => l.trim()).filter(Boolean)
+    const delimiter = text.includes(";") ? /\s*;\s*/ : /\s*,\s+(?![^(]*\))/
+    const lines = text.split(delimiter).map((l) => l.trim()).filter(Boolean)
     return (
       <div className="flex flex-col gap-1">
         {lines.map((line, idx) => (
@@ -73,7 +74,13 @@ function formatValue(k: string, v: React.ReactNode): React.ReactNode {
   }
 
   if (k === "Planning") {
-    const lines = text.split(/\s*(?=\b\d+\.\s+)/).map((l) => l.trim()).filter(Boolean)
+    let lines: string[] = []
+    if (/\b\d+\.\s+/.test(text)) {
+      lines = text.split(/\s*(?=\b\d+\.\s+)/).map((l) => l.trim()).filter(Boolean)
+    } else {
+      const delimiter = text.includes(";") ? /\s*;\s*/ : /\s*,\s+(?![^(]*\))/
+      lines = text.split(delimiter).map((l) => l.trim()).filter(Boolean)
+    }
     return (
       <div className="flex flex-col gap-1">
         {lines.map((line, idx) => (
