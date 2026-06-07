@@ -28,9 +28,62 @@ function val(v: unknown): React.ReactNode {
   return String(v)
 }
 
-function isLongValue(v: React.ReactNode): boolean {
+function isLongValue(k: string, v: React.ReactNode): boolean {
+  if (k === "Laboratory" || k === "Assessment" || k === "Planning") return true
   if (typeof v === "string") return v.length > 60 || v.includes("\n")
   return false
+}
+
+function formatValue(k: string, v: React.ReactNode): React.ReactNode {
+  if (typeof v !== "string") return v
+  const text = v.trim()
+  if (!text || text === "—" || text === "Performed") return v
+
+  if (k === "Laboratory") {
+    const blocks = text.split(/\s*;\s*/)
+    const lines: string[] = []
+    blocks.forEach((block, bIdx) => {
+      if (!block.trim()) return
+      const parts = block.split(/(?<=\d)\s+(?=[A-Z])/)
+      lines.push(...parts.map((p) => p.trim()))
+      if (bIdx < blocks.length - 1) {
+        lines.push("") // Empty line between major blocks
+      }
+    })
+    return (
+      <div className="flex flex-col gap-1">
+        {lines.map((line, idx) => (
+          <div key={idx} className={line === "" ? "h-2" : ""}>
+            {line}
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  if (k === "Assessment") {
+    const lines = text.split(/\s*;\s*/).map((l) => l.trim()).filter(Boolean)
+    return (
+      <div className="flex flex-col gap-1">
+        {lines.map((line, idx) => (
+          <div key={idx}>{line}</div>
+        ))}
+      </div>
+    )
+  }
+
+  if (k === "Planning") {
+    const lines = text.split(/\s*(?=\b\d+\.\s+)/).map((l) => l.trim()).filter(Boolean)
+    return (
+      <div className="flex flex-col gap-1">
+        {lines.map((line, idx) => (
+          <div key={idx}>{line}</div>
+        ))}
+      </div>
+    )
+  }
+
+  return v
 }
 
 export default function CaseDetailPage() {
@@ -262,7 +315,7 @@ export default function CaseDetailPage() {
               </div>
               <dl className="flex flex-col divide-y divide-border">
                 {s.rows.map(([k, v]) => {
-                  const stacked = isLongValue(v)
+                  const stacked = isLongValue(k, v)
                   return (
                     <div
                       key={k}
@@ -288,7 +341,7 @@ export default function CaseDetailPage() {
                             : "text-sm text-foreground sm:max-w-[60%] sm:text-right"
                         }
                       >
-                        {v}
+                        {formatValue(k, v)}
                       </dd>
                     </div>
                   )
