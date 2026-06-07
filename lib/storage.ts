@@ -54,6 +54,26 @@ export async function signIn(
       status: error.status,
       code: (error as { code?: string }).code,
     })
+
+    if (error.message === "Invalid login credentials") {
+      // Check if the email exists in the profiles table to determine if they are registered
+      const { data, error: profileError } = await supabase
+        .from("profiles")
+        .select("id")
+        .ilike("email", email.trim())
+        .maybeSingle()
+
+      if (profileError) {
+        console.error("Error checking user registration status:", profileError)
+      }
+
+      if (!data) {
+        return { error: "Email is not registered. Please sign up first." }
+      } else {
+        return { error: "Incorrect password. Please try again." }
+      }
+    }
+
     return { error: error.message }
   }
   return {}
