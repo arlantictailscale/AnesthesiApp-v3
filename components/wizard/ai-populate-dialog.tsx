@@ -19,7 +19,10 @@ import { Textarea } from "@/components/ui/textarea"
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
@@ -210,14 +213,36 @@ export function AiPopulateDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {AI_MODELS.map((m) => (
-                  <SelectItem key={m.id} value={m.id}>
-                    <div className="flex flex-col">
-                      <span className="font-medium">{m.label}</span>
-                      <span className="text-xs text-muted-foreground">{m.id}</span>
-                    </div>
-                  </SelectItem>
-                ))}
+                <SelectGroup>
+                  <SelectLabel className="font-bold text-xs uppercase text-emerald-600 dark:text-emerald-400 tracking-wider">Free Models</SelectLabel>
+                  {AI_MODELS.filter(m => m.tier === "free").map((m) => (
+                    <SelectItem key={m.id} value={m.id}>
+                      <div className="flex flex-col py-0.5">
+                        <span className="font-medium text-sm text-foreground">{m.label}</span>
+                        <span className="text-[10px] text-muted-foreground font-mono">{m.id}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+                
+                <SelectSeparator />
+                
+                <SelectGroup>
+                  <SelectLabel className="font-bold text-xs uppercase text-amber-600 dark:text-amber-400 tracking-wider">Paid Models (Sorted by Price)</SelectLabel>
+                  {AI_MODELS.filter(m => m.tier === "paid").map((m) => (
+                    <SelectItem key={m.id} value={m.id}>
+                      <div className="flex flex-col py-0.5">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-medium text-sm text-foreground">{m.label}</span>
+                          <span className="text-[9px] bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-full px-1.5 py-0.2 font-mono font-semibold">
+                            {m.priceLabel}
+                          </span>
+                        </div>
+                        <span className="text-[10px] text-muted-foreground font-mono">{m.id}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
               </SelectContent>
             </Select>
           </div>
