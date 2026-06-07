@@ -21,11 +21,26 @@ export default function LoginPage() {
     e.preventDefault()
     setLoading(true)
     const { error } = await signIn(email, password)
-    setLoading(false)
     if (error) {
+      setLoading(false)
       toast.error(error)
       return
     }
+
+    try {
+      const { createClient } = await import("@/lib/supabase/client")
+      const supabase = createClient()
+      const { data: aalData, error: aalError } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+      if (!aalError && aalData && aalData.currentLevel === "aal1" && aalData.nextLevel === "aal2") {
+        toast.info("Two-Factor Authentication required")
+        router.push("/login/mfa")
+        return
+      }
+    } catch (err) {
+      console.error("MFA checking error:", err)
+    }
+
+    setLoading(false)
     toast.success("Welcome back")
     router.push("/dashboard")
     router.refresh()

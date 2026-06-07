@@ -30,6 +30,38 @@ export async function updateSession(request: NextRequest) {
 
   const { pathname } = request.nextUrl
 
+  // Check if they need 2FA
+  let needs2FA = false
+  if (user) {
+    const { data: aalData, error: aalError } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+    if (!aalError && aalData) {
+      needs2FA = aalData.currentLevel === "aal1" && aalData.nextLevel === "aal2"
+    }
+  }
+
+  // Redirect to MFA verification if they need 2FA
+  if (needs2FA) {
+    const isProtectedOrAuth =
+      pathname.startsWith("/dashboard") ||
+      pathname.startsWith("/cases") ||
+      pathname.startsWith("/cbt") ||
+      pathname.startsWith("/osce") ||
+      pathname.startsWith("/drugs") ||
+      pathname.startsWith("/guidelines") ||
+      pathname.startsWith("/research") ||
+      pathname === "/login" ||
+      pathname === "/signup" ||
+      pathname === "/"
+
+    if (isProtectedOrAuth && pathname !== "/login/mfa") {
+      const url = request.nextUrl.clone()
+      url.pathname = "/login/mfa"
+      url.search = ""
+      return NextResponse.redirect(url)
+    }
+    return supabaseResponse
+  }
+
   // Redirect successful auth redirects to /dashboard
   if (user && (pathname === "/login" || pathname === "/signup")) {
     const url = request.nextUrl.clone()
