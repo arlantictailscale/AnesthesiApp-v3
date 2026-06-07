@@ -9,7 +9,9 @@ import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { signIn, signInWithGoogle, sendPasswordResetEmail } from "@/lib/storage"
+import { createClient } from "@/lib/supabase/client"
 import { Logo } from "@/components/logo"
+import { Fingerprint, Loader2 } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -57,6 +59,35 @@ export default function LoginPage() {
     toast.success("Welcome back")
     router.push("/dashboard")
     router.refresh()
+  }
+
+  async function handlePasskeySignIn() {
+    setLoading(true)
+    try {
+      const supabase = createClient()
+      const { data, error } = await supabase.auth.signInWithPasskey()
+      if (error) {
+        toast.error(error.message || "Failed to sign in with passkey")
+        setLoading(false)
+        return
+      }
+
+      // Check if MFA is required
+      const { data: aalData, error: aalError } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+      if (!aalError && aalData && aalData.currentLevel === "aal1" && aalData.nextLevel === "aal2") {
+        toast.info("Two-Factor Authentication required")
+        router.push("/login/mfa")
+        return
+      }
+
+      toast.success("Welcome back")
+      router.push("/dashboard")
+      router.refresh()
+    } catch (err: any) {
+      toast.error(err.message || "An error occurred during passkey sign-in")
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function handleResetPasswordSubmit(e: React.FormEvent) {
@@ -139,8 +170,18 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
-            <Button type="submit" className="mt-2" disabled={loading}>
+            <Button type="submit" className="mt-2 font-bold text-xs" disabled={loading}>
               {loading ? "Signing in…" : "Sign in"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="gap-2 border-primary/30 hover:bg-primary/5 hover:border-primary font-bold text-xs"
+              onClick={handlePasskeySignIn}
+              disabled={loading}
+            >
+              <Fingerprint className="h-4 w-4 text-primary" />
+              Sign in with Passkey
             </Button>
           </form>
 

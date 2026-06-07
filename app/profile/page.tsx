@@ -44,7 +44,9 @@ import {
   Trash2,
   ShieldAlert,
   QrCode,
-  Laptop
+  Laptop,
+  Fingerprint,
+  Key
 } from "lucide-react"
 
 export default function ProfilePage() {
@@ -98,6 +100,18 @@ export default function ProfilePage() {
   const [disableOtp, setDisableOtp] = useState("")
   const [verifyingDisableOtp, setVerifyingDisableOtp] = useState(false)
 
+  // Passkeys states
+  const [passkeys, setPasskeys] = useState<any[]>([])
+  const [passkeysLoading, setPasskeysLoading] = useState(false)
+  const [registeringPasskey, setRegisteringPasskey] = useState(false)
+  const [renameDialogOpen, setRenameDialogOpen] = useState(false)
+  const [renamePasskeyId, setRenamePasskeyId] = useState("")
+  const [renameFriendlyName, setRenameFriendlyName] = useState("")
+  const [updatingPasskeyName, setUpdatingPasskeyName] = useState(false)
+  const [confirmDeletePasskeyOpen, setConfirmDeletePasskeyOpen] = useState(false)
+  const [deletePasskeyId, setDeletePasskeyId] = useState("")
+  const [deletingPasskey, setDeletingPasskey] = useState(false)
+
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -136,6 +150,16 @@ export default function ProfilePage() {
         const { data: mfaData, error: mfaError } = await supabase.auth.mfa.listFactors()
         if (!mfaError && mfaData) {
           setMfaFactors(mfaData.all || [])
+        }
+
+        // Load passkeys
+        try {
+          const { data: passkeysData, error: passkeysError } = await supabase.auth.passkey.list()
+          if (!passkeysError && passkeysData) {
+            setPasskeys(passkeysData)
+          }
+        } catch (e) {
+          console.error("Failed to load passkeys on mount:", e)
         }
 
         // Automatically switch to security tab if recovery or security tab requested
@@ -203,6 +227,101 @@ export default function ProfilePage() {
       console.error("MFA list error:", err)
     } finally {
       setMfaLoading(false)
+    }
+  }
+
+  // Refreshes Passkeys list
+  async function loadPasskeys() {
+    setPasskeysLoading(true)
+    try {
+      const supabase = createClient()
+      const { data, error } = await supabase.auth.passkey.list()
+      if (error) {
+        console.error("Failed to load passkeys:", error.message)
+      } else {
+        setPasskeys(data || [])
+      }
+    } catch (err) {
+      console.error("Error loading passkeys:", err)
+    } finally {
+      setPasskeysLoading(false)
+    }
+  }
+
+  // Register Passkey
+  async function handleRegisterPasskey() {
+    setRegisteringPasskey(true)
+    try {
+      const supabase = createClient()
+      const { data, error } = await supabase.auth.registerPasskey()
+      if (error) {
+        toast.error(error.message || "Failed to register passkey")
+      } else if (data) {
+        toast.success("Passkey registered successfully!")
+        
+        // Open rename dialog to customize its name
+        setRenamePasskeyId(data.id)
+        setRenameFriendlyName(data.friendly_name || "My Passkey")
+        setRenameDialogOpen(true)
+        
+        await loadPasskeys()
+      }
+    } catch (err: any) {
+      toast.error(err.message || "An error occurred during passkey registration")
+    } finally {
+      setRegisteringPasskey(false)
+    }
+  }
+
+  // Rename Passkey
+  async function handleRenamePasskey(e: React.FormEvent) {
+    e.preventDefault()
+    if (!renameFriendlyName.trim()) {
+      toast.error("Please enter a name for the passkey")
+      return
+    }
+    setUpdatingPasskeyName(true)
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.auth.passkey.update({
+        passkeyId: renamePasskeyId,
+        friendlyName: renameFriendlyName.trim()
+      })
+      if (error) {
+        toast.error(error.message || "Failed to update passkey name")
+      } else {
+        toast.success("Passkey renamed successfully")
+        setRenameDialogOpen(false)
+        await loadPasskeys()
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to rename passkey")
+    } finally {
+      setUpdatingPasskeyName(false)
+    }
+  }
+
+  // Delete Passkey
+  async function handleDeletePasskey() {
+    if (!deletePasskeyId) return
+    setDeletingPasskey(true)
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.auth.passkey.delete({
+        passkeyId: deletePasskeyId
+      })
+      if (error) {
+        toast.error(error.message || "Failed to delete passkey")
+      } else {
+        toast.success("Passkey deleted successfully")
+        setConfirmDeletePasskeyOpen(false)
+        await loadPasskeys()
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete passkey")
+    } finally {
+      setDeletingPasskey(false)
+      setDeletePasskeyId("")
     }
   }
 
@@ -1118,6 +1237,108 @@ export default function ProfilePage() {
                 </CardContent>
               </Card>
 
+              {/* Passkeys (WebAuthn) Card */}
+              <Card className="border border-border/80 shadow-xs">
+                <CardHeader>
+                  <CardTitle className="text-base font-bold flex items-center gap-1.5">
+                    <Fingerprint className="h-5 w-5 text-primary" /> Passkeys (WebAuthn)
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    Sign in securely using biometrics (Touch ID, Face ID, Windows Hello) or security keys without entering your password.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {passkeysLoading ? (
+                    <div className="flex justify-center py-4">
+                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    </div>
+                  ) : passkeys.length > 0 ? (
+                    <div className="space-y-3">
+                      {passkeys.map((passkey) => (
+                        <div key={passkey.id} className="flex items-center justify-between p-4 border border-border bg-card rounded-lg shadow-2xs hover:bg-muted/10 transition">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+                              <Key className="h-5 w-5" />
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-xs text-foreground">{passkey.friendly_name || "Unnamed Passkey"}</h4>
+                              <p className="text-[10px] text-muted-foreground">Registered on {new Date(passkey.created_at).toLocaleDateString()}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setRenamePasskeyId(passkey.id)
+                                setRenameFriendlyName(passkey.friendly_name || "")
+                                setRenameDialogOpen(true)
+                              }}
+                              className="font-semibold text-xs h-8"
+                            >
+                              Rename
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => {
+                                setDeletePasskeyId(passkey.id)
+                                setConfirmDeletePasskeyOpen(true)
+                              }}
+                              className="font-semibold text-xs h-8"
+                            >
+                              Delete
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                      <div className="flex justify-end pt-2">
+                        <Button
+                          type="button"
+                          onClick={handleRegisterPasskey}
+                          disabled={registeringPasskey}
+                          className="bg-primary text-white font-bold text-xs gap-1.5"
+                        >
+                          {registeringPasskey ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Fingerprint className="h-3.5 w-3.5" />
+                          )}
+                          Add a Passkey
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-4 items-center justify-center py-6 text-center p-4 border border-dashed rounded-lg bg-muted/20">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                        <Fingerprint className="h-6 w-6" />
+                      </div>
+                      <div className="space-y-1">
+                        <h4 className="font-bold text-xs text-foreground">No Passkeys Registered</h4>
+                        <p className="text-[10px] text-muted-foreground leading-normal max-w-sm">
+                          Simplify your login experience. Register a passkey on this device to sign in instantly.
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        onClick={handleRegisterPasskey}
+                        disabled={registeringPasskey}
+                        className="bg-primary text-white font-bold text-xs gap-1.5"
+                      >
+                        {registeringPasskey ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Fingerprint className="h-3.5 w-3.5" />
+                        )}
+                        Register a Passkey
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
             </div>
 
           </div>
@@ -1211,6 +1432,71 @@ export default function ProfilePage() {
             </form>
           </DialogContent>
         </Dialog>
+
+        {/* Rename Passkey Dialog */}
+        <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 font-bold text-lg">
+                <Key className="h-5 w-5 text-primary" />
+                Rename Passkey
+              </DialogTitle>
+              <DialogDescription className="text-sm leading-relaxed">
+                Provide a friendly name for this passkey to help identify it (e.g. "Work Laptop", "Personal Phone").
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleRenamePasskey} className="space-y-4 py-2">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="renameFriendlyName" className="text-[10px] font-bold text-muted-foreground uppercase">Friendly Name</Label>
+                <div className="flex gap-3">
+                  <Input
+                    id="renameFriendlyName"
+                    type="text"
+                    placeholder="My Device"
+                    value={renameFriendlyName}
+                    onChange={(e) => setRenameFriendlyName(e.target.value)}
+                    className="text-xs font-semibold"
+                    disabled={updatingPasskeyName}
+                    required
+                    autoFocus
+                  />
+                  <Button
+                    type="submit"
+                    disabled={updatingPasskeyName}
+                    className="bg-primary font-bold text-xs"
+                  >
+                    {updatingPasskeyName ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+                  </Button>
+                </div>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Passkey Confirmation Dialog */}
+        <AlertDialog open={confirmDeletePasskeyOpen} onOpenChange={setConfirmDeletePasskeyOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-destructive flex items-center gap-2 font-bold text-lg">
+                <Trash2 className="h-5 w-5 text-destructive" />
+                Remove this Passkey?
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-sm leading-relaxed pt-2">
+                Are you sure you want to remove this passkey? You will no longer be able to use it to sign in on this device.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="mt-4">
+              <AlertDialogCancel onClick={() => setDeletePasskeyId("")}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeletePasskey}
+                className="bg-destructive hover:bg-destructive/90 text-destructive-foreground font-bold"
+                disabled={deletingPasskey}
+              >
+                {deletingPasskey ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Yes, Remove Passkey"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </AppShell>
   )
