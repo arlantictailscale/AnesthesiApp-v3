@@ -151,6 +151,7 @@ const DEFAULT_VALUES: Partial<CaseData> = {
   fluid_balance: "",
   hemodynamics_post: "",
   lab_results_post: "",
+  is_shared: true,
 }
 
 export function CaseWizard() {
