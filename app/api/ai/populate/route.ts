@@ -88,6 +88,62 @@ Rules:
 - Dates must be ISO YYYY-MM-DD. If only a relative date is given (e.g., "today"), leave it empty.
 - **List items**: For fields that contain multiple items or bullet points (such as "allergy", "medication", "past_illness", "assessment", or "planning"), separate the items using semicolons with spaces (" ; "). For example: "ASA II ; G2P1001Ab000 ; Anemia" or "Informed consent ; IV line 18G ; IVFD RL 100cc/jam ; Puasa 6 jam".
 
+EXAMPLE INPUT:
+"Pasien wanita, Ny. Sarah, 34 tahun, MRN 98234, rencana operasi laparascopy cholecystectomy tgl 2026-06-10 di OK 2. BB 60kg, TB 155cm. Riwayat HT, minum amlodipine. Puasa 6 jam. Alergi parasetamol. Airway: Mallampati 1, buka mulut >3cm. Lab: Hb 12.5, lainnya DBN. Chest X-Ray normal. Plan GA, induksi propofol 120mg, maintenance sevofluran, analgetik fentanyl 100mcg. Post-op: Low Care."
+
+EXAMPLE OUTPUT:
+{
+  "procedure_date": "2026-06-10",
+  "patient_name": "Ny. Sarah",
+  "sex": "Female",
+  "age": 34,
+  "medical_record_number": "98234",
+  "room": "OK 2",
+  "weight_kg": 60,
+  "height_cm": 155,
+  "diagnosis": "Cholecystolithiasis",
+  "procedure_intervention": "Laparoscopic Cholecystectomy",
+  "allergy": "Parasetamol",
+  "medication": "Amlodipine",
+  "past_illness": "Hipertensi",
+  "last_meal": "Puasa 6 jam",
+  "event": "",
+  "b1_breathing": "Airway bebas ; Mallampati 1 ; Buka mulut >3cm",
+  "b2_blood": "",
+  "b3_brain": "",
+  "b4_bladder": "",
+  "b5_bowel": "",
+  "b6_body_temp": "",
+  "others": "",
+  "inv_laboratory": { "enabled": true, "result": "Hb 12.5 ; Lainnya DBN" },
+  "inv_xray": { "enabled": true, "result": "Normal" },
+  "inv_ecg": { "enabled": false, "result": "" },
+  "inv_ct": { "enabled": false, "result": "" },
+  "inv_mri": { "enabled": false, "result": "" },
+  "inv_other_label": "",
+  "inv_other_result": "",
+  "assessment": "Hipertensi terkontrol",
+  "planning": "General Anesthesia",
+  "anesthesia_management": "GA (General Anesthesia)",
+  "regimen_pre_induction": "",
+  "regimen_induction": "Propofol 120mg",
+  "regimen_maintenance": "Sevofluran",
+  "analgesia_pre_op": "",
+  "analgesia_intra_op": "Fentanyl 100mcg",
+  "analgesia_post_op": "",
+  "post_induction_side_effects": "",
+  "ventilator_settings": "",
+  "hemodynamics_intra": "",
+  "duration_surgery": "",
+  "bleeding": "",
+  "transfusion": "",
+  "urine_output": "",
+  "fluid_balance": "",
+  "post_op_room": "Low Care",
+  "hemodynamics_post": "",
+  "lab_results_post": ""
+}
+
 ${FIELD_SCHEMA_DOC}`
 
 function isAllowedModel(id: string): id is AiModelId {
@@ -154,7 +210,7 @@ export async function POST(req: Request) {
     try {
       const aiResult = await callAiModel({
         model,
-        temperature: 0.2,
+        temperature: 0.1,
         jsonMode: true,
         origin,
         messages: [
