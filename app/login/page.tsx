@@ -122,50 +122,13 @@ export default function LoginPage() {
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
-                <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
-                  <DialogTrigger asChild>
-                    <button
-                      type="button"
-                      className="text-xs font-semibold text-primary hover:underline cursor-pointer"
-                    >
-                      Forgot password?
-                    </button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                      <DialogTitle>Reset Password</DialogTitle>
-                      <DialogDescription>
-                        We will send a secure link to your email address to reset your password and restore account access.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <form onSubmit={handleResetPasswordSubmit} className="space-y-4 py-2">
-                      <div className="grid gap-2">
-                        <Label htmlFor="resetEmail">Email Address</Label>
-                        <Input
-                          id="resetEmail"
-                          type="email"
-                          required
-                          value={resetEmail}
-                          onChange={(e) => setResetEmail(e.target.value)}
-                          placeholder="you@hospital.org"
-                        />
-                      </div>
-                      <div className="flex justify-end gap-2 pt-2">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          onClick={() => setResetDialogOpen(false)}
-                          disabled={resetLoading}
-                        >
-                          Cancel
-                        </Button>
-                        <Button type="submit" disabled={resetLoading}>
-                          {resetLoading ? "Sending..." : "Send Reset Link"}
-                        </Button>
-                      </div>
-                    </form>
-                  </DialogContent>
-                </Dialog>
+                <button
+                  type="button"
+                  onClick={() => setResetDialogOpen(true)}
+                  className="text-xs font-semibold text-primary hover:underline cursor-pointer"
+                >
+                  Forgot password?
+                </button>
               </div>
               <Input
                 id="password"
@@ -180,6 +143,44 @@ export default function LoginPage() {
               {loading ? "Signing in…" : "Sign in"}
             </Button>
           </form>
+
+          {/* Reset Password Dialog */}
+          <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Reset Password</DialogTitle>
+                <DialogDescription>
+                  We will send a secure link to your email address to reset your password and restore account access.
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleResetPasswordSubmit} className="space-y-4 py-2">
+                <div className="grid gap-2">
+                  <Label htmlFor="resetEmail">Email Address</Label>
+                  <Input
+                    id="resetEmail"
+                    type="email"
+                    required
+                    value={resetEmail}
+                    onChange={(e) => setResetEmail(e.target.value)}
+                    placeholder="you@hospital.org"
+                  />
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => setResetDialogOpen(false)}
+                    disabled={resetLoading}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={resetLoading}>
+                    {resetLoading ? "Sending..." : "Send Reset Link"}
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
 
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
