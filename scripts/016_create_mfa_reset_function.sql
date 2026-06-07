@@ -36,6 +36,12 @@ BEGIN
   IF has_recovery THEN
     DELETE FROM auth.mfa_factors
     WHERE user_id = current_user_id AND factor_type = 'totp';
+    
+    -- Update user metadata to clear mfa_enrolled
+    UPDATE auth.users
+    SET raw_user_meta_data = coalesce(raw_user_meta_data, '{}'::jsonb) || '{"mfa_enrolled": false}'::jsonb
+    WHERE id = current_user_id;
+
     RETURN TRUE;
   ELSE
     RAISE EXCEPTION 'MFA reset is only allowed during a password recovery session';

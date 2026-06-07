@@ -318,6 +318,8 @@ export default function ProfilePage() {
       if (verifyError) {
         toast.error(verifyError.message)
       } else {
+        // Update user metadata to reflect MFA is enabled
+        await supabase.auth.updateUser({ data: { mfa_enrolled: true } })
         toast.success("MFA successfully enabled!")
         setEnrollingMfa(false)
         setMfaOtp("")
@@ -349,6 +351,8 @@ export default function ProfilePage() {
       if (error) {
         toast.error(error.message)
       } else {
+        // Update user metadata to reflect MFA is disabled
+        await supabase.auth.updateUser({ data: { mfa_enrolled: false } })
         toast.success("MFA successfully disabled")
         await refreshMfaFactors()
       }
@@ -372,6 +376,8 @@ export default function ProfilePage() {
       if (error) {
         toast.error(error.message)
       } else {
+        // Refresh session to get a new JWT token reflecting the updated metadata
+        await supabase.auth.refreshSession()
         toast.success("MFA factors successfully reset!")
         await refreshMfaFactors()
       }

@@ -23,10 +23,16 @@ export async function updateSession(request: NextRequest) {
     },
   )
 
-  // Do not run code between createServerClient and supabase.auth.getUser()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  // Check if there is an auth cookie first to bypass network calls for guest users
+  const hasAuthCookie = request.cookies.getAll().some(c => c.name.includes("-auth-token"))
+
+  let user = null
+  if (hasAuthCookie) {
+    const {
+      data: { user: supabaseUser },
+    } = await supabase.auth.getUser()
+    user = supabaseUser
+  }
 
   const { pathname } = request.nextUrl
 
@@ -34,13 +40,18 @@ export async function updateSession(request: NextRequest) {
   let needs2FA = false
   if (user) {
     const { data: { session } } = await supabase.auth.getSession()
-    const amrMethods = session ? getAmrFromToken(session.access_token) : []
-    const isRecovery = amrMethods.includes("recovery")
+    if (session) {
+      const tokenPayload = getPayloadFromToken(session.access_token)
+      if (tokenPayload) {
+        const amrMethods = tokenPayload.amr ? parseAmr(tokenPayload.amr) : []
+        const isRecovery = amrMethods.includes("recovery")
 
-    if (!isRecovery) {
-      const { data: aalData, error: aalError } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
-      if (!aalError && aalData) {
-        needs2FA = aalData.currentLevel === "aal1" && aalData.nextLevel === "aal2"
+        if (!isRecovery) {
+          // Check if MFA is enabled in user_metadata, and session is AAL1
+          const isMfaEnrolled = tokenPayload.user_metadata?.mfa_enrolled === true
+          const currentAal = tokenPayload.aal || "aal1"
+          needs2FA = isMfaEnrolled && currentAal === "aal1"
+        }
       }
     }
   }
@@ -95,10 +106,10 @@ export async function updateSession(request: NextRequest) {
   return supabaseResponse
 }
 
-function getAmrFromToken(token: string): string[] {
+function getPayloadFromToken(token: string): any {
   try {
     const parts = token.split(".")
-    if (parts.length !== 3) return []
+    if (parts.length !== 3) return null
     const base64Url = parts[1]
     const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/")
     const jsonPayload = decodeURIComponent(
@@ -107,19 +118,22 @@ function getAmrFromToken(token: string): string[] {
         .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
         .join("")
     )
-    const payload = JSON.parse(jsonPayload)
-    const amr = payload.amr
-    if (Array.isArray(amr)) {
-      return amr.map((item: any) => {
-        if (typeof item === "string") return item
-        if (item && typeof item === "object" && typeof item.method === "string") {
-          return item.method
-        }
-        return ""
-      }).filter(Boolean)
-    }
+    return JSON.parse(jsonPayload)
   } catch (e) {
-    console.error("Error decoding token AMR:", e)
+    console.error("Error decoding token payload:", e)
+    return null
+  }
+}
+
+function parseAmr(amr: any): string[] {
+  if (Array.isArray(amr)) {
+    return amr.map((item: any) => {
+      if (typeof item === "string") return item
+      if (item && typeof item === "object" && typeof item.method === "string") {
+        return item.method
+      }
+      return ""
+    }).filter(Boolean)
   }
   return []
 }
