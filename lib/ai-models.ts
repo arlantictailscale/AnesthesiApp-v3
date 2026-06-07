@@ -25,6 +25,11 @@ export const AI_MODELS = [
     description: "OpenRouter Owl Alpha — default model for AnesthesiApp",
   },
   {
+    id: "deepseek/deepseek-v4-flash",
+    label: "DeepSeek V4 Flash",
+    description: "DeepSeek V4 Flash via OpenRouter — fast and efficient coding & reasoning model",
+  },
+  {
     id: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
     label: "Nemotron-3 Nano Omni (free)",
     description: "NVIDIA Nemotron-3 Nano Omni 30B reasoning model",
