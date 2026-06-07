@@ -180,8 +180,7 @@ export default function CBTDashboardPage() {
               Portal CBT Prep Nasional
             </span>
             <h1 className="text-3xl font-extrabold tracking-tight md:text-5xl leading-tight">
-              Kolegium Anestesiologi <br />
-              <span className="text-primary-foreground/90 font-medium text-2xl md:text-3xl">Computer-Based Test Simulator</span>
+              Computer-Based Test Simulator
             </h1>
             <p className="text-pretty text-sm leading-relaxed text-primary-foreground/80 md:text-base">
               Siapkan diri Anda untuk Ujian Kompetensi Nasional Anestesiologi dengan bank soal berkualitas tinggi. Uji kemampuan Anda dengan simulator waktu riil, analisis kategori sub-spesialisasi lengkap, dan pembahasan mendalam.
