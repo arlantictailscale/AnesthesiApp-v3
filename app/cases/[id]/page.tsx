@@ -30,7 +30,10 @@ function val(v: unknown): React.ReactNode {
 
 function isLongValue(k: string, v: React.ReactNode): boolean {
   if (k === "Laboratory" || k === "Assessment" || k === "Planning") return true
-  if (typeof v === "string") return v.length > 60 || v.includes("\n")
+  if (typeof v === "string") {
+    if (v.includes(";") || (v.includes(",") && /\s*,\s+/.test(v))) return true
+    return v.length > 60 || v.includes("\n")
+  }
   return false
 }
 
@@ -39,6 +42,7 @@ function formatValue(k: string, v: React.ReactNode): React.ReactNode {
   const text = v.trim()
   if (!text || text === "—" || text === "Performed") return v
 
+  // Special logic for Laboratory (regex-based spacing and blocks)
   if (k === "Laboratory") {
     const blocks = text.split(/\s*;\s*/)
     const lines: string[] = []
@@ -61,9 +65,9 @@ function formatValue(k: string, v: React.ReactNode): React.ReactNode {
     )
   }
 
-  if (k === "Assessment") {
-    const delimiter = text.includes(";") ? /\s*;\s*/ : /\s*,\s+(?![^(]*\))/
-    const lines = text.split(delimiter).map((l) => l.trim()).filter(Boolean)
+  // Special logic for Planning (numbered list check)
+  if (k === "Planning" && /\b\d+\.\s+/.test(text)) {
+    const lines = text.split(/\s*(?=\b\d+\.\s+)/).map((l) => l.trim()).filter(Boolean)
     return (
       <div className="flex flex-col gap-1">
         {lines.map((line, idx) => (
@@ -73,21 +77,19 @@ function formatValue(k: string, v: React.ReactNode): React.ReactNode {
     )
   }
 
-  if (k === "Planning") {
-    let lines: string[] = []
-    if (/\b\d+\.\s+/.test(text)) {
-      lines = text.split(/\s*(?=\b\d+\.\s+)/).map((l) => l.trim()).filter(Boolean)
-    } else {
-      const delimiter = text.includes(";") ? /\s*;\s*/ : /\s*,\s+(?![^(]*\))/
-      lines = text.split(delimiter).map((l) => l.trim()).filter(Boolean)
+  // Generic list splitting for any other fields containing list delimiters
+  if (text.includes(";") || (text.includes(",") && /\s*,\s+/.test(text))) {
+    const delimiter = text.includes(";") ? /\s*;\s*/ : /\s*,\s+(?![^(]*\))/
+    const lines = text.split(delimiter).map((l) => l.trim()).filter(Boolean)
+    if (lines.length > 1) {
+      return (
+        <div className="flex flex-col gap-1">
+          {lines.map((line, idx) => (
+            <div key={idx}>{line}</div>
+          ))}
+        </div>
+      )
     }
-    return (
-      <div className="flex flex-col gap-1">
-        {lines.map((line, idx) => (
-          <div key={idx}>{line}</div>
-        ))}
-      </div>
-    )
   }
 
   return v
