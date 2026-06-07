@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = request.nextUrl
   const code = searchParams.get('code')
-  const next = searchParams.get('next') ?? '/'
+  const next = searchParams.get('next') ?? '/dashboard'
 
   // Resolve the true origin when behind a reverse proxy (e.g. Nginx, Cloudflare)
   const forwardedHost = request.headers.get('x-forwarded-host')
