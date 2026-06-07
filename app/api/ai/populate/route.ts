@@ -240,7 +240,6 @@ export async function POST(req: Request) {
         .update({
           ...parsedUpdate,
           status: "completed",
-          updated_at: new Date().toISOString(),
         })
         .eq("id", caseRow.id)
 
