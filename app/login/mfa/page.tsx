@@ -52,9 +52,11 @@ function MFAChallengeContent() {
       const { data: factorsData, error: factorsError } = await supabase.auth.mfa.listFactors()
       if (factorsError) throw factorsError
 
-      const verifiedFactor = factorsData?.all?.find(
-        (f) => f.factorType === "totp" && f.status === "verified"
-      )
+      const verifiedFactor =
+        factorsData?.totp?.find((f) => f.status === "verified") ||
+        factorsData?.all?.find(
+          (f) => (f.factorType === "totp" || (f as any).factor_type === "totp") && f.status === "verified"
+        )
 
       if (!verifiedFactor) {
         toast.error("No active verified authenticator factor found.")
