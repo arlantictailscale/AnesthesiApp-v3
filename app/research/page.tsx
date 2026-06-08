@@ -48,7 +48,7 @@ export default function ResearchLibraryPage() {
 
   // Filtered cases list
   const filteredCases = cases.filter((c) => {
-    if (c.status === "processing") return false
+    if (c.status === "processing" || c.status === "failed") return false
 
     const isOwner = currentUserId !== null && c.user_id === currentUserId
     const displayName = isOwner ? c.patient_name : "Patient [Anonymized]"
