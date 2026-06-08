@@ -364,6 +364,12 @@ export default function CaseDetailPage() {
                 MRN {c.medical_record_number} · {c.sex} · {c.age}y · Logged{" "}
                 {new Date(c.created_at).toLocaleDateString()}
               </p>
+              {c.ai_model && typeof c.ai_duration_seconds === "number" && (
+                <p className="text-[11px] text-muted-foreground/70 font-mono mt-0.5 flex items-center gap-1.5">
+                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Info autofilled with {c.ai_model} in {c.ai_duration_seconds.toFixed(1)}s
+                </p>
+              )}
             </div>
           </div>
 

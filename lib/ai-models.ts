@@ -114,14 +114,7 @@ export const AI_MODELS = [
     priceLabel: "$0.03 / 1M tokens",
     description: "OpenAI GPT OSS 20B model"
   },
-  {
-    id: "nvidia/nemotron-3-nano-30b-a3b",
-    label: "Nemotron-3 Nano 30B",
-    tier: "paid",
-    price: 0.032,
-    priceLabel: "$0.03 / 1M tokens",
-    description: "NVIDIA Nemotron-3 Nano 30B model"
-  },
+
   {
     id: "arcee-ai/trinity-mini",
     label: "Trinity Mini",
@@ -226,14 +219,7 @@ export const AI_MODELS = [
     priceLabel: "$0.098 / 1M tokens",
     description: "DeepSeek V4 Flash coding & reasoning model"
   },
-  {
-    id: "stepfun/step-3.5-flash",
-    label: "Step 3.5 Flash",
-    tier: "paid",
-    price: 0.10,
-    priceLabel: "$0.10 / 1M tokens",
-    description: "Stepfun Step 3.5 Flash model"
-  }
+
 ] as const
 
 export type AiModelId = (typeof AI_MODELS)[number]["id"]
