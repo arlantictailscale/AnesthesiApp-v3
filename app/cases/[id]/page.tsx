@@ -369,31 +369,38 @@ export default function CaseDetailPage() {
 
           {/* Action buttons for the owner */}
           {isOwner && (
-            <div className="flex items-center gap-2 shrink-0">
-              <Button asChild variant="outline" size="sm" className="gap-2 font-semibold">
-                <Link href={`/cases/${c.id}/edit`}>
-                  <Pencil className="h-4 w-4" /> Edit Case
-                </Link>
-              </Button>
-              <Button
-                variant={isShared ? "outline" : "default"}
-                size="sm"
-                disabled={sharingLoading}
-                onClick={handleToggleSharing}
-                className="gap-2 font-semibold"
-              >
-                {sharingLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : isShared ? (
-                  <>
-                    <Lock className="h-4 w-4" /> Make Case Private
-                  </>
-                ) : (
-                  <>
-                    <Globe className="h-4 w-4" /> Share for Research
-                  </>
-                )}
-              </Button>
+            <div className="flex flex-col items-end gap-1.5 shrink-0">
+              <div className="flex items-center gap-2">
+                <Button asChild variant="outline" size="sm" className="gap-2 font-semibold">
+                  <Link href={`/cases/${c.id}/edit`}>
+                    <Pencil className="h-4 w-4" /> Edit Case
+                  </Link>
+                </Button>
+                <Button
+                  variant={isShared ? "outline" : "default"}
+                  size="sm"
+                  disabled={sharingLoading}
+                  onClick={handleToggleSharing}
+                  className="gap-2 font-semibold"
+                >
+                  {sharingLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : isShared ? (
+                    <>
+                      <Lock className="h-4 w-4" /> Make Case Private
+                    </>
+                  ) : (
+                    <>
+                      <Globe className="h-4 w-4" /> Share for Research
+                    </>
+                  )}
+                </Button>
+              </div>
+              {c.ai_model && typeof c.ai_duration_seconds === "number" && (
+                <span className="text-[10px] text-muted-foreground font-mono">
+                  Autofilled with {c.ai_model} in {c.ai_duration_seconds}s
+                </span>
+              )}
             </div>
           )}
         </div>

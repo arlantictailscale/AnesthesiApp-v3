@@ -103,12 +103,16 @@ export type StoredCase = (Partial<CaseData> & {
   created_at: string
   status: 'processing' | 'failed'
   error_message?: string
+  ai_model?: string
+  ai_duration_seconds?: number
 }) | (CaseData & {
   id: string
   user_id: string
   created_at: string
   status?: 'completed'
   error_message?: string
+  ai_model?: string
+  ai_duration_seconds?: number
 })
 
 export const STEP_TITLES = [

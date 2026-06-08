@@ -255,6 +255,7 @@ function extractJson(text: string): unknown {
 }
 
 export async function POST(req: Request) {
+  const startTime = Date.now()
   let body: { description?: string; model?: string }
   try {
     body = await req.json()
@@ -421,6 +422,8 @@ export async function POST(req: Request) {
         .update({
           ...parsedUpdate,
           status: "completed",
+          ai_model: model,
+          ai_duration_seconds: Number(((Date.now() - startTime) / 1000).toFixed(1)),
         })
         .eq("id", caseRow.id)
 
@@ -428,7 +431,12 @@ export async function POST(req: Request) {
         console.error("[v0] Failed to save AI populated case to DB:", updateError)
         await supabase
           .from("anesthesia_cases")
-          .update({ status: "failed", error_message: updateError.message })
+          .update({
+            status: "failed",
+            error_message: updateError.message,
+            ai_model: model,
+            ai_duration_seconds: Number(((Date.now() - startTime) / 1000).toFixed(1)),
+          })
           .eq("id", caseRow.id)
       }
     } catch (err: any) {
@@ -436,7 +444,12 @@ export async function POST(req: Request) {
       const errMsg = err instanceof Error ? err.message : String(err)
       await supabase
         .from("anesthesia_cases")
-        .update({ status: "failed", error_message: errMsg })
+        .update({
+          status: "failed",
+          error_message: errMsg,
+          ai_model: model,
+          ai_duration_seconds: Number(((Date.now() - startTime) / 1000).toFixed(1)),
+        })
         .eq("id", caseRow.id)
     }
   })
