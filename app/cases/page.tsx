@@ -432,7 +432,7 @@ export default function DashboardPage() {
                           />
                         </TableCell>
                       )}
-                      <TableCell className="font-medium">
+                      <TableCell className="font-medium whitespace-normal break-words max-w-[280px]">
                         <div className="flex items-center gap-2">
                           {isProcessing && (
                             <Loader2 className="h-3.5 w-3.5 animate-spin text-amber-500 shrink-0" />
@@ -446,7 +446,7 @@ export default function DashboardPage() {
                               <span className="text-foreground font-semibold">{c.patient_name}</span>
                             )}
                             {isFailed && (
-                              <p className="text-xs text-muted-foreground max-w-[250px] truncate" title={c.error_message}>
+                              <p className="text-xs text-muted-foreground break-all whitespace-normal" title={c.error_message}>
                                 {c.error_message || "Failed to parse notes"}
                               </p>
                             )}
@@ -473,7 +473,7 @@ export default function DashboardPage() {
                       <TableCell className="text-muted-foreground">
                         {isProcessing ? "—" : isFailed ? "—" : `Room ${c.room}`}
                       </TableCell>
-                      <TableCell className="max-w-[200px] truncate text-muted-foreground text-xs" title={c.diagnosis}>
+                      <TableCell className="max-w-[250px] whitespace-normal break-words text-muted-foreground text-xs" title={c.diagnosis}>
                         {isProcessing ? "—" : isFailed ? "—" : c.diagnosis}
                       </TableCell>
                       {!isSelectionMode && (
