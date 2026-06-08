@@ -1,0 +1,88 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "AnesthesiApp AI Case Auto-population API",
+    "version": "1.0.0",
+    "description": "API for automatically extracting clinical documentation and anesthesia parameters from unstructured text."
+  },
+  "servers": [
+    {
+      "url": "https://anesthesiapp.my.id",
+      "description": "Production Server"
+    }
+  ],
+  "paths": {
+    "/api/ai/populate": {
+      "post": {
+        "summary": "Auto-populate case with AI",
+        "description": "Submit raw clinical notes to be processed asynchronously by the AI model. Returns a case ID immediately; processing completes in the background.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "description": {
+                    "type": "string",
+                    "description": "Unstructured handover notes or clinical records."
+                  },
+                  "model": {
+                    "type": "string",
+                    "description": "Model ID to use for processing (default is google/gemini-2.5-flash)."
+                  }
+                },
+                "required": [
+                  "description"
+                ]
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful request submission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "caseId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "example": "f7ff4f26-75a4-4b40-90bb-97ad101e6f01"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request (e.g. description is empty or missing)"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}
