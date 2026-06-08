@@ -48,6 +48,8 @@ export default function ResearchLibraryPage() {
 
   // Filtered cases list
   const filteredCases = cases.filter((c) => {
+    if (c.status === "processing") return false
+
     const isOwner = currentUserId !== null && c.user_id === currentUserId
     const displayName = isOwner ? c.patient_name : "Patient [Anonymized]"
 
@@ -278,48 +280,6 @@ export default function ResearchLibraryPage() {
             <Download className="h-4 w-4" />
             Export to Excel
           </Button>
-        </div>
-
-        {/* Dashboard Analytics summary */}
-        <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
-          <Card className="bg-muted/10 border border-border shadow-xs">
-            <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Total Shared Cases</CardDescription>
-            </CardHeader>
-            <CardContent className="p-4 pt-0">
-              <div className="text-2xl font-bold">{cases.length}</div>
-            </CardContent>
-          </Card>
-          <Card className="bg-muted/10 border border-border shadow-xs">
-            <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">ICU Admitted</CardDescription>
-            </CardHeader>
-            <CardContent className="p-4 pt-0">
-              <div className="text-2xl font-bold text-red-500">
-                {cases.filter((c) => c.post_op_room === "ICU").length}
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-muted/10 border border-border shadow-xs">
-            <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Pediatric Cases</CardDescription>
-            </CardHeader>
-            <CardContent className="p-4 pt-0">
-              <div className="text-2xl font-bold text-blue-500">
-                {cases.filter((c) => c.age < 18).length}
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-muted/10 border border-border shadow-xs">
-            <CardHeader className="p-4 pb-2">
-              <CardDescription className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">My Contributions</CardDescription>
-            </CardHeader>
-            <CardContent className="p-4 pt-0">
-              <div className="text-2xl font-bold text-emerald-500">
-                {cases.filter((c) => currentUserId && c.user_id === currentUserId).length}
-              </div>
-            </CardContent>
-          </Card>
         </div>
 
         {/* Search, Filter and Sort Section */}
