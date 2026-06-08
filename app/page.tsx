@@ -2,6 +2,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Logo } from "@/components/logo"
+import { Footer } from "@/components/footer"
 import {
   Activity,
   ClipboardList,
@@ -330,24 +331,7 @@ export default async function LandingPage() {
           </Card>
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="border-t border-border bg-muted/20">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-6 px-4 py-10 text-xs text-muted-foreground md:flex-row md:px-6">
-          <div className="flex items-center gap-3">
-            <Logo height={24} href={null} />
-            <span className="font-semibold">· for medical training & clinical research</span>
-          </div>
-          
-          <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 font-bold">
-            <Link href="/privacy" className="hover:underline">Privacy Policy</Link>
-            <Link href="/terms" className="hover:underline">Terms of Service</Link>
-            <a href="mailto:support@anesthesiapp.my.id" className="hover:underline">Contact Support</a>
-          </div>
-
-          <p className="font-semibold">© {new Date().getFullYear()} AnesthesiApp. All rights reserved.</p>
-        </div>
-      </footer>
+      <Footer containerClassName="mx-auto flex max-w-6xl flex-col items-center justify-between gap-6 px-4 py-10 text-xs text-muted-foreground md:flex-row md:px-6" />
     </div>
   )
 }

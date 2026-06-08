@@ -27,6 +27,7 @@ import {
   Pill
 } from "lucide-react"
 import { Logo } from "@/components/logo"
+import { Footer } from "@/components/footer"
 import {
   Sheet,
   SheetContent,
@@ -356,6 +357,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 md:px-6 md:py-10">
         {children}
       </main>
+      <Footer />
     </div>
   )
 }

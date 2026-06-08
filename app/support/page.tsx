@@ -493,24 +493,6 @@ export default function SupportUsPage() {
 
         </div>
       </div>
-
-      {/* Footer */}
-      <footer className="mt-12 border-t border-border pt-8 bg-transparent">
-        <div className="flex flex-col items-center justify-between gap-6 py-6 text-xs text-muted-foreground md:flex-row">
-          <div className="flex items-center gap-3">
-            <Logo height={20} href={null} />
-            <span className="font-semibold">· for medical training & clinical research</span>
-          </div>
-          
-          <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 font-bold">
-            <Link href="/privacy" className="hover:underline">Privacy Policy</Link>
-            <Link href="/terms" className="hover:underline">Terms of Service</Link>
-            <a href="mailto:support@anesthesiapp.my.id" className="hover:underline">Contact Support</a>
-          </div>
-
-          <p className="font-semibold">© {new Date().getFullYear()} AnesthesiApp. All rights reserved.</p>
-        </div>
-      </footer>
     </AppShell>
   )
 }

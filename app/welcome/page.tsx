@@ -2,6 +2,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Logo } from "@/components/logo"
+import { Footer } from "@/components/footer"
 import { ShieldCheck, ArrowRight, Sparkles, ClipboardList, Stethoscope, GraduationCap } from "lucide-react"
 
 export default function WelcomePage() {
@@ -82,6 +83,7 @@ export default function WelcomePage() {
           </div>
         </Card>
       </main>
+      <Footer containerClassName="mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-6 px-4 py-8 text-xs text-muted-foreground md:flex-row md:px-6" />
     </div>
   )
 }

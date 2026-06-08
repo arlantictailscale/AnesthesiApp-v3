@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Logo } from "@/components/logo"
+import { Footer } from "@/components/footer"
 import { createClient } from "@/lib/supabase/client"
 import { Mail, CheckCircle2, AlertCircle } from "lucide-react"
 import { toast } from "sonner"
@@ -152,6 +153,7 @@ function SignUpSuccessPageContent() {
           </div>
         </Card>
       </main>
+      <Footer containerClassName="mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-6 px-4 py-8 text-xs text-muted-foreground md:flex-row md:px-6" />
     </div>
   )
 }

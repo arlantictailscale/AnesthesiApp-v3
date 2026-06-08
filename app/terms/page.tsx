@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Logo } from "@/components/logo"
+import { Footer } from "@/components/footer"
 import { ArrowLeft, ShieldCheck, Scale, FileText } from "lucide-react"
 
 export const metadata: Metadata = {
@@ -146,17 +147,7 @@ export default function TermsOfServicePage() {
           </div>
         </article>
       </main>
-
-      {/* Footer */}
-      <footer className="border-t border-border bg-muted/20">
-        <div className="mx-auto flex max-w-4xl flex-col items-center justify-between gap-4 px-4 py-8 text-xs text-muted-foreground md:flex-row">
-          <div className="flex items-center gap-2">
-            <Logo height={20} href={null} />
-            <span>· legal terms</span>
-          </div>
-          <p>© {new Date().getFullYear()} AnesthesiApp. All rights reserved.</p>
-        </div>
-      </footer>
+      <Footer tagline="· legal terms" containerClassName="mx-auto flex max-w-4xl flex-col items-center justify-between gap-4 px-4 py-8 text-xs text-muted-foreground md:flex-row" />
     </div>
   )
 }

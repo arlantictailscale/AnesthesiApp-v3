@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Logo } from "@/components/logo"
+import { Footer } from "@/components/footer"
 import { createClient } from "@/lib/supabase/client"
 import { signOut } from "@/lib/storage"
 import { ShieldCheck, Loader2, LogOut, ArrowLeft, KeyRound } from "lucide-react"
@@ -234,6 +235,7 @@ function MFAChallengeContent() {
 
         </Card>
       </main>
+      <Footer containerClassName="mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-6 px-4 py-8 text-xs text-muted-foreground md:flex-row md:px-6" />
     </div>
   )
 }
@@ -256,6 +258,7 @@ export default function MFAChallengePage() {
             </div>
           </Card>
         </main>
+        <Footer containerClassName="mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-6 px-4 py-8 text-xs text-muted-foreground md:flex-row md:px-6" />
       </div>
     }>
       <MFAChallengeContent />

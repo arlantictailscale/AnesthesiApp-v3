@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label"
 import { signIn, signInWithGoogle, sendPasswordResetEmail } from "@/lib/storage"
 import { createClient } from "@/lib/supabase/client"
 import { Logo } from "@/components/logo"
+import { Footer } from "@/components/footer"
 import { Fingerprint, Loader2 } from "lucide-react"
 import {
   Dialog,
@@ -268,6 +269,7 @@ export default function LoginPage() {
           </p>
         </Card>
       </main>
+      <Footer containerClassName="mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-6 px-4 py-8 text-xs text-muted-foreground md:flex-row md:px-6" />
     </div>
   )
 }
