@@ -19,7 +19,7 @@ export async function GET(request: Request) {
     response_types_supported: ["code", "token"],
     token_endpoint_auth_methods_supported: ["client_secret_post", "client_secret_basic"],
     agent_auth: {
-      skill: `${origin}/.well-known/agent-skills/index.json`,
+      skill: `${origin}/auth.md`,
       register_uri: `${origin}/signup`,
       identity_types_supported: ["anonymous"],
       anonymous: {
