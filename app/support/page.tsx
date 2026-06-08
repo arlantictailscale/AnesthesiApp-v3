@@ -9,8 +9,36 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { listSupporters, addSupporter, type Supporter } from "@/lib/storage"
-import { Heart, Landmark, Globe, MessageSquare, Plus, Loader2, Sparkles } from "lucide-react"
+import { listSupporters, type Supporter } from "@/lib/storage"
+import { Heart, Landmark, Globe, Loader2, Sparkles, AlertCircle } from "lucide-react"
+import Script from "next/script"
+
+declare global {
+  interface Window {
+    snap: {
+      pay: (
+        token: string,
+        options?: {
+          onSuccess?: (result: any) => void
+          onPending?: (result: any) => void
+          onError?: (result: any) => void
+          onClose?: () => void
+        }
+      ) => void
+    }
+  }
+}
+
+const getTierDefaultAmount = (type: "individual" | "sponsor", selectedTier: string): string => {
+  if (type === "individual") {
+    return selectedTier === "Backer" ? "50000" : "150000"
+  } else {
+    if (selectedTier === "Backer") return "250000"
+    if (selectedTier === "Sponsor") return "500000"
+    if (selectedTier === "Gold Sponsor") return "1000000"
+    return "2500000"
+  }
+}
 
 export default function SupportUsPage() {
   const [supporters, setSupporters] = useState<Supporter[]>([])
@@ -21,9 +49,21 @@ export default function SupportUsPage() {
   const [name, setName] = useState("")
   const [type, setType] = useState<"individual" | "sponsor">("individual")
   const [tier, setTier] = useState<"Backer" | "Sponsor" | "Gold Sponsor" | "Platinum Sponsor">("Backer")
-  const [amount, setAmount] = useState("")
+  const [amount, setAmount] = useState("50000")
   const [message, setMessage] = useState("")
   const [website, setWebsite] = useState("")
+
+  // Update tier & amount when type changes
+  useEffect(() => {
+    const defaultTier = type === "individual" ? "Backer" : "Gold Sponsor"
+    setTier(defaultTier)
+    setAmount(getTierDefaultAmount(type, defaultTier))
+  }, [type])
+
+  const handleTierChange = (newTier: typeof tier) => {
+    setTier(newTier)
+    setAmount(getTierDefaultAmount(type, newTier))
+  }
 
   async function load() {
     try {
@@ -47,28 +87,73 @@ export default function SupportUsPage() {
       return
     }
 
+    if (!amount || parseInt(amount) <= 0) {
+      toast.error("Please enter a valid donation amount.")
+      return
+    }
+
     setSubmitting(true)
-    const toastId = toast.loading("Recording your support...")
+    const toastId = toast.loading("Initiating secure payment checkout...")
 
     try {
-      await addSupporter({
-        name: name.trim(),
-        type,
-        tier,
-        amount: amount ? parseFloat(amount) : undefined,
-        message: message.trim() || undefined,
-        website: website.trim() || undefined,
+      const res = await fetch("/api/support/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name.trim(),
+          type,
+          tier,
+          amount: Math.round(parseFloat(amount)),
+          message: message.trim() || undefined,
+          website: website.trim() || undefined,
+        }),
       })
 
-      toast.success("Thank you so much for your support! Your name is now on the board.", { id: toastId })
-      
-      // Reset form
-      setName("")
-      setAmount("")
-      setMessage("")
-      setWebsite("")
-      
-      await load()
+      if (!res.ok) {
+        const errData = await res.json()
+        throw new Error(errData.error || "Failed to initiate payment")
+      }
+
+      const { token, order_id } = await res.json()
+      toast.dismiss(toastId)
+
+      if (typeof window.snap === "undefined") {
+        throw new Error("Payment gateway SDK failed to load. Please refresh the page.")
+      }
+
+      window.snap.pay(token, {
+        onSuccess: async (result: any) => {
+          const confirmToast = toast.loading("Verifying payment settlement status...")
+          try {
+            const confirmRes = await fetch("/api/support/confirm", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ order_id }),
+            })
+            if (confirmRes.ok) {
+              toast.success("Thank you! Payment successful and recorded.", { id: confirmToast })
+              setName("")
+              setMessage("")
+              setWebsite("")
+              await load()
+            } else {
+              toast.error("Payment settlement verification pending.", { id: confirmToast })
+            }
+          } catch (confirmErr) {
+            toast.error("Error confirming payment status.", { id: confirmToast })
+          }
+        },
+        onPending: () => {
+          toast.info("Payment is pending. Please complete transaction.")
+        },
+        onError: () => {
+          toast.error("Payment failed. Please try again.")
+        },
+        onClose: () => {
+          toast.warning("Payment checkout closed.")
+        }
+      })
+
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to record support", { id: toastId })
     } finally {
@@ -82,8 +167,20 @@ export default function SupportUsPage() {
   const sponsors = supporters.filter(s => s.tier === "Sponsor")
   const backers = supporters.filter(s => s.tier === "Backer")
 
+  const isProduction = process.env.NEXT_PUBLIC_MIDTRANS_IS_PRODUCTION === "true"
+  const snapUrl = isProduction
+    ? "https://app.midtrans.com/snap/snap.js"
+    : "https://app.sandbox.midtrans.com/snap/snap.js"
+  const clientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || ""
+
   return (
     <AppShell>
+      <Script
+        src={snapUrl}
+        data-client-key={clientKey}
+        strategy="lazyOnload"
+      />
+
       <div className="flex flex-col gap-8 pb-12">
         {/* Header Section */}
         <div className="text-center max-w-2xl mx-auto flex flex-col gap-3">
@@ -123,12 +220,7 @@ export default function SupportUsPage() {
                         type="button"
                         variant={type === "individual" ? "secondary" : "ghost"}
                         className="h-8 text-xs font-semibold"
-                        onClick={() => {
-                          setType("individual")
-                          if (tier === "Platinum Sponsor" || tier === "Gold Sponsor") {
-                            setTier("Sponsor")
-                          }
-                        }}
+                        onClick={() => setType("individual")}
                       >
                         Individual Donor
                       </Button>
@@ -136,10 +228,7 @@ export default function SupportUsPage() {
                         type="button"
                         variant={type === "sponsor" ? "secondary" : "ghost"}
                         className="h-8 text-xs font-semibold"
-                        onClick={() => {
-                          setType("sponsor")
-                          setTier("Gold Sponsor")
-                        }}
+                        onClick={() => setType("sponsor")}
                       >
                         Sponsor / Org
                       </Button>
@@ -166,20 +255,20 @@ export default function SupportUsPage() {
                     <select
                       id="support-tier"
                       value={tier}
-                      onChange={(e) => setTier(e.target.value as any)}
+                      onChange={(e) => handleTierChange(e.target.value as any)}
                       className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring font-medium"
                     >
                       {type === "individual" ? (
                         <>
-                          <option value="Backer">Backer (Any amount)</option>
-                          <option value="Sponsor">Sponsor ($100+)</option>
+                          <option value="Backer">Backer (Rp 50.000+)</option>
+                          <option value="Sponsor">Sponsor (Rp 150.000+)</option>
                         </>
                       ) : (
                         <>
-                          <option value="Backer">Sponsor Backer ($50+)</option>
-                          <option value="Sponsor">Bronze Sponsor ($100+)</option>
-                          <option value="Gold Sponsor">Gold Sponsor ($250+)</option>
-                          <option value="Platinum Sponsor">Platinum Sponsor ($500+)</option>
+                          <option value="Backer">Sponsor Backer (Rp 250.000+)</option>
+                          <option value="Sponsor">Bronze Sponsor (Rp 500.000+)</option>
+                          <option value="Gold Sponsor">Gold Sponsor (Rp 1.000.000+)</option>
+                          <option value="Platinum Sponsor">Platinum Sponsor (Rp 2.500.000+)</option>
                         </>
                       )}
                     </select>
@@ -187,16 +276,17 @@ export default function SupportUsPage() {
 
                   {/* Optional Donation Amount */}
                   <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="support-amount" className="text-xs font-semibold">Donation Amount (USD, Optional)</Label>
+                    <Label htmlFor="support-amount" className="text-xs font-semibold">Donation Amount (IDR / Rupiah)</Label>
                     <div className="relative">
-                      <span className="absolute left-3 top-2.5 text-xs text-muted-foreground font-semibold">$</span>
+                      <span className="absolute left-3 top-2.5 text-xs text-muted-foreground font-semibold">Rp</span>
                       <Input
                         id="support-amount"
                         type="number"
-                        placeholder="e.g., 50"
-                        className="pl-7"
+                        placeholder="e.g., 50000"
+                        className="pl-8"
                         value={amount}
                         onChange={(e) => setAmount(e.target.value)}
+                        required
                       />
                     </div>
                   </div>
@@ -233,7 +323,7 @@ export default function SupportUsPage() {
                       </>
                     ) : (
                       <>
-                        <Sparkles className="h-4 w-4" /> Add My Support
+                        <Sparkles className="h-4 w-4" /> Support with Midtrans
                       </>
                     )}
                   </Button>
@@ -291,7 +381,7 @@ export default function SupportUsPage() {
                           <div className="flex flex-col gap-1.5">
                             <span className="font-bold text-sm text-amber-700 dark:text-amber-400">{s.name}</span>
                             {s.amount && (
-                              <span className="text-xs font-mono font-bold text-muted-foreground/80">${s.amount} USD Contribution</span>
+                              <span className="text-xs font-mono font-bold text-muted-foreground/80">Rp {s.amount.toLocaleString("id-ID")} Contribution</span>
                             )}
                             {s.message && (
                               <p className="text-xs text-muted-foreground/90 italic mt-1 leading-relaxed">&ldquo;{s.message}&rdquo;</p>
@@ -321,7 +411,7 @@ export default function SupportUsPage() {
                           <div className="flex flex-col gap-1.5">
                             <span className="font-bold text-sm text-yellow-700 dark:text-yellow-400">{s.name}</span>
                             {s.amount && (
-                              <span className="text-xs font-mono font-bold text-muted-foreground/80">${s.amount} USD Contribution</span>
+                              <span className="text-xs font-mono font-bold text-muted-foreground/80">Rp {s.amount.toLocaleString("id-ID")} Contribution</span>
                             )}
                             {s.message && (
                               <p className="text-xs text-muted-foreground/90 italic mt-0.5 leading-relaxed">&ldquo;{s.message}&rdquo;</p>
@@ -351,7 +441,7 @@ export default function SupportUsPage() {
                           <div className="flex flex-wrap items-center justify-between gap-2">
                             <span className="font-bold text-xs text-foreground">{s.name}</span>
                             {s.amount && (
-                              <span className="text-[10px] font-mono font-bold text-muted-foreground/80">${s.amount} USD</span>
+                              <span className="text-[10px] font-mono font-bold text-muted-foreground/80">Rp {s.amount.toLocaleString("id-ID")}</span>
                             )}
                           </div>
                           {s.message && (
@@ -384,7 +474,7 @@ export default function SupportUsPage() {
                         >
                           <div className="flex items-center gap-1.5">
                             <span className="font-bold text-foreground">{s.name}</span>
-                            {s.amount && <span className="text-[10px] font-mono font-bold text-muted-foreground/80">${s.amount}</span>}
+                            {s.amount && <span className="text-[10px] font-mono font-bold text-muted-foreground/80">Rp {s.amount.toLocaleString("id-ID")}</span>}
                           </div>
                           {s.message && (
                             <span className="text-[10px] text-muted-foreground italic max-w-[150px] truncate">&ldquo;{s.message}&rdquo;</span>

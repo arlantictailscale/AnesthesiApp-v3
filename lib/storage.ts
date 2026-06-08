@@ -339,6 +339,8 @@ export type Supporter = {
   amount?: number
   message?: string
   website?: string
+  status: 'pending' | 'paid' | 'failed'
+  order_id?: string
   created_at: string
 }
 
@@ -347,6 +349,7 @@ export async function listSupporters(): Promise<Supporter[]> {
   const { data, error } = await supabase
     .from("supporters")
     .select("*")
+    .eq("status", "paid")
     .order("created_at", { ascending: false })
   if (error) throw new Error(error.message)
   return (data ?? []) as Supporter[]
