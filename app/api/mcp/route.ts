@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { getRequestOrigin } from "@/lib/origin"
 
 export const runtime = "nodejs"
 
@@ -79,7 +80,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Description argument is required" }, { status: 400 })
     }
 
-    const origin = req.headers.get("origin") ?? "https://anesthesiapp.local"
+    const origin = getRequestOrigin(req)
     const supabase = await createClient()
 
     const authHeader = req.headers.get("authorization") || ""

@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server"
+import { getRequestOrigin } from "@/lib/origin"
 
 export const runtime = "nodejs"
 
 export async function GET(request: Request) {
-  const url = new URL(request.url)
-  const origin = url.origin
+  const origin = getRequestOrigin(request)
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://shqthvtlwqkshccetgcz.supabase.co"
   const issuer = origin
