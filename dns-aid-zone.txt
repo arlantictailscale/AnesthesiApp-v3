@@ -1,0 +1,7 @@
+; DNS for AI Discovery (DNS-AID) Zone File for anesthesiapp.my.id
+; Upload this to Cloudflare DNS dashboard to configure both SVCB and HTTPS records correctly.
+
+_index._agents.anesthesiapp.my.id. 3600 IN SVCB 1 anesthesiapp.my.id. alpn="a2a" port=443 mandatory=alpn,port
+_a2a._agents.anesthesiapp.my.id. 3600 IN SVCB 1 anesthesiapp.my.id. alpn="a2a" port=443 mandatory=alpn,port
+_index._agents.anesthesiapp.my.id. 3600 IN HTTPS 1 anesthesiapp.my.id. alpn="a2a" port=443 mandatory=alpn,port
+_a2a._agents.anesthesiapp.my.id. 3600 IN HTTPS 1 anesthesiapp.my.id. alpn="a2a" port=443 mandatory=alpn,port
