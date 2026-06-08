@@ -4,8 +4,14 @@ import { NextResponse, type NextRequest } from "next/server"
 export async function middleware(request: NextRequest) {
   // Check for Accept: text/markdown content negotiation
   const acceptHeader = request.headers.get("accept") || ""
-  if (acceptHeader.includes("text/markdown")) {
-    const { pathname } = request.nextUrl
+  const { pathname } = request.nextUrl
+  
+  if (
+    acceptHeader.includes("text/markdown") &&
+    !pathname.startsWith("/.well-known") &&
+    !pathname.startsWith("/api") &&
+    !pathname.endsWith(".md")
+  ) {
     let markdownContent = ""
 
     if (pathname === "/") {
