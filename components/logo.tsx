@@ -20,8 +20,8 @@ export function Logo({
   className,
   priority = false,
 }: LogoProps) {
-  // Source image is 870x182 → aspect ratio ~4.78
-  const aspectRatio = 870 / 182
+  // Source image is 856x184 → aspect ratio ~4.65
+  const aspectRatio = 856 / 184
   const width = Math.round(height * aspectRatio)
 
   const img = (
@@ -32,7 +32,7 @@ export function Logo({
       height={height}
       priority={priority}
       className={className}
-      style={{ width: "auto", height }}
+      style={{ display: "inline-block", width: `${width}px`, height: `${height}px` }}
     />
   )
 
