@@ -283,7 +283,7 @@ export default function DrugLibraryPage() {
 
   return (
     <AppShell>
-      <div className="flex flex-col gap-6 pb-12 h-[calc(100vh-8rem)] min-h-[500px]">
+      <div className="flex flex-col gap-6 pb-12">
         {/* Page Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between shrink-0">
           <div>
@@ -301,10 +301,10 @@ export default function DrugLibraryPage() {
         </div>
 
         {/* Outer Split Container */}
-        <div className="flex flex-1 gap-6 min-h-0 overflow-hidden relative">
+        <div className="flex flex-1 gap-6 relative">
           
           {/* MASTER PANEL (Left Sidebar) */}
-          <div className={`flex flex-col gap-4 w-full md:w-[350px] lg:w-[400px] shrink-0 border border-border bg-card rounded-xl p-4 min-h-0 ${showMobileDetails ? "hidden md:flex" : "flex"}`}>
+          <div className={`flex flex-col gap-4 w-full md:w-[350px] lg:w-[400px] shrink-0 border border-border bg-card rounded-xl p-4 ${showMobileDetails ? "hidden md:flex" : "flex"}`}>
             
             {/* Search inputs */}
             <div className="relative w-full">
@@ -347,7 +347,7 @@ export default function DrugLibraryPage() {
             </div>
 
             {/* Drug List */}
-            <div className="flex-1 overflow-y-auto pr-1 flex flex-col gap-2 min-h-0">
+            <div className="flex flex-col gap-2">
               {loading ? (
                 Array.from({ length: 6 }).map((_, i) => (
                   <div key={i} className="h-16 w-full animate-pulse bg-muted rounded-lg" />
@@ -420,7 +420,7 @@ export default function DrugLibraryPage() {
           </div>
 
           {/* DETAIL PANEL (Right Area) */}
-          <div className={`flex-1 flex flex-col border border-border bg-card rounded-xl overflow-hidden min-h-0 ${!showMobileDetails ? "hidden md:flex" : "flex"}`}>
+          <div className={`flex-1 flex flex-col border border-border bg-card rounded-xl overflow-hidden md:sticky md:top-20 h-fit md:max-h-[calc(100vh-7rem)] ${!showMobileDetails ? "hidden md:flex" : "flex"}`}>
             {activeDrug ? (
               <div className="flex-1 flex flex-col min-h-0">
                 {/* Detail Header */}
