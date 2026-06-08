@@ -446,9 +446,9 @@ export default function GuidelinesLibraryPage() {
           </div>
 
           {/* DETAIL PANEL (Right Area) */}
-          <div className={`flex-1 flex flex-col border border-border bg-card rounded-xl overflow-hidden md:sticky md:top-20 h-fit md:max-h-[calc(100vh-7rem)] ${!showMobileDetails ? "hidden md:flex" : "flex"}`}>
+          <div className={`flex-1 flex flex-col border border-border bg-card rounded-xl ${!showMobileDetails ? "hidden md:flex" : "flex"}`}>
             {activeGuideline ? (
-              <div className="flex-1 flex flex-col min-h-0">
+              <div className="flex flex-col">
                 
                 {/* Detail Header */}
                 <div className="p-4 border-b border-border bg-muted/10 shrink-0 flex items-center justify-between gap-4">
@@ -500,8 +500,8 @@ export default function GuidelinesLibraryPage() {
                   )}
                 </div>
 
-                {/* Detail Content (Scrollable) */}
-                <div className="flex-1 overflow-y-auto p-5 space-y-6 min-h-0">
+                {/* Detail Content */}
+                <div className="p-5 space-y-6">
                   
                   {/* Executive Summary Card */}
                   <Card className="bg-muted/10 border-border shadow-sm">
