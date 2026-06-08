@@ -83,9 +83,14 @@ export default function DashboardPage() {
         setOsceCount(stations.length)
         setOsceAttemptsCount(osceAttempts.length)
         if (osceAttempts.length > 0) {
-          // Average checklist score
-          const totalChecklistScore = osceAttempts.reduce((acc, curr) => acc + curr.score, 0)
-          setOsceAvgScore(Math.round(totalChecklistScore / osceAttempts.length))
+          const completedAttempts = osceAttempts.filter((a) => a.status === "completed")
+          if (completedAttempts.length > 0) {
+            const totalScore = completedAttempts.reduce((acc, curr) => acc + (curr.total_score || 0), 0)
+            const maxScore = completedAttempts.reduce((acc, curr) => acc + (curr.max_score || 0), 0)
+            setOsceAvgScore(maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0)
+          } else {
+            setOsceAvgScore(null)
+          }
         }
 
         // Fetch Drug count
