@@ -23,7 +23,8 @@ import {
   GraduationCap,
   BookOpen,
   Share2,
-  Heart
+  Heart,
+  Pill
 } from "lucide-react"
 import { Logo } from "@/components/logo"
 import {
