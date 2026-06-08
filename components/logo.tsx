@@ -38,7 +38,7 @@ export function Logo({
 
   if (href === null) return img
   return (
-    <Link href={href} className="inline-flex items-center" aria-label="AnesthesiApp home">
+    <Link href={href} className="inline-flex items-center shrink-0" aria-label="AnesthesiApp home">
       {img}
     </Link>
   )
