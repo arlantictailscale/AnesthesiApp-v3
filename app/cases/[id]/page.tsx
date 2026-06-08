@@ -81,11 +81,13 @@ function formatValue(k: string, v: React.ReactNode): React.ReactNode {
   // Special logic for Planning (numbered list or fallback list)
   if (k === "Planning") {
     let lines: string[] = []
-    if (/\b\d+\.\s+/.test(text)) {
-      lines = text.split(/\s*(?=\b\d+\.\s+)/).map((l) => l.trim()).filter(Boolean)
-    } else {
+    if (text.includes(";")) {
       const delimiter = /\s*;\s*/
       lines = text.split(delimiter).map((l) => l.trim()).filter(Boolean)
+    } else if (/\b\d+\.\s+/.test(text)) {
+      lines = text.split(/\s*(?=\b\d+\.\s+)/).map((l) => l.trim()).filter(Boolean)
+    } else {
+      lines = [text]
     }
     return (
       <div className="flex flex-col gap-1">
