@@ -325,7 +325,7 @@ export default function SupportUsPage() {
                       </>
                     ) : (
                       <>
-                        <Sparkles className="h-4 w-4" /> Support with Midtrans
+                        <Sparkles className="h-4 w-4" /> Make a Donation
                       </>
                     )}
                   </Button>
