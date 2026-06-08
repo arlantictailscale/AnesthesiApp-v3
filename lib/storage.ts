@@ -164,6 +164,13 @@ export async function deleteCase(id: string): Promise<void> {
   if (error) throw new Error(error.message)
 }
 
+export async function deleteCases(ids: string[]): Promise<void> {
+  if (ids.length === 0) return
+  const supabase = createClient()
+  const { error } = await supabase.from("anesthesia_cases").delete().in("id", ids)
+  if (error) throw new Error(error.message)
+}
+
 export async function listSharedCases(): Promise<StoredCase[]> {
   const supabase = createClient()
   const { data, error } = await supabase
