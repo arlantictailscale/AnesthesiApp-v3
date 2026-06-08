@@ -331,3 +331,36 @@ export async function sendPasswordResetEmail(email: string): Promise<{ error?: s
   return {}
 }
 
+export type Supporter = {
+  id: string
+  name: string
+  type: 'individual' | 'sponsor'
+  tier: 'Backer' | 'Sponsor' | 'Gold Sponsor' | 'Platinum Sponsor'
+  amount?: number
+  message?: string
+  website?: string
+  created_at: string
+}
+
+export async function listSupporters(): Promise<Supporter[]> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from("supporters")
+    .select("*")
+    .order("created_at", { ascending: false })
+  if (error) throw new Error(error.message)
+  return (data ?? []) as Supporter[]
+}
+
+export async function addSupporter(supporter: Omit<Supporter, "id" | "created_at">): Promise<Supporter> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from("supporters")
+    .insert(supporter)
+    .select("*")
+    .single()
+  if (error) throw new Error(error.message)
+  return data as Supporter
+}
+
+

@@ -22,8 +22,8 @@ import {
   ClipboardList,
   GraduationCap,
   BookOpen,
-  Pill,
-  Share2
+  Share2,
+  Heart
 } from "lucide-react"
 import { Logo } from "@/components/logo"
 import {
@@ -100,6 +100,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isDrugs = pathname?.startsWith("/drugs")
   const isGuidelines = pathname?.startsWith("/guidelines")
   const isResearch = pathname?.startsWith("/research")
+  const isSupport = pathname?.startsWith("/support")
   const isOsce = pathname?.startsWith("/osce")
   const isNew = pathname?.startsWith("/cases/new")
   const isCases = pathname?.startsWith("/cases") && !isNew
@@ -172,6 +173,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             >
               <Link href="/research">Research</Link>
             </Button>
+            <Button
+              asChild
+              variant={isSupport ? "secondary" : "ghost"}
+              size="sm"
+              className="text-amber-600 dark:text-amber-400 font-semibold"
+            >
+              <Link href="/support" className="flex items-center gap-1">
+                <Heart className="h-3.5 w-3.5 fill-current" />
+                <span>Support Us</span>
+              </Link>
+            </Button>
           </nav>
 
           <div className="flex items-center gap-2">
@@ -190,6 +202,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <DropdownMenuItem asChild>
                   <Link href="/profile" className="flex items-center w-full cursor-pointer">
                     <User className="mr-2 h-4 w-4" /> My Profile
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/support" className="flex items-center w-full cursor-pointer text-amber-600 dark:text-amber-400 font-semibold">
+                    <Heart className="mr-2 h-4 w-4 fill-current" /> Support Us
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
@@ -292,6 +309,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       <Link href="/research">
                         <Share2 className="h-4 w-4 shrink-0 text-primary" />
                         Research Hub
+                      </Link>
+                    </Button>
+                    <Button
+                      asChild
+                      variant={isSupport ? "secondary" : "ghost"}
+                      className="justify-start gap-3 w-full"
+                    >
+                      <Link href="/support" className="text-amber-600 dark:text-amber-400 font-semibold">
+                        <Heart className="h-4 w-4 shrink-0 fill-current" />
+                        Support Us
                       </Link>
                     </Button>
                   </nav>
