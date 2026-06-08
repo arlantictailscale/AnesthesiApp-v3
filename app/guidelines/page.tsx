@@ -328,7 +328,7 @@ export default function GuidelinesLibraryPage() {
         </div>
 
         {/* Master Detail Grid Split */}
-        <div className="flex flex-1 gap-6 relative">
+        <div className="flex flex-col md:flex-row flex-1 gap-6 relative">
 
           {/* MASTER PANEL (Left Sidebar) */}
           <div className={`flex flex-col gap-4 w-full md:w-[350px] lg:w-[400px] shrink-0 border border-border bg-card rounded-xl p-4 ${showMobileDetails ? "hidden md:flex" : "flex"}`}>
@@ -446,7 +446,7 @@ export default function GuidelinesLibraryPage() {
           </div>
 
           {/* DETAIL PANEL (Right Area) */}
-          <div className={`flex-1 flex flex-col border border-border bg-card rounded-xl ${!showMobileDetails ? "hidden md:flex" : "flex"}`}>
+          <div className={`flex-1 min-w-0 flex flex-col border border-border bg-card rounded-xl ${!showMobileDetails ? "hidden md:flex" : "flex"}`}>
             {activeGuideline ? (
               <div className="flex flex-col">
                 
