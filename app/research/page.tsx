@@ -13,8 +13,16 @@ import type { StoredCase } from "@/lib/schema"
 import {
   Search, ClipboardList, Filter, X, ArrowUpDown, ArrowRight,
   Shield, Calendar, MapPin, User as UserIcon, Activity, Stethoscope,
-  Download
+  Download, LayoutGrid, List
 } from "lucide-react"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 
 export default function ResearchLibraryPage() {
   const [cases, setCases] = useState<StoredCase[]>([])
@@ -27,6 +35,20 @@ export default function ResearchLibraryPage() {
   const [selectedAgeGroup, setSelectedAgeGroup] = useState("All")
   const [selectedPostOpRoom, setSelectedPostOpRoom] = useState("All")
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "age">("newest")
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+
+  // Load view mode preference on client mount
+  useEffect(() => {
+    const saved = localStorage.getItem('research_view_mode')
+    if (saved === 'grid' || saved === 'list') {
+      setViewMode(saved)
+    }
+  }, [])
+
+  const toggleViewMode = (mode: 'grid' | 'list') => {
+    setViewMode(mode)
+    localStorage.setItem('research_view_mode', mode)
+  }
 
   async function loadData() {
     try {
@@ -381,6 +403,28 @@ export default function ResearchLibraryPage() {
                 </Button>
               )}
             </div>
+
+            {/* View Toggle */}
+            <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-lg border border-border ml-auto">
+              <Button
+                variant={viewMode === "grid" ? "secondary" : "ghost"}
+                size="sm"
+                onClick={() => toggleViewMode("grid")}
+                className="h-7 w-7 p-0"
+                title="Grid view"
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={viewMode === "list" ? "secondary" : "ghost"}
+                size="sm"
+                onClick={() => toggleViewMode("list")}
+                className="h-7 w-7 p-0"
+                title="List view"
+              >
+                <List className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </Card>
 
@@ -397,7 +441,7 @@ export default function ResearchLibraryPage() {
             <h3 className="font-semibold text-lg">No shared cases found</h3>
             <p className="text-sm text-muted-foreground max-w-sm mt-1">Try updating your filters or search terms.</p>
           </div>
-        ) : (
+        ) : viewMode === "grid" ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {sortedCases.map((c) => {
               const isOwner = currentUserId !== null && c.user_id === currentUserId
@@ -472,6 +516,86 @@ export default function ResearchLibraryPage() {
                 </Card>
               )
             })}
+          </div>
+        ) : (
+          /* List / Table View */
+          <div className="rounded-xl border border-border bg-card overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead>Patient</TableHead>
+                  <TableHead>MRN</TableHead>
+                  <TableHead>Sex & Age</TableHead>
+                  <TableHead className="max-w-[200px]">Procedure</TableHead>
+                  <TableHead className="max-w-[200px]">Diagnosis</TableHead>
+                  <TableHead>Outcome</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sortedCases.map((c) => {
+                  const isOwner = currentUserId !== null && c.user_id === currentUserId
+
+                  let roomBadgeStyle = "bg-muted text-muted-foreground"
+                  if (c.post_op_room === "ICU") roomBadgeStyle = "bg-red-500/10 text-red-600 border-red-500/20"
+                  else if (c.post_op_room === "High Care") roomBadgeStyle = "bg-orange-500/10 text-orange-600 border-orange-500/20"
+                  else if (c.post_op_room === "Low Care") roomBadgeStyle = "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+
+                  return (
+                    <TableRow key={c.id} className="group cursor-pointer hover:bg-muted/30 transition-colors">
+                      <TableCell className="font-medium whitespace-normal break-words max-w-[200px]">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="min-w-0">
+                            <span className="text-foreground font-semibold block truncate group-hover:text-primary transition-colors">
+                              {isOwner ? c.patient_name : "Patient [Anonymized]"}
+                            </span>
+                          </div>
+                          {isOwner && (
+                            <Badge variant="outline" className="bg-emerald-500/10 border-emerald-500/20 text-emerald-600 font-bold text-[9px] shrink-0">
+                              Mine
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-xs font-mono">
+                        {c.medical_record_number}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className="font-bold text-[9px] uppercase">
+                          {c.sex} · {c.age}y
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="max-w-[200px] whitespace-normal break-words text-muted-foreground text-xs" title={c.procedure_intervention}>
+                        {c.procedure_intervention}
+                      </TableCell>
+                      <TableCell className="max-w-[200px] whitespace-normal break-words text-muted-foreground text-xs" title={c.diagnosis}>
+                        {c.diagnosis}
+                      </TableCell>
+                      <TableCell>
+                        {c.post_op_room ? (
+                          <Badge variant="outline" className={`text-[9px] font-bold uppercase ${roomBadgeStyle}`}>
+                            {c.post_op_room}
+                          </Badge>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-xs">
+                        {new Date(c.procedure_date).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button asChild variant="ghost" size="sm" className="h-8 gap-1 text-xs font-bold text-primary">
+                          <Link href={`/cases/${c.id}`}>
+                            View <ArrowRight className="h-3.5 w-3.5" />
+                          </Link>
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
           </div>
         )}
       </div>
