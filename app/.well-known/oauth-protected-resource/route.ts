@@ -11,7 +11,7 @@ export async function GET(request: Request) {
 
   const resourceMetadata = {
     resource: `${origin}/`,
-    authorization_servers: [issuer],
+    authorization_servers: [origin],
     scopes_supported: ["anon", "authenticated"],
     bearer_methods_supported: ["header"]
   }
