@@ -35,11 +35,13 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
+import { SupporterBadge } from "@/components/supporter-badge"
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
   const [email, setEmail] = useState<string | null>(null)
+  const [supporterTier, setSupporterTier] = useState<string | null>(null)
   const [ready, setReady] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
 
@@ -52,6 +54,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         return
       }
       setEmail(s.email)
+
+      // Fetch profile supporter tier
+      try {
+        const { getUserProfile } = await import("@/lib/storage")
+        const profile = await getUserProfile(s.userId)
+        if (active && profile) {
+          setSupporterTier(profile.supporter_tier || null)
+        }
+      } catch (err) {
+        console.error("Failed to load user profile in app shell:", err)
+      }
+
       setReady(true)
 
       // Background self-healing check to sync MFA metadata status
@@ -197,8 +211,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuLabel className="max-w-[220px] truncate">
-                  {email}
+                <DropdownMenuLabel className="max-w-[220px] truncate flex flex-col gap-1 items-start">
+                  <span className="truncate">{email}</span>
+                  <SupporterBadge tier={supporterTier} />
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>

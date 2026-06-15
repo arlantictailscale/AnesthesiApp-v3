@@ -16,6 +16,9 @@ export async function POST(request: Request) {
 
     // Insert pending Supporter in database
     const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    const userId = user?.id || null
+
     const { error: dbError } = await supabase
       .from("supporters")
       .insert({
@@ -27,6 +30,7 @@ export async function POST(request: Request) {
         website: website || null,
         status: "pending",
         order_id: orderId,
+        user_id: userId,
       })
 
     if (dbError) {

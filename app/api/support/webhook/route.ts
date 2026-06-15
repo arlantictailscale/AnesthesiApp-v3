@@ -55,14 +55,30 @@ export async function POST(request: Request) {
     // If state changed, update database record
     if (dbStatus !== "pending") {
       const supabase = await createClient()
-      const { error: dbError } = await supabase
+      const { data: updatedSupporters, error: dbError } = await supabase
         .from("supporters")
         .update({ status: dbStatus })
         .eq("order_id", order_id)
+        .select("user_id, tier")
 
       if (dbError) {
         console.error("Database update error on webhook:", dbError)
         return NextResponse.json({ error: dbError.message }, { status: 500 })
+      }
+
+      // If payment is settled, set user's supporter tier badge
+      if (dbStatus === "paid" && updatedSupporters && updatedSupporters.length > 0) {
+        const { user_id, tier } = updatedSupporters[0]
+        if (user_id) {
+          const { error: profileError } = await supabase
+            .from("profiles")
+            .update({ supporter_tier: tier.toLowerCase() })
+            .eq("id", user_id)
+          
+          if (profileError) {
+            console.error("Failed to update profile supporter tier on webhook:", profileError)
+          }
+        }
       }
       console.log(`[Support Webhook] Updated order ${order_id} to ${dbStatus}`)
     }

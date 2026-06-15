@@ -234,6 +234,7 @@ export interface UserProfile {
   department: string | null
   bio: string | null
   avatar_url: string | null
+  supporter_tier?: string | null
   updated_at: string
 }
 

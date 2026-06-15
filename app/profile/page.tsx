@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { getSession, getUserProfile, updateUserProfile, uploadAvatar, type UserProfile } from "@/lib/storage"
 import { createClient } from "@/lib/supabase/client"
+import { SupporterBadge } from "@/components/supporter-badge"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -752,9 +753,10 @@ export default function ProfilePage() {
                   className="hidden"
                 />
 
-                <div className="text-center">
+                <div className="text-center flex flex-col items-center gap-1.5">
                   <h3 className="font-bold text-base truncate max-w-[200px]">{fullName || "Anesthesiologist"}</h3>
                   <p className="text-xs text-muted-foreground font-medium truncate max-w-[200px]">{email}</p>
+                  <SupporterBadge tier={profile?.supporter_tier} />
                 </div>
 
                 <Button
