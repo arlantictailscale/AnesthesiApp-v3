@@ -112,7 +112,7 @@ export default function TransactionFlowPage() {
             <CardContent className="p-4 pt-0 text-sm space-y-1.5 font-semibold">
               <div className="flex justify-between">
                 <span className="text-muted-foreground font-normal">Goods Sold:</span>
-                <span className="text-foreground">Digital Access & Seats</span>
+                <span className="text-foreground">Supporter Badges & Wall Recognition</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground font-normal">Base Currency:</span>
@@ -180,23 +180,23 @@ export default function TransactionFlowPage() {
           <div className="border rounded-xl p-5 bg-card print-card flex flex-col gap-3">
             <div className="flex items-center gap-2">
               <span className="h-6 w-6 rounded-full bg-primary/10 text-primary font-mono font-bold flex items-center justify-center text-xs">02</span>
-              <h3 className="font-bold text-base">Plan Selection & Feature Review</h3>
+              <h3 className="font-bold text-base">Supporter Tier Selection</h3>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              The user navigates to the Premium/Sponsorship page. They choose between **Individual Practitioner** and **Institution/Hospital** accounts and select a specific plan, which instantly displays its IDR price and feature access mappings.
+              The user navigates to the Supporter/Sponsorship page. They choose between **Individual Supporter** and **Institution/Hospital** accounts and select a specific plan, which displays its IDR price and corresponding profile badges.
             </p>
             <div className="rounded-lg border bg-muted/20 p-4 font-mono text-[10px] space-y-2 max-w-md">
               <div className="text-muted-foreground border-b pb-1 font-bold">Plan Details Display (in IDR)</div>
               <div className="grid grid-cols-2 gap-2 text-[9px]">
                 <div className="border p-2 rounded bg-background">
-                  <div className="font-bold text-foreground">Practitioner Backer</div>
+                  <div className="font-bold text-foreground">Supporter Backer</div>
                   <div className="text-primary font-bold mt-1">Rp 50.000</div>
-                  <div className="text-muted-foreground mt-1 text-[8px] leading-tight">• 3 CBT Prep Packages<br />• Core OSCE simulator</div>
+                  <div className="text-muted-foreground mt-1 text-[8px] leading-tight">• Verified Backer Badge<br />• Name listed on Wall</div>
                 </div>
                 <div className="border border-primary p-2 rounded bg-background">
-                  <div className="font-bold text-foreground">Practitioner Sponsor</div>
+                  <div className="font-bold text-foreground">Supporter Sponsor</div>
                   <div className="text-primary font-bold mt-1">Rp 150.000</div>
-                  <div className="text-muted-foreground mt-1 text-[8px] leading-tight">• Unlimited CBT Prep<br />• Full AI OSCE patients</div>
+                  <div className="text-muted-foreground mt-1 text-[8px] leading-tight">• Verified Sponsor Badge<br />• Name listed on Wall</div>
                 </div>
               </div>
             </div>
@@ -246,17 +246,17 @@ export default function TransactionFlowPage() {
           <div className="border rounded-xl p-5 bg-card print-card flex flex-col gap-3">
             <div className="flex items-center gap-2">
               <span className="h-6 w-6 rounded-full bg-emerald-500/10 text-emerald-600 font-mono font-bold flex items-center justify-center text-xs">05</span>
-              <h3 className="font-bold text-base">Settlement Verification & Service Delivery</h3>
+              <h3 className="font-bold text-base">Settlement Verification & Profile Badge Activation</h3>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Upon successful payment, Midtrans redirects the user back to `/support/success`. The client triggers the server validation API (<code>/api/support/confirm</code>), which verifies the settlement with the Midtrans Status API. Once settled, the server updates the database record state to `paid` and elevates the user's role status to unlock premium modules immediately.
+              Upon successful payment, Midtrans redirects the user back to `/support/success`. The client triggers the server validation API (<code>/api/support/confirm</code>), which verifies the settlement with the Midtrans Status API. Once settled, the server updates the database record state to `paid` and upgrades the user's supporter status to display their premium badge on comments & logs immediately.
             </p>
             <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/[0.02] p-4 font-mono text-[10px] space-y-1.5 max-w-sm mx-auto w-full text-center">
               <div className="h-8 w-8 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center mx-auto">
                 <CheckCircle2 className="h-5 w-5" />
               </div>
-              <div className="font-bold text-emerald-700">Premium Plan Activated!</div>
-              <div className="text-[8px] text-muted-foreground">Order ID: SUPPORT-8C2A has been successfully verified. Your clinical simulator tools are now unlocked.</div>
+              <div className="font-bold text-emerald-700">Supporter Badge Activated!</div>
+              <div className="text-[8px] text-muted-foreground">Order ID: SUPPORT-8C2A has been successfully verified. Your supporter badge is now visible next to your profile.</div>
             </div>
           </div>
         </div>
