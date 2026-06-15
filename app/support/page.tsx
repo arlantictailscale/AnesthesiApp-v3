@@ -46,33 +46,43 @@ const getTierFeatures = (type: "individual" | "sponsor", selectedTier: string): 
   if (type === "individual") {
     return selectedTier === "Backer"
       ? [
-          "Access standard CBT Board Prep mock exams (up to 3 packages)",
-          "Access standard OSCE station mock timer prep",
-          "Core Drug Pharmacology reference library",
-          "Official medical guidelines reference database",
+          "Verified Supporter Backer profile badge next to comments & logs",
+          "Your name highlighted on the Premium Members Wall",
+          "Help fund core server hosting and operational costs",
         ]
       : [
-          "Unlimited CBT Board Prep practice packages",
-          "Interactive AI-powered OSCE patient simulator",
-          "Instant OSCE checklists & model answers",
-          "Bedside clinical case log cloud backups",
-          "Advanced drug dosage and scaling calculators",
+          "Verified Premium Sponsor profile badge next to comments & logs",
+          "Your name highlighted on the Premium Members Wall",
+          "Help fund ongoing AI patient simulator training costs",
+          "Priority beta access to upcoming offline tools",
         ]
   } else {
     if (selectedTier === "Backer") {
-      return ["2 free Premium User Licenses", "Organization listing on Wall of Fame"]
+      return [
+        "2 Premium Badge seats for residents/staff",
+        "Hospital/Institution text listing on the Wall of Fame",
+        "Help support local clinical training initiatives"
+      ]
     }
     if (selectedTier === "Sponsor") {
-      return ["5 free Premium User Licenses", "Bronze listing with logo & website on Wall of Fame"]
+      return [
+        "5 Premium Badge seats for residents/staff",
+        "Bronze logo & website showcase on the Wall of Fame",
+        "Help support local clinical training initiatives"
+      ]
     }
     if (selectedTier === "Gold Sponsor") {
-      return ["15 free Premium User Licenses", "Gold listing with logo & website", "Priority developer support"]
+      return [
+        "15 Premium Badge seats for residents/staff",
+        "Gold logo & website showcase on the Wall of Fame",
+        "Priority developer onboarding and support for staff setup"
+      ]
     }
     return [
-      "50 free Premium User Licenses",
-      "Sticky hero logo & site showcase on Wall of Fame",
-      "Dedicated Custom API integration setup support",
-      "Priority developer service hotline",
+      "50 Premium Badge seats for residents/staff",
+      "Sticky hero logo banner & site showcase on the Wall of Fame",
+      "Priority developer service hotline for institutional setup",
+      "Discussion and feedback channel on custom guidelines updates"
     ]
   }
 }
@@ -223,13 +233,13 @@ export default function SupportUsPage() {
         {/* Header Section */}
         <div className="text-center max-w-2xl mx-auto flex flex-col gap-3">
           <Badge variant="outline" className="w-fit mx-auto bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400 font-bold px-3 py-1 text-xs">
-            Premium Access & Sponsorship
+            Profile Badges & Sponsorship
           </Badge>
           <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl md:text-5xl bg-gradient-to-r from-primary via-amber-500 to-emerald-500 bg-clip-text text-transparent">
-            Premium Plans & Sponsorships
+            Supporter Badges & Sponsorships
           </h1>
           <p className="text-base sm:text-lg text-muted-foreground mt-1">
-            Unlock full access to AnesthesiApp's clinical case loggers, CBT board prep exam packages, and OSCE simulation stations. Select a practitioner plan or institutional sponsor tier below.
+            AnesthesiApp is built to empower anesthesia practitioners with intelligent OSCE/CBT prep, drug calculators, and case logs. <strong>All features are 100% free for everyone.</strong> Upgrade to a premium plan to obtain a profile badge next to your posts and join our public recognition wall.
           </p>
         </div>
 
@@ -242,10 +252,10 @@ export default function SupportUsPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <Sparkles className="h-5 w-5 text-amber-500 fill-amber-500" />
-                  Select Premium Plan
+                  Choose Profile Badge Tier
                 </CardTitle>
                 <CardDescription>
-                  Enter details to upgrade your account credentials.
+                  Choose a plan to show your support and claim your badge.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -260,7 +270,7 @@ export default function SupportUsPage() {
                         className="h-8 text-xs font-semibold"
                         onClick={() => setType("individual")}
                       >
-                        Individual Practitioner
+                        Individual Supporter
                       </Button>
                       <Button
                         type="button"
@@ -289,7 +299,7 @@ export default function SupportUsPage() {
 
                   {/* Access Plan Select */}
                   <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="support-tier" className="text-xs font-semibold">Select Access Plan</Label>
+                    <Label htmlFor="support-tier" className="text-xs font-semibold">Choose Badge Level</Label>
                     <select
                       id="support-tier"
                       value={tier}
@@ -298,8 +308,8 @@ export default function SupportUsPage() {
                     >
                       {type === "individual" ? (
                         <>
-                          <option value="Backer">Practitioner Backer (Rp 50.000)</option>
-                          <option value="Sponsor">Practitioner Sponsor (Rp 150.000)</option>
+                          <option value="Backer">Supporter Backer (Rp 50.000)</option>
+                          <option value="Sponsor">Supporter Sponsor (Rp 150.000)</option>
                         </>
                       ) : (
                         <>
@@ -314,7 +324,7 @@ export default function SupportUsPage() {
 
                   {/* Plan Price */}
                   <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="support-amount" className="text-xs font-semibold">Plan Price (IDR / Rupiah)</Label>
+                    <Label htmlFor="support-amount" className="text-xs font-semibold">Support Amount (IDR / Rupiah)</Label>
                     <div className="relative">
                       <span className="absolute left-3 top-2.5 text-xs text-muted-foreground font-semibold">Rp</span>
                       <Input
@@ -334,7 +344,7 @@ export default function SupportUsPage() {
                   <div className="rounded-lg border border-border bg-muted/40 p-3 flex flex-col gap-2">
                     <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
                       <Check className="h-4 w-4 text-emerald-500" />
-                      Plan Features Included:
+                      Sponsorship Benefits & Badges:
                     </div>
                     <ul className="flex flex-col gap-1.5 text-[11px] text-muted-foreground pl-1.5 font-medium">
                       {getTierFeatures(type, tier).map((feature, i) => (
@@ -378,7 +388,7 @@ export default function SupportUsPage() {
                       </>
                     ) : (
                       <>
-                        <Sparkles className="h-4 w-4" /> Upgrade & Pay
+                        <Sparkles className="h-4 w-4" /> Upgrade Profile & Pay
                       </>
                     )}
                   </Button>
@@ -394,7 +404,7 @@ export default function SupportUsPage() {
                   Billing & Refund Policy
                 </div>
                 <p>
-                  All payments are securely processed via Midtrans payment gateway. By upgrading your account, you agree to our Terms of Service. Because premium features and institutional licensing allocations are provisioned instantly, all fees paid are non-refundable. For billing queries, support, or tax invoice requests, please contact us at <span className="font-semibold text-foreground">support@anesthesiapp.my.id</span>.
+                  All payments are securely processed via Midtrans payment gateway. By upgrading your account, you agree to our Terms of Service. Because supporter profile badges and wall listings are activated instantly, support payments are non-refundable. For billing queries, support, or tax invoice requests, please contact us at <span className="font-semibold text-foreground">support@anesthesiapp.my.id</span>.
                 </p>
               </div>
             </Card>
