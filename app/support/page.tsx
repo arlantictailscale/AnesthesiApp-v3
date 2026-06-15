@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { listSupporters, type Supporter } from "@/lib/storage"
-import { Heart, Landmark, Globe, Loader2, Sparkles, AlertCircle } from "lucide-react"
+import { Heart, Landmark, Globe, Loader2, Sparkles, AlertCircle, Check, HelpCircle } from "lucide-react"
 import Script from "next/script"
 import Link from "next/link"
 import { Logo } from "@/components/logo"
@@ -41,6 +41,42 @@ const getTierDefaultAmount = (type: "individual" | "sponsor", selectedTier: stri
     return "2500000"
   }
 }
+
+const getTierFeatures = (type: "individual" | "sponsor", selectedTier: string): string[] => {
+  if (type === "individual") {
+    return selectedTier === "Backer"
+      ? [
+          "Access standard CBT Board Prep mock exams (up to 3 packages)",
+          "Access standard OSCE station mock timer prep",
+          "Core Drug Pharmacology reference library",
+          "Official medical guidelines reference database",
+        ]
+      : [
+          "Unlimited CBT Board Prep practice packages",
+          "Interactive AI-powered OSCE patient simulator",
+          "Instant OSCE checklists & model answers",
+          "Bedside clinical case log cloud backups",
+          "Advanced drug dosage and scaling calculators",
+        ]
+  } else {
+    if (selectedTier === "Backer") {
+      return ["2 free Premium User Licenses", "Organization listing on Wall of Fame"]
+    }
+    if (selectedTier === "Sponsor") {
+      return ["5 free Premium User Licenses", "Bronze listing with logo & website on Wall of Fame"]
+    }
+    if (selectedTier === "Gold Sponsor") {
+      return ["15 free Premium User Licenses", "Gold listing with logo & website", "Priority developer support"]
+    }
+    return [
+      "50 free Premium User Licenses",
+      "Sticky hero logo & site showcase on Wall of Fame",
+      "Dedicated Custom API integration setup support",
+      "Priority developer service hotline",
+    ]
+  }
+}
+
 
 export default function SupportUsPage() {
   const [supporters, setSupporters] = useState<Supporter[]>([])
@@ -187,36 +223,36 @@ export default function SupportUsPage() {
         {/* Header Section */}
         <div className="text-center max-w-2xl mx-auto flex flex-col gap-3">
           <Badge variant="outline" className="w-fit mx-auto bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400 font-bold px-3 py-1 text-xs">
-            Non-Profit & Open Source
+            Premium Access & Sponsorship
           </Badge>
           <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl md:text-5xl bg-gradient-to-r from-primary via-amber-500 to-emerald-500 bg-clip-text text-transparent">
-            Support AnesthesiApp
+            Premium Plans & Sponsorships
           </h1>
           <p className="text-base sm:text-lg text-muted-foreground mt-1">
-            AnesthesiApp is built to empower anesthesia practitioners with intelligent OSCE/CBT prep, drugs metadata, and case logs. Help us keep the servers running and the app free for everyone.
+            Unlock full access to AnesthesiApp's clinical case loggers, CBT board prep exam packages, and OSCE simulation stations. Select a practitioner plan or institutional sponsor tier below.
           </p>
         </div>
 
         {/* Content Columns */}
         <div className="grid gap-8 lg:grid-cols-12">
           
-          {/* Column 1: Donation & Sponsorship Form */}
+          {/* Column 1: Pricing Plans & Checkout Form */}
           <div className="lg:col-span-5 flex flex-col gap-6">
             <Card className="border border-border shadow-md bg-card/50 backdrop-blur-xs">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
-                  <Heart className="h-5 w-5 text-red-500 fill-red-500" />
-                  Become a Supporter
+                  <Sparkles className="h-5 w-5 text-amber-500 fill-amber-500" />
+                  Select Premium Plan
                 </CardTitle>
                 <CardDescription>
-                  Enter your details to join the wall of donors.
+                  Enter details to upgrade your account credentials.
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                  {/* Supporter Type Toggle */}
+                  {/* Account Type Toggle */}
                   <div className="flex flex-col gap-2">
-                    <Label className="text-xs font-semibold">Support Type</Label>
+                    <Label className="text-xs font-semibold">Account Type</Label>
                     <div className="grid grid-cols-2 gap-2 bg-muted p-1 rounded-lg">
                       <Button
                         type="button"
@@ -224,7 +260,7 @@ export default function SupportUsPage() {
                         className="h-8 text-xs font-semibold"
                         onClick={() => setType("individual")}
                       >
-                        Individual Donor
+                        Individual Practitioner
                       </Button>
                       <Button
                         type="button"
@@ -232,7 +268,7 @@ export default function SupportUsPage() {
                         className="h-8 text-xs font-semibold"
                         onClick={() => setType("sponsor")}
                       >
-                        Sponsor / Org
+                        Institution / Hospital
                       </Button>
                     </div>
                   </div>
@@ -240,7 +276,7 @@ export default function SupportUsPage() {
                   {/* Name Input */}
                   <div className="flex flex-col gap-1.5">
                     <Label htmlFor="support-name" className="text-xs font-semibold">
-                      {type === "individual" ? "Your Name" : "Organization Name"}
+                      {type === "individual" ? "Your Full Name" : "Institution Name"}
                     </Label>
                     <Input
                       id="support-name"
@@ -251,9 +287,9 @@ export default function SupportUsPage() {
                     />
                   </div>
 
-                  {/* Support Tier Select */}
+                  {/* Access Plan Select */}
                   <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="support-tier" className="text-xs font-semibold">Support Tier</Label>
+                    <Label htmlFor="support-tier" className="text-xs font-semibold">Select Access Plan</Label>
                     <select
                       id="support-tier"
                       value={tier}
@@ -262,35 +298,52 @@ export default function SupportUsPage() {
                     >
                       {type === "individual" ? (
                         <>
-                          <option value="Backer">Backer (Rp 50.000+)</option>
-                          <option value="Sponsor">Sponsor (Rp 150.000+)</option>
+                          <option value="Backer">Practitioner Backer (Rp 50.000)</option>
+                          <option value="Sponsor">Practitioner Sponsor (Rp 150.000)</option>
                         </>
                       ) : (
                         <>
-                          <option value="Backer">Sponsor Backer (Rp 250.000+)</option>
-                          <option value="Sponsor">Bronze Sponsor (Rp 500.000+)</option>
-                          <option value="Gold Sponsor">Gold Sponsor (Rp 1.000.000+)</option>
-                          <option value="Platinum Sponsor">Platinum Sponsor (Rp 2.500.000+)</option>
+                          <option value="Backer">Sponsor Backer (Rp 250.000)</option>
+                          <option value="Sponsor">Bronze Sponsor (Rp 500.000)</option>
+                          <option value="Gold Sponsor">Gold Sponsor (Rp 1.000.000)</option>
+                          <option value="Platinum Sponsor">Platinum Sponsor (Rp 2.500.000)</option>
                         </>
                       )}
                     </select>
                   </div>
 
-                  {/* Optional Donation Amount */}
+                  {/* Plan Price */}
                   <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="support-amount" className="text-xs font-semibold">Donation Amount (IDR / Rupiah)</Label>
+                    <Label htmlFor="support-amount" className="text-xs font-semibold">Plan Price (IDR / Rupiah)</Label>
                     <div className="relative">
                       <span className="absolute left-3 top-2.5 text-xs text-muted-foreground font-semibold">Rp</span>
                       <Input
                         id="support-amount"
                         type="number"
                         placeholder="e.g., 50000"
-                        className="pl-8"
+                        className="pl-8 bg-muted/50"
                         value={amount}
                         onChange={(e) => setAmount(e.target.value)}
+                        readOnly
                         required
                       />
                     </div>
+                  </div>
+
+                  {/* Plan Feature Breakdown */}
+                  <div className="rounded-lg border border-border bg-muted/40 p-3 flex flex-col gap-2">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
+                      <Check className="h-4 w-4 text-emerald-500" />
+                      Plan Features Included:
+                    </div>
+                    <ul className="flex flex-col gap-1.5 text-[11px] text-muted-foreground pl-1.5 font-medium">
+                      {getTierFeatures(type, tier).map((feature, i) => (
+                        <li key={i} className="flex items-start gap-1.5">
+                          <span className="h-1.5 w-1.5 bg-primary rounded-full mt-1.5 shrink-0" />
+                          <span>{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
 
                   {/* Optional Website Link */}
@@ -306,13 +359,13 @@ export default function SupportUsPage() {
 
                   {/* Optional Message */}
                   <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="support-message" className="text-xs font-semibold">Message of Support (Optional)</Label>
+                    <Label htmlFor="support-message" className="text-xs font-semibold">Custom Wall Message (Optional)</Label>
                     <Textarea
                       id="support-message"
-                      placeholder="Keep up the great work! Any message you leave will be displayed on the supporter wall."
+                      placeholder="Leave a message to display on the public members wall."
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
-                      rows={3}
+                      rows={2}
                       className="resize-none"
                     />
                   </div>
@@ -321,11 +374,11 @@ export default function SupportUsPage() {
                   <Button type="submit" disabled={submitting} className="mt-2 w-full font-bold gap-2">
                     {submitting ? (
                       <>
-                        <Loader2 className="h-4 w-4 animate-spin" /> Recording...
+                        <Loader2 className="h-4 w-4 animate-spin" /> Upgrading...
                       </>
                     ) : (
                       <>
-                        <Sparkles className="h-4 w-4" /> Make a Donation
+                        <Sparkles className="h-4 w-4" /> Upgrade & Pay
                       </>
                     )}
                   </Button>
@@ -333,13 +386,15 @@ export default function SupportUsPage() {
               </CardContent>
             </Card>
 
-            {/* Sponsorship info banner */}
-            <Card className="border-emerald-500/20 bg-emerald-500/[0.02] p-5 flex gap-4">
-              <Landmark className="h-6 w-6 text-emerald-500 shrink-0 mt-0.5" />
-              <div className="flex flex-col gap-1">
-                <h4 className="font-bold text-sm text-emerald-800 dark:text-emerald-400">Institutional Sponsorship</h4>
-                <p className="text-xs text-muted-foreground leading-normal">
-                  Organizations and hospitals can request custom banner listings, API endpoints or custom integrations. Contact us at <span className="font-semibold text-foreground">sponsors@anesthesiapp.my.id</span> to discuss formal partnerships.
+            {/* Refund & Billing Policy Card */}
+            <Card className="border-border bg-muted/10 p-4">
+              <div className="flex flex-col gap-1.5 text-[11px] text-muted-foreground leading-normal">
+                <div className="flex items-center gap-1 text-foreground font-bold uppercase tracking-wider text-[10px]">
+                  <AlertCircle className="h-3.5 w-3.5 text-amber-500" />
+                  Billing & Refund Policy
+                </div>
+                <p>
+                  All payments are securely processed via Midtrans payment gateway. By upgrading your account, you agree to our Terms of Service. Because premium features and institutional licensing allocations are provisioned instantly, all fees paid are non-refundable. For billing queries, support, or tax invoice requests, please contact us at <span className="font-semibold text-foreground">support@anesthesiapp.my.id</span>.
                 </p>
               </div>
             </Card>
@@ -349,7 +404,7 @@ export default function SupportUsPage() {
           <div className="lg:col-span-7 flex flex-col gap-6">
             <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
               <Sparkles className="h-6 w-6 text-amber-500" />
-              Supporters Wall of Fame
+              Premium Members & Sponsors Wall
             </h2>
 
             {loading ? (
@@ -361,9 +416,9 @@ export default function SupportUsPage() {
             ) : supporters.length === 0 ? (
               <Card className="border border-dashed p-8 text-center bg-card/30">
                 <Heart className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
-                <h3 className="font-bold text-base">No supporters listed yet</h3>
+                <h3 className="font-bold text-base">No premium members listed yet</h3>
                 <p className="text-xs text-muted-foreground max-w-xs mx-auto mt-1">
-                  Be the very first to support this project and claim your spot on the Wall of Fame!
+                  Be the very first to purchase a premium package and claim your spot on the Wall!
                 </p>
               </Card>
             ) : (
@@ -374,7 +429,7 @@ export default function SupportUsPage() {
                   <div className="flex flex-col gap-3">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 flex items-center gap-2">
                       <span className="h-1 w-8 bg-amber-500 rounded-full" />
-                      Platinum Sponsors
+                      Platinum Members
                     </h3>
                     <div className="grid gap-3 sm:grid-cols-2">
                       {platinumSponsors.map((s) => (
@@ -383,7 +438,7 @@ export default function SupportUsPage() {
                           <div className="flex flex-col gap-1.5">
                             <span className="font-bold text-sm text-amber-700 dark:text-amber-400">{s.name}</span>
                             {s.amount && (
-                              <span className="text-xs font-mono font-bold text-muted-foreground/80">Rp {s.amount.toLocaleString("id-ID")} Contribution</span>
+                              <span className="text-xs font-mono font-bold text-muted-foreground/80">Rp {s.amount.toLocaleString("id-ID")} License Tier</span>
                             )}
                             {s.message && (
                               <p className="text-xs text-muted-foreground/90 italic mt-1 leading-relaxed">&ldquo;{s.message}&rdquo;</p>
@@ -405,7 +460,7 @@ export default function SupportUsPage() {
                   <div className="flex flex-col gap-3">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-yellow-600 dark:text-yellow-400 flex items-center gap-2">
                       <span className="h-1 w-8 bg-yellow-500 rounded-full" />
-                      Gold Sponsors
+                      Gold Members
                     </h3>
                     <div className="grid gap-3 sm:grid-cols-2">
                       {goldSponsors.map((s) => (
@@ -413,7 +468,7 @@ export default function SupportUsPage() {
                           <div className="flex flex-col gap-1.5">
                             <span className="font-bold text-sm text-yellow-700 dark:text-yellow-400">{s.name}</span>
                             {s.amount && (
-                              <span className="text-xs font-mono font-bold text-muted-foreground/80">Rp {s.amount.toLocaleString("id-ID")} Contribution</span>
+                              <span className="text-xs font-mono font-bold text-muted-foreground/80">Rp {s.amount.toLocaleString("id-ID")} License Tier</span>
                             )}
                             {s.message && (
                               <p className="text-xs text-muted-foreground/90 italic mt-0.5 leading-relaxed">&ldquo;{s.message}&rdquo;</p>
@@ -435,7 +490,7 @@ export default function SupportUsPage() {
                   <div className="flex flex-col gap-3">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
                       <span className="h-1 w-8 bg-emerald-500 rounded-full" />
-                      Sponsors
+                      Sponsors & Members
                     </h3>
                     <div className="flex flex-col gap-2">
                       {sponsors.map((s) => (
@@ -465,7 +520,7 @@ export default function SupportUsPage() {
                   <div className="flex flex-col gap-3">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-2">
                       <span className="h-1 w-8 bg-primary rounded-full" />
-                      Backers
+                      Premium Backers
                     </h3>
                     <div className="flex flex-wrap gap-2">
                       {backers.map((s) => (

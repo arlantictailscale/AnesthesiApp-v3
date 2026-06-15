@@ -79,7 +79,7 @@ function SuccessPageContent() {
         </CardDescription>
         <div className="flex flex-col gap-2 w-full mt-4">
           <Button asChild className="w-full font-bold">
-            <Link href="/support">Try Supporting Again</Link>
+            <Link href="/support">Try Purchasing Again</Link>
           </Button>
           <Button asChild variant="outline" className="w-full font-semibold">
             <Link href="/dashboard">Back to Dashboard</Link>
@@ -112,7 +112,7 @@ function SuccessPageContent() {
 
       <div className="space-y-1">
         <CardTitle className={`text-xl font-extrabold ${isPending ? "text-amber-700 dark:text-amber-400" : "text-emerald-700 dark:text-emerald-400"}`}>
-          {isPending ? "Payment Pending Completion" : "Support Successful!"}
+          {isPending ? "Payment Pending Completion" : "Premium Plan Activated!"}
         </CardTitle>
         <CardDescription className="text-xs font-medium text-muted-foreground">
           Order ID: <span className="font-mono font-bold text-foreground">{orderId}</span>
@@ -121,8 +121,8 @@ function SuccessPageContent() {
 
       <p className="text-xs text-muted-foreground leading-relaxed max-w-xs">
         {isPending 
-          ? "Your transaction has been initiated but requires payment completion (e.g. at an ATM, convenience store, or banking app). Your name will display on the Wall of Fame once settlement completes."
-          : "Thank you for supporting AnesthesiApp! Your contribution helps us maintain server hosting and develop new features for the medical education registry."
+          ? "Your transaction has been initiated but requires payment completion (e.g. at an ATM, convenience store, or banking app). Your name will display on the Premium Wall once settlement completes."
+          : "Thank you for upgrading! Your premium access has been activated. You can now use all premium simulator prep tools and logged case cloud backups."
         }
       </p>
 
@@ -135,7 +135,7 @@ function SuccessPageContent() {
       <div className="flex flex-col gap-2 w-full mt-4 pt-4 border-t border-border/60">
         <Button asChild className={`w-full font-bold text-xs gap-1.5 ${isPending ? "bg-amber-600 hover:bg-amber-700" : "bg-emerald-600 hover:bg-emerald-700"}`}>
           <Link href="/support">
-            {isPending ? "Check Wall of Fame" : "See Wall of Fame"} <ArrowRight className="h-3.5 w-3.5" />
+            {isPending ? "Check Members Wall" : "See Members Wall"} <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </Button>
         <Button asChild variant="outline" className="w-full font-semibold text-xs">
