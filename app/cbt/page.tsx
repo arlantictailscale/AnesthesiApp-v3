@@ -312,7 +312,7 @@ export default function CBTDashboardPage() {
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between gap-2">
                       <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${isDefault ? "bg-primary/10 text-primary" : "bg-secondary text-secondary-foreground"}`}>
-                        {isDefault ? "Resmi Kolegium" : pkg.creator_email ? `Oleh: ${pkg.creator_email.split('@')[0]}` : "Kustom User"}
+                        {isDefault ? "AnesthesiApp" : pkg.creator_email ? `Oleh: ${pkg.creator_email.split('@')[0]}` : "Kustom User"}
                       </span>
                       <div className="flex items-center gap-1.5">
                         <div className="flex items-center gap-1 text-xs text-yellow-500 font-semibold" title={`Average: ${rInfo.average} stars`}>

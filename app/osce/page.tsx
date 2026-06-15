@@ -125,7 +125,7 @@ export default function OscePrepDashboard() {
                 {s.category}
               </Badge>
               <span className="text-[10px] text-muted-foreground font-semibold">
-                {isDefault ? "Resmi Kolegium" : s.creator_email ? `Oleh: ${s.creator_email.split('@')[0]}` : "Kustom User"}
+                {isDefault ? "AnesthesiApp" : s.creator_email ? `Oleh: ${s.creator_email.split('@')[0]}` : "Kustom User"}
               </span>
             </div>
             <h3 className="font-bold text-base text-foreground group-hover:text-primary transition-colors">
