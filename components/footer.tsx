@@ -32,9 +32,14 @@ export function Footer({
           </a>
         </div>
 
-        <p className="font-semibold">
-          © {new Date().getFullYear()} AnesthesiApp. All rights reserved.
-        </p>
+        <div className="flex flex-col items-center md:items-end gap-1 font-semibold text-center md:text-right">
+          <p>
+            © {new Date().getFullYear()} AnesthesiApp. All rights reserved.
+          </p>
+          <p className="text-[10px] text-muted-foreground/80">
+            Developed by Department of Anesthesiology and Intensive Therapy, Brawijaya University
+          </p>
+        </div>
       </div>
     </footer>
   )
