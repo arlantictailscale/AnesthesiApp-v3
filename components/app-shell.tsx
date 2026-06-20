@@ -27,6 +27,7 @@ import {
   Heart,
   Pill,
   ShieldAlert,
+  ShieldCheck,
   Loader2,
   CreditCard,
   History
@@ -75,6 +76,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const [email, setEmail] = useState<string | null>(null)
   const [supporterTier, setSupporterTier] = useState<string | null>(null)
+  const [userRole, setUserRole] = useState<string | null>(null)
   const [ready, setReady] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
 
@@ -100,6 +102,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         const profile = await getUserProfile(s.userId)
         if (active && profile) {
           setSupporterTier(profile.supporter_tier || null)
+          setUserRole(profile.role || null)
         }
       } catch (err) {
         console.error("Failed to load user profile in app shell:", err)
@@ -259,6 +262,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   <SupporterBadge tier={supporterTier} />
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                {userRole === "admin" && (
+                  <DropdownMenuItem asChild>
+                    <Link href="/admin" className="flex items-center w-full cursor-pointer font-bold text-red-600 dark:text-red-400">
+                      <ShieldCheck className="mr-2 h-4 w-4" /> Admin Panel
+                    </Link>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem asChild>
                   <Link href="/profile" className="flex items-center w-full cursor-pointer">
                     <User className="mr-2 h-4 w-4" /> My Profile
@@ -376,6 +386,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                         Research Hub
                       </Link>
                     </Button>
+                    {userRole === "admin" && (
+                      <Button
+                        asChild
+                        variant={pathname === "/admin" ? "secondary" : "ghost"}
+                        className="justify-start gap-3 w-full font-bold text-red-600 dark:text-red-400 hover:text-red-700"
+                      >
+                        <Link href="/admin">
+                          <ShieldCheck className="h-4 w-4 shrink-0 text-red-600 dark:text-red-400" />
+                          Admin Panel
+                        </Link>
+                      </Button>
+                    )}
                   </nav>
                 </div>
                 {email && (
