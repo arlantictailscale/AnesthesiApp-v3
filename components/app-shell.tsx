@@ -241,17 +241,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             >
               <Link href="/research">Research</Link>
             </Button>
-            <Button
-              asChild
-              variant={isSupport ? "secondary" : "ghost"}
-              size="sm"
-              className="text-amber-600 dark:text-amber-400 font-semibold"
-            >
-              <Link href="/support" className="flex items-center gap-1">
-                <Heart className="h-3.5 w-3.5 fill-current" />
-                <span>Support Us</span>
-              </Link>
-            </Button>
+
           </nav>
 
           <div className="flex items-center gap-2">
