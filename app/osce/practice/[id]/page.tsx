@@ -311,6 +311,18 @@ export default function OsceArenaPage() {
                         <p className="text-xs text-muted-foreground leading-relaxed pt-1 border-t border-border/40 mt-1 italic">
                           {b.feedback}
                         </p>
+                        {aspectDetails && aspectDetails.items && aspectDetails.items.length > 0 && (
+                          <div className="mt-3 pt-2.5 border-t border-border/40">
+                            <span className="text-[10px] text-primary font-bold uppercase tracking-wider block mb-1.5">
+                              Poin Jawaban yang Benar (Kriteria Rubrik):
+                            </span>
+                            <ul className="list-disc pl-4 space-y-1 text-[11px] text-muted-foreground font-medium">
+                              {aspectDetails.items.map((item, itemIdx) => (
+                                <li key={itemIdx}>{item}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
                       </Card>
                     )
                   })}
