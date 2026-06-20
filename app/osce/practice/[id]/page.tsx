@@ -1,14 +1,14 @@
 "use client"
 
 import Link from "next/link"
-import { useParams, useRouter } from "next/navigation"
-import { useEffect, useRef, useState } from "react"
+import { useParams, useRouter, useSearchParams } from "next/navigation"
+import { useEffect, useRef, useState, Suspense } from "react"
 import { toast } from "sonner"
 import { AppShell } from "@/components/app-shell"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { getOsceStation, saveOsceAttempt } from "@/lib/osce/storage"
+import { getOsceStation, saveOsceAttempt, getOsceAttempt } from "@/lib/osce/storage"
 import type { OsceStation } from "@/lib/osce/default-data"
 import { OSCEDiscussion } from "@/components/osce-discussion"
 import {
@@ -23,8 +23,23 @@ import {
 } from "lucide-react"
 
 export default function OsceArenaPage() {
+  return (
+    <Suspense fallback={
+      <AppShell>
+        <div className="flex h-[400px] items-center justify-center text-muted-foreground">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mr-2" /> Loading OSCE Station...
+        </div>
+      </AppShell>
+    }>
+      <OsceArenaPageContent />
+    </Suspense>
+  )
+}
+
+function OsceArenaPageContent() {
   const params = useParams<{ id: string }>()
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   const [station, setStation] = useState<OsceStation | null>(null)
   const [loading, setLoading] = useState(true)
@@ -52,20 +67,59 @@ export default function OsceArenaPage() {
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const chatBottomRef = useRef<HTMLDivElement>(null)
 
-  // Load active station
+  // Load active station and past attempt if any
   useEffect(() => {
     if (!params?.id) return
-    getOsceStation(params.id).then((st) => {
-      setStation(st)
-      if (st) {
+
+    const attemptId = searchParams?.get("attempt")
+
+    const loadData = async () => {
+      try {
+        const st = await getOsceStation(params.id)
+        if (!st) {
+          setLoading(false)
+          return
+        }
+        setStation(st)
         setTimeLeft(st.duration_minutes * 60)
+
+        if (attemptId) {
+          const attempt = await getOsceAttempt(attemptId)
+          if (attempt) {
+            setStarted(true)
+            setCompleted(true)
+            setMessages(attempt.chat_history || [])
+            
+            // Reconstruct breakdown based on aspect scores and station rubrics
+            const breakdown = st.rubric.map((r) => {
+              const score = attempt.scores[r.aspect] ?? 0
+              return {
+                aspect: r.aspect,
+                score,
+                max_score: 3,
+                feedback: "" // Keep this empty; we'll conditionally hide it in UI
+              }
+            })
+
+            setScorecard({
+              scores: attempt.scores,
+              feedback: attempt.feedback,
+              breakdown
+            })
+          } else {
+            toast.error("Past attempt history not found.")
+          }
+        }
+      } catch (err) {
+        console.error(err)
+        toast.error("Failed to load OSCE station or past attempt.")
+      } finally {
+        setLoading(false)
       }
-      setLoading(false)
-    }).catch(() => {
-      toast.error("Failed to load active OSCE station.")
-      setLoading(false)
-    })
-  }, [params?.id])
+    }
+
+    loadData()
+  }, [params?.id, searchParams])
 
   // Scroll to bottom of chat
   useEffect(() => {
@@ -253,7 +307,7 @@ export default function OsceArenaPage() {
           </div>
 
           <div className="flex items-center gap-3 ml-auto sm:ml-0">
-            {started && (
+            {started && !completed && (
               <Badge variant="outline" className={`flex gap-1.5 py-1 px-3 text-sm font-bold animate-pulse-slow ${timeLeft < 180 ? "border-red-500 text-red-500" : ""}`}>
                 <Clock className="h-4 w-4 mt-0.5" /> {formatTime(timeLeft)}
               </Badge>
@@ -262,6 +316,11 @@ export default function OsceArenaPage() {
               <Button onClick={handleFinishExam} variant="destructive" size="sm" className="font-bold">
                 Akhiri Ujian
               </Button>
+            )}
+            {completed && (
+              <Badge variant="secondary" className="flex gap-1.5 py-1.5 px-3 text-xs font-bold bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600" /> Selesai
+              </Badge>
             )}
           </div>
         </div>
@@ -308,9 +367,11 @@ export default function OsceArenaPage() {
                             Skor: {b.score} / {b.max_score}
                           </Badge>
                         </div>
-                        <p className="text-xs text-muted-foreground leading-relaxed pt-1 border-t border-border/40 mt-1 italic">
-                          {b.feedback}
-                        </p>
+                        {b.feedback && (
+                          <p className="text-xs text-muted-foreground leading-relaxed pt-1 border-t border-border/40 mt-1 italic">
+                            {b.feedback}
+                          </p>
+                        )}
                         {aspectDetails && aspectDetails.items && aspectDetails.items.length > 0 && (
                           <div className="mt-3 pt-2.5 border-t border-border/40">
                             <span className="text-[10px] text-primary font-bold uppercase tracking-wider block mb-1.5">
@@ -344,7 +405,18 @@ export default function OsceArenaPage() {
               <Button onClick={() => setDiscussionOpen(true)} variant="outline" className="gap-1.5 font-semibold text-xs">
                 <MessageSquare className="h-3.5 w-3.5 text-primary" /> Diskusi & Rating
               </Button>
-              <Button onClick={() => window.location.reload()} variant="outline" className="gap-1.5 font-semibold text-xs">
+              <Button
+                onClick={() => {
+                  router.push(`/osce/practice/${station.id}`)
+                  setStarted(false)
+                  setCompleted(false)
+                  setMessages([])
+                  setScorecard(null)
+                  setTimeLeft(station.duration_minutes * 60)
+                }}
+                variant="outline"
+                className="gap-1.5 font-semibold text-xs"
+              >
                 <RefreshCw className="h-3.5 w-3.5" /> Ulangi Ujian
               </Button>
               <Button asChild className="gap-1.5 font-bold text-xs">
@@ -357,97 +429,97 @@ export default function OsceArenaPage() {
         )}
 
         {/* Simulation Arena */}
-        {!completed && (
-          <div className="grid gap-6 md:grid-cols-5 flex-1 min-h-0">
-            {/* Left Case Sheet details */}
-            <div className="md:col-span-2 flex flex-col gap-4">
-              {/* Skenario Ujian */}
-              <Card className="border border-border bg-card">
-                <CardHeader className="p-4 pb-2 border-b border-border/40 bg-muted/10">
-                  <CardTitle className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1.5">
-                    Skenario Kasus Klinis
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 text-sm text-foreground font-medium leading-relaxed">
-                  {station.scenario}
-                </CardContent>
-              </Card>
+        <div className="grid gap-6 md:grid-cols-5 flex-1 min-h-0">
+          {/* Left Case Sheet details */}
+          <div className="md:col-span-2 flex flex-col gap-4">
+            {/* Skenario Ujian */}
+            <Card className="border border-border bg-card">
+              <CardHeader className="p-4 pb-2 border-b border-border/40 bg-muted/10">
+                <CardTitle className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1.5">
+                  Skenario Kasus Klinis
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 text-sm text-foreground font-medium leading-relaxed">
+                {station.scenario}
+              </CardContent>
+            </Card>
 
-              {/* Instruksi Tugas */}
-              <Card className="border border-border bg-card">
-                <CardHeader className="p-4 pb-2 border-b border-border/40 bg-muted/10">
-                  <CardTitle className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1.5">
-                    Instruksi Tugas Peserta
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 text-xs text-muted-foreground font-semibold leading-relaxed whitespace-pre-line">
-                  {station.instructions_participant}
-                </CardContent>
-              </Card>
+            {/* Instruksi Tugas */}
+            <Card className="border border-border bg-card">
+              <CardHeader className="p-4 pb-2 border-b border-border/40 bg-muted/10">
+                <CardTitle className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1.5">
+                  Instruksi Tugas Peserta
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 text-xs text-muted-foreground font-semibold leading-relaxed whitespace-pre-line">
+                {station.instructions_participant}
+              </CardContent>
+            </Card>
 
-              {/* Daftar Peralatan yang Disediakan */}
-              <Card className="border border-border bg-card">
-                <CardHeader className="p-4 pb-2 border-b border-border/40 bg-muted/10">
-                  <CardTitle className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1.5">
-                    Peralatan yang Disediakan
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 flex flex-wrap gap-1.5">
-                  {station.equipment.map((eq) => (
-                    <span key={eq} className="text-[10px] bg-muted/50 border text-muted-foreground font-bold px-2 py-0.5 rounded-full">
-                      {eq}
-                    </span>
-                  ))}
-                </CardContent>
-              </Card>
-            </div>
+            {/* Daftar Peralatan yang Disediakan */}
+            <Card className="border border-border bg-card">
+              <CardHeader className="p-4 pb-2 border-b border-border/40 bg-muted/10">
+                <CardTitle className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1.5">
+                  Peralatan yang Disediakan
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 flex flex-wrap gap-1.5">
+                {station.equipment.map((eq) => (
+                  <span key={eq} className="text-[10px] bg-muted/50 border text-muted-foreground font-bold px-2 py-0.5 rounded-full">
+                    {eq}
+                  </span>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
 
-            {/* Right Chat panel */}
-            <div className="md:col-span-3 border border-border bg-card rounded-xl flex flex-col overflow-hidden min-h-[450px]">
-              {!started ? (
-                <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-muted/5">
-                  <Clock className="h-12 w-12 text-muted-foreground/30 mb-3" />
-                  <h3 className="font-bold text-lg">Mulai Latihan OSCE</h3>
-                  <p className="text-xs text-muted-foreground max-w-sm mt-1 mb-4 leading-normal">
-                    Setelah Anda menekan tombol Mulai, waktu 17 menit akan berjalan, dan Penguji akan menyapa Anda untuk memulai ujian.
-                  </p>
-                  <Button onClick={handleStartExam} className="gap-2 font-bold px-6">
-                    <Play className="h-4 w-4 fill-current" /> Mulai Ujian Sekarang
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex-1 flex flex-col min-h-0 bg-muted/5 relative">
-                  {/* Messages log */}
-                  <div className="flex-1 overflow-y-auto p-4 space-y-3.5">
-                    {messages.map((m, idx) => {
-                      const isExaminer = m.role === "assistant"
-                      return (
-                        <div key={idx} className={`flex ${isExaminer ? "justify-start" : "justify-end"}`}>
-                          <div className={`max-w-[85%] rounded-xl p-3.5 shadow-sm text-xs font-medium leading-relaxed ${
-                            isExaminer
-                              ? "bg-card border border-border text-foreground rounded-tl-xs"
-                              : "bg-primary text-primary-foreground rounded-tr-xs"
-                          }`}>
-                            <span className="text-[9px] font-bold block uppercase tracking-wider mb-1 opacity-70">
-                              {isExaminer ? "Penguji" : "Peserta"}
-                            </span>
-                            <span className="whitespace-pre-line leading-relaxed">{m.content}</span>
-                          </div>
-                        </div>
-                      )
-                    })}
-                    {sending && (
-                      <div className="flex justify-start">
-                        <div className="bg-card border rounded-xl p-3 shadow-xs text-xs flex items-center gap-2 rounded-tl-xs">
-                          <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                          <span className="text-muted-foreground font-semibold text-[10px]">Penguji sedang mengetik...</span>
+          {/* Right Chat panel */}
+          <div className="md:col-span-3 border border-border bg-card rounded-xl flex flex-col overflow-hidden min-h-[450px]">
+            {!started ? (
+              <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-muted/5">
+                <Clock className="h-12 w-12 text-muted-foreground/30 mb-3" />
+                <h3 className="font-bold text-lg">Mulai Latihan OSCE</h3>
+                <p className="text-xs text-muted-foreground max-w-sm mt-1 mb-4 leading-normal">
+                  Setelah Anda menekan tombol Mulai, waktu 17 menit akan berjalan, dan Penguji akan menyapa Anda untuk memulai ujian.
+                </p>
+                <Button onClick={handleStartExam} className="gap-2 font-bold px-6">
+                  <Play className="h-4 w-4 fill-current" /> Mulai Ujian Sekarang
+                </Button>
+              </div>
+            ) : (
+              <div className="flex-1 flex flex-col min-h-0 bg-muted/5 relative">
+                {/* Messages log */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-3.5">
+                  {messages.map((m, idx) => {
+                    const isExaminer = m.role === "assistant"
+                    return (
+                      <div key={idx} className={`flex ${isExaminer ? "justify-start" : "justify-end"}`}>
+                        <div className={`max-w-[85%] rounded-xl p-3.5 shadow-sm text-xs font-medium leading-relaxed ${
+                          isExaminer
+                            ? "bg-card border border-border text-foreground rounded-tl-xs"
+                            : "bg-primary text-primary-foreground rounded-tr-xs"
+                        }`}>
+                          <span className="text-[9px] font-bold block uppercase tracking-wider mb-1 opacity-70">
+                            {isExaminer ? "Penguji" : "Peserta"}
+                          </span>
+                          <span className="whitespace-pre-line leading-relaxed">{m.content}</span>
                         </div>
                       </div>
-                    )}
-                    <div ref={chatBottomRef} />
-                  </div>
+                    )
+                  })}
+                  {sending && (
+                    <div className="flex justify-start">
+                      <div className="bg-card border rounded-xl p-3 shadow-xs text-xs flex items-center gap-2 rounded-tl-xs">
+                        <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                        <span className="text-muted-foreground font-semibold text-[10px]">Penguji sedang mengetik...</span>
+                      </div>
+                    </div>
+                  )}
+                  <div ref={chatBottomRef} />
+                </div>
 
-                  {/* Input Form Box */}
+                {/* Input Form Box */}
+                {!completed ? (
                   <form onSubmit={handleSendMessage} className="p-3 border-t border-border bg-card flex gap-2 shrink-0">
                     <input
                       type="text"
@@ -461,11 +533,15 @@ export default function OsceArenaPage() {
                       <Send className="h-4 w-4" />
                     </Button>
                   </form>
-                </div>
-              )}
-            </div>
+                ) : (
+                  <div className="p-3 border-t border-border bg-muted/20 text-center text-[11px] text-muted-foreground font-bold italic shrink-0">
+                    Sesi Ujian Selesai. Percakapan telah dikunci (Read-Only).
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-        )}
+        </div>
 
         {/* Evaluating loader overlay */}
         {evaluating && (

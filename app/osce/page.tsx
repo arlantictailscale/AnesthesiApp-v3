@@ -331,23 +331,25 @@ export default function OscePrepDashboard() {
                   const stationTitle = matched ? matched.title : "OSCE Station"
 
                   return (
-                    <Card key={a.id} className="p-3 border border-border bg-card hover:bg-muted/15 transition-all text-xs">
-                      <div className="flex justify-between items-start gap-2 mb-1.5">
-                        <span className="font-bold text-foreground truncate block max-w-[140px]" title={stationTitle}>
-                          {stationTitle}
-                        </span>
-                        <span className={`font-extrabold text-[13px] shrink-0 ${scoreColor}`}>
-                          {pct}%
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center text-[10px] text-muted-foreground font-semibold">
-                        <span>Score: {a.total_score}/{a.max_score}</span>
-                        <span>{new Date(a.completed_at).toLocaleDateString()}</span>
-                      </div>
-                      <p className="text-[10px] text-muted-foreground mt-2 line-clamp-2 italic leading-relaxed border-t border-border/40 pt-1.5">
-                        "{a.feedback}"
-                      </p>
-                    </Card>
+                    <Link key={a.id} href={`/osce/practice/${a.station_id}?attempt=${a.id}`}>
+                      <Card className="p-3 border border-border bg-card hover:bg-muted/15 transition-all text-xs cursor-pointer hover:border-primary/40">
+                        <div className="flex justify-between items-start gap-2 mb-1.5">
+                          <span className="font-bold text-foreground truncate block max-w-[140px]" title={stationTitle}>
+                            {stationTitle}
+                          </span>
+                          <span className={`font-extrabold text-[13px] shrink-0 ${scoreColor}`}>
+                            {pct}%
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center text-[10px] text-muted-foreground font-semibold">
+                          <span>Score: {a.total_score}/{a.max_score}</span>
+                          <span>{new Date(a.completed_at).toLocaleDateString()}</span>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground mt-2 line-clamp-2 italic leading-relaxed border-t border-border/40 pt-1.5">
+                          "{a.feedback}"
+                        </p>
+                      </Card>
+                    </Link>
                   )
                 })}
               </div>

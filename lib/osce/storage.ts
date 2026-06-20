@@ -125,6 +125,14 @@ export async function listOsceAttempts(): Promise<OsceAttempt[]> {
 }
 
 /**
+ * Gets a single OSCE attempt by ID
+ */
+export async function getOsceAttempt(id: string): Promise<OsceAttempt | null> {
+  const attempts = await listOsceAttempts()
+  return attempts.find((a) => a.id === id) || null
+}
+
+/**
  * Saves a completed OSCE practice session attempt
  */
 export async function saveOsceAttempt(
