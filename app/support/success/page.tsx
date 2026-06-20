@@ -60,7 +60,7 @@ function SuccessPageContent() {
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
         <CardTitle className="text-lg font-bold mt-2">Confirming Payment</CardTitle>
         <CardDescription className="text-xs">
-          Verifying your transaction with Midtrans payment gateway, please do not close this page...
+          Verifying your transaction with DOKU payment gateway, please do not close this page...
         </CardDescription>
       </Card>
     )

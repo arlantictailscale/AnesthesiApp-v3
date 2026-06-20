@@ -11,26 +11,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { listSupporters, type Supporter } from "@/lib/storage"
 import { Heart, Landmark, Globe, Loader2, Sparkles, AlertCircle, Check, HelpCircle } from "lucide-react"
-import Script from "next/script"
 import Link from "next/link"
 import { Logo } from "@/components/logo"
 import { SupporterBadge } from "@/components/supporter-badge"
-
-declare global {
-  interface Window {
-    snap: {
-      pay: (
-        token: string,
-        options?: {
-          onSuccess?: (result: any) => void
-          onPending?: (result: any) => void
-          onError?: (result: any) => void
-          onClose?: () => void
-        }
-      ) => void
-    }
-  }
-}
 
 const getTierDefaultAmount = (selectedTier: string): string => {
   if (selectedTier === "Backer") return "50000"
@@ -148,45 +131,13 @@ export default function SupportUsPage() {
         throw new Error(errData.error || "Failed to initiate payment")
       }
 
-      const { token, order_id } = await res.json()
+      const { redirect_url } = await res.json()
       toast.dismiss(toastId)
-
-      if (typeof window.snap === "undefined") {
-        throw new Error("Payment gateway SDK failed to load. Please refresh the page.")
-      }
-
-      window.snap.pay(token, {
-        onSuccess: async (result: any) => {
-          const confirmToast = toast.loading("Verifying payment settlement status...")
-          try {
-            const confirmRes = await fetch("/api/support/confirm", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ order_id }),
-            })
-            if (confirmRes.ok) {
-              toast.success("Thank you! Payment successful and recorded.", { id: confirmToast })
-              setName("")
-              setMessage("")
-              setWebsite("")
-              await load()
-            } else {
-              toast.error("Payment settlement verification pending.", { id: confirmToast })
-            }
-          } catch (confirmErr) {
-            toast.error("Error confirming payment status.", { id: confirmToast })
-          }
-        },
-        onPending: () => {
-          toast.info("Payment is pending. Please complete transaction.")
-        },
-        onError: () => {
-          toast.error("Payment failed. Please try again.")
-        },
-        onClose: () => {
-          toast.warning("Payment checkout closed.")
-        }
-      })
+      toast.success("Redirecting to secure payment checkout...")
+      
+      // Redirect to DOKU Checkout hosted page
+      window.location.href = redirect_url
+      return
 
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to record support", { id: toastId })
@@ -202,19 +153,8 @@ export default function SupportUsPage() {
   const sponsors = supporters.filter(s => s.tier === "Sponsor")
   const backers = supporters.filter(s => s.tier === "Backer")
 
-  const isProduction = process.env.NEXT_PUBLIC_MIDTRANS_IS_PRODUCTION === "true"
-  const snapUrl = isProduction
-    ? "https://app.midtrans.com/snap/snap.js"
-    : "https://app.sandbox.midtrans.com/snap/snap.js"
-  const clientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || ""
-
   return (
     <AppShell>
-      <Script
-        src={snapUrl}
-        data-client-key={clientKey}
-        strategy="lazyOnload"
-      />
 
       <div className="flex flex-col gap-8 pb-12">
         {/* Header Section */}
@@ -366,7 +306,7 @@ export default function SupportUsPage() {
                   Billing & Refund Policy
                 </div>
                 <p>
-                  All payments are securely processed via Midtrans payment gateway. By upgrading your account, you agree to our Terms of Service. Because supporter profile badges and wall listings are activated instantly, support payments are non-refundable. For billing queries, support, or tax invoice requests, please contact us at <span className="font-semibold text-foreground">support@anesthesiapp.my.id</span>.
+                  All payments are securely processed via DOKU payment gateway. By upgrading your account, you agree to our Terms of Service. Because supporter profile badges and wall listings are activated instantly, support payments are non-refundable. For billing queries, support, or tax invoice requests, please contact us at <span className="font-semibold text-foreground">support@anesthesiapp.my.id</span>.
                 </p>
               </div>
             </Card>

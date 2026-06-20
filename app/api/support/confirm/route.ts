@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { getDokuConfig, generateSignature } from "@/lib/doku"
 
 export const runtime = "nodejs"
 
@@ -12,52 +13,56 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing order_id" }, { status: 400 })
     }
 
-    const serverKey = process.env.MIDTRANS_SERVER_KEY
-    const isProduction = process.env.NEXT_PUBLIC_MIDTRANS_IS_PRODUCTION === "true"
-
-    if (!serverKey) {
-      console.error("MIDTRANS_SERVER_KEY is not configured")
-      return NextResponse.json({ error: "Payment gateway key misconfigured" }, { status: 500 })
+    const dokuConfig = getDokuConfig()
+    if (!dokuConfig.clientId || !dokuConfig.secretKey) {
+      console.error("DOKU configuration is missing keys")
+      return NextResponse.json({ error: "Payment gateway configuration error" }, { status: 500 })
     }
 
-    const baseUrl = isProduction
-      ? `https://api.midtrans.com/v2/${order_id}/status`
-      : `https://api.sandbox.midtrans.com/v2/${order_id}/status`
+    const requestTarget = `/checkout/v1/payment/check-status/${order_id}`
+    const requestUrl = `${dokuConfig.baseUrl}${requestTarget}`
 
-    const authHeader = `Basic ${Buffer.from(serverKey + ":").toString("base64")}`
+    const requestId = crypto.randomUUID()
+    const timestamp = new Date().toISOString().split(".")[0] + "Z" // format YYYY-MM-DDTHH:mm:ssZ
 
-    const response = await fetch(baseUrl, {
+    // For GET request, digest is empty string
+    const signature = generateSignature({
+      clientId: dokuConfig.clientId,
+      requestId,
+      timestamp,
+      target: requestTarget,
+      digest: "",
+      secretKey: dokuConfig.secretKey,
+    })
+
+    const response = await fetch(requestUrl, {
       method: "GET",
       headers: {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-        "Authorization": authHeader,
+        "Client-Id": dokuConfig.clientId,
+        "Request-Id": requestId,
+        "Request-Timestamp": timestamp,
+        "Signature": signature,
       },
     })
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error("Midtrans status API error:", errorText)
+      console.error("DOKU status API error:", errorText)
       return NextResponse.json({ error: `Payment gateway error: ${response.statusText}` }, { status: 502 })
     }
 
     const data = await response.json()
-    const transactionStatus = data.transaction_status
-    const fraudStatus = data.fraud_status
+    const orderStatus = data.order?.status
+    const transactionStatus = data.transaction?.status
 
     let dbStatus: "pending" | "paid" | "failed" = "pending"
 
-    if (
-      transactionStatus === "capture" && fraudStatus === "accept" ||
-      transactionStatus === "settlement"
-    ) {
+    if (transactionStatus === "SUCCESS") {
       dbStatus = "paid"
-    } else if (
-      transactionStatus === "deny" ||
-      transactionStatus === "cancel" ||
-      transactionStatus === "expire"
-    ) {
+    } else if (transactionStatus === "FAILED" || orderStatus === "ORDER_EXPIRED") {
       dbStatus = "failed"
+    } else if (transactionStatus === "PENDING" || orderStatus === "ORDER_GENERATED") {
+      dbStatus = "pending"
     }
 
     // Update the database only if state changed
@@ -92,7 +97,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       status: dbStatus,
-      transaction_status: transactionStatus,
+      transaction_status: transactionStatus || orderStatus || "unknown",
     })
 
   } catch (err) {
