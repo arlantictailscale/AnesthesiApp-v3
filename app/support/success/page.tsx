@@ -89,7 +89,8 @@ function SuccessPageContent() {
     )
   }
 
-  const isPending = status === "pending" || transactionStatus === "pending"
+  // Verification failed (network/API error) or payment is still pending — do NOT activate
+  const isPending = status === "pending" || status === "unknown" || transactionStatus === "pending"
 
   return (
     <Card className={`border shadow-lg max-w-md mx-auto text-center p-8 flex flex-col items-center justify-center gap-4 relative overflow-hidden ${isPending ? "border-amber-500/20 bg-amber-500/[0.01]" : "border-emerald-500/20 bg-emerald-500/[0.01]"}`}>
@@ -112,7 +113,11 @@ function SuccessPageContent() {
 
       <div className="space-y-1">
         <CardTitle className={`text-xl font-extrabold ${isPending ? "text-amber-700 dark:text-amber-400" : "text-emerald-700 dark:text-emerald-400"}`}>
-          {isPending ? "Payment Pending Completion" : "Premium Plan Activated!"}
+          {status === "unknown"
+            ? "Awaiting Payment Confirmation"
+            : isPending
+            ? "Payment Pending Completion"
+            : "Premium Plan Activated!"}
         </CardTitle>
         <CardDescription className="text-xs font-medium text-muted-foreground">
           Order ID: <span className="font-mono font-bold text-foreground">{orderId}</span>
@@ -120,7 +125,9 @@ function SuccessPageContent() {
       </div>
 
       <p className="text-xs text-muted-foreground leading-relaxed max-w-xs">
-        {isPending 
+        {status === "unknown"
+          ? "We could not verify your payment status at this time. Your premium plan will be activated automatically once payment is confirmed. Please check back in a few minutes."
+          : isPending
           ? "Your transaction has been initiated but requires payment completion (e.g. at an ATM, convenience store, or banking app). Your name will display on the Premium Wall once settlement completes."
           : "Thank you for upgrading! Your premium access has been activated. You can now use all premium simulator prep tools and logged case cloud backups."
         }
@@ -128,7 +135,7 @@ function SuccessPageContent() {
 
       {errorMsg && (
         <div className="p-3 bg-yellow-500/5 border border-yellow-500/15 rounded-lg text-[10px] text-yellow-700 dark:text-yellow-400 max-w-xs text-left leading-normal mt-2">
-          {errorMsg}
+          ⚠️ <strong>Your premium plan is NOT yet active.</strong> {errorMsg}
         </div>
       )}
 
