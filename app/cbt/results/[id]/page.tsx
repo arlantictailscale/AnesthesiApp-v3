@@ -159,11 +159,11 @@ export default function CBTResultsPage() {
         </div>
 
         {/* Results Overview Row */}
-        <div className="grid gap-6 md:grid-cols-[1fr_2fr]">
+        <div className="grid gap-6 md:grid-cols-[1fr_2fr] items-start">
           {/* Circular Score card */}
-          <Card className="flex flex-col items-center justify-between border-border bg-card p-6 shadow-sm">
+          <Card className="flex flex-col items-center border-border bg-card p-6 shadow-sm">
             <CardHeader className="text-center pb-2">
-              <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+              <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
                 Hasil Akhir Anda
               </CardTitle>
             </CardHeader>
