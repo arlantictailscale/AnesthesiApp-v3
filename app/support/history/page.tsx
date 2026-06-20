@@ -83,7 +83,8 @@ export default function PaymentHistoryPage() {
       await loadPayments()
     } catch (err) {
       console.error(err)
-      toast.error("Failed to sync payment status with DOKU.", { id: toastId })
+      const message = err instanceof Error ? err.message : "Failed to sync payment status with DOKU."
+      toast.error(message, { id: toastId })
     } finally {
       setSyncingId(null)
     }

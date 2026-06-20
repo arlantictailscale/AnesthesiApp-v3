@@ -50,7 +50,10 @@ export function generateSignature({
   digest,
   secretKey,
 }: GenerateSignatureParams): string {
-  const rawString = `Client-Id:${clientId}\nRequest-Id:${requestId}\nRequest-Timestamp:${timestamp}\nRequest-Target:${target}\nDigest:${digest}`
+  let rawString = `Client-Id:${clientId}\nRequest-Id:${requestId}\nRequest-Timestamp:${timestamp}\nRequest-Target:${target}`
+  if (digest) {
+    rawString += `\nDigest:${digest}`
+  }
   const hmac = createHmac("sha256", secretKey)
   hmac.update(rawString, "utf8")
   return `HMACSHA256=${hmac.digest("base64")}`
