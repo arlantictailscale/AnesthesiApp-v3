@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -24,7 +25,9 @@ import {
   BookOpen,
   Share2,
   Heart,
-  Pill
+  Pill,
+  ShieldAlert,
+  Loader2
 } from "lucide-react"
 import { Logo } from "@/components/logo"
 import { Footer } from "@/components/footer"
@@ -37,6 +40,34 @@ import {
 } from "@/components/ui/sheet"
 import { SupporterBadge } from "@/components/supporter-badge"
 
+const TERMS_AND_PRIVACY_TEXT = `
+PERSYARATAN LAYANAN & KEBIJAKAN PRIVASI ANESTHESIAPP
+Terakhir diperbarui: Juni 20, 2026
+
+Selamat datang di AnesthesiApp. Sebelum menggunakan layanan kami, Anda wajib membaca, memahami, dan menyetujui seluruh ketentuan di bawah ini.
+
+1. PENAFIAN MEDIS (MEDICAL DISCLAIMER)
+- AnesthesiApp adalah platform simulasi pendidikan, persiapan ujian, dan pencatatan kasus klinis untuk tujuan pembelajaran.
+- Aplikasi ini BUKAN merupakan perangkat medis bersertifikat, Rekam Medis Elektronik (EHR/RME) resmi, atau alat penunjang keputusan klinis.
+- Segala dosis, panduan, dan rumus obat dalam modul Farmakologi dan Guidelines hanya untuk tinjauan akademis. Jangan mengandalkan output aplikasi ini untuk keputusan terapi pasien nyata.
+
+2. KEBIJAKAN PRIVASI DATA PASIEN & ANONIMISASI (PENTING)
+- Sebagai pengguna yang mencatat kasus klinis, Anda bertanggung jawab penuh untuk menjaga privasi pasien sesuai UU No. 27 Tahun 2022 tentang Pelindungan Data Pribadi (UU PDP) dan regulasi kesehatan lainnya.
+- Anda dilarang keras (NEVER) menginput data identitas pasien nyata (PII/PHI) seperti Nama Lengkap Pasien, Nomor Rekam Medis (MRN) asli, Tanggal Lahir pasien, Alamat rumah, atau Nomor Telepon pasien di bagian mana pun dalam aplikasi ini (termasuk catatan pribadi).
+- Semua kolom nama pasien dan MRN wajib menggunakan nilai samaran, dummy, atau acak (contoh: "Pasien A", "MRN-9999").
+- Layanan kami tidak dirancang untuk menampung rekam medis pasien yang sebenarnya. Kami tidak bertanggung jawab atas segala pelanggaran hukum privasi jika Anda memasukkan identitas asli pasien.
+- Kami berhak menghapus data kasus tanpa pemberitahuan jika terdeteksi mengandung informasi identitas pasien asli.
+
+3. PENGGUNAAN AUTHENTIKASI GOOGLE OAUTH
+- Kami menggunakan Google Sign-In untuk otentikasi akun. Kami hanya mengakses informasi dasar profil Anda (email, nama, foto profil) untuk pembuatan akun.
+- Data Anda disimpan dengan aman menggunakan enkripsi TLS/SSL dan Row-Level Security (RLS) di database Supabase.
+
+4. HAK DAN PENGHAPUSAN DATA
+- Anda memiliki hak penuh untuk meminta penghapusan seluruh data akun dan catatan kasus Anda dengan menghubungi kami di support@anesthesiapp.my.id. Kami akan memproses penghapusan data Anda dalam waktu 7 hari kerja.
+
+Dengan mencentang kotak di bawah ini dan mengeklik "Setuju dan Lanjutkan", Anda menyatakan bahwa Anda telah membaca, memahami, dan menyetujui seluruh ketentuan di atas.
+`.trim()
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -44,6 +75,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [supporterTier, setSupporterTier] = useState<string | null>(null)
   const [ready, setReady] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
+
+  // Terms agreement state
+  const [showTermsModal, setShowTermsModal] = useState(false)
+  const [hasScrolled, setHasScrolled] = useState(false)
+  const [agreed, setAgreed] = useState(false)
+  const [submittingTerms, setSubmittingTerms] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -64,6 +101,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         }
       } catch (err) {
         console.error("Failed to load user profile in app shell:", err)
+      }
+
+      // Check if user has accepted the terms and privacy policy
+      try {
+        const { createClient } = await import("@/lib/supabase/client")
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          const alreadyAgreed = user.user_metadata?.agreed_to_terms === true
+          if (active && !alreadyAgreed) {
+            setShowTermsModal(true)
+          }
+        }
+      } catch (err) {
+        console.error("Failed to check terms agreement metadata:", err)
       }
 
       setReady(true)
@@ -373,6 +425,90 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {children}
       </main>
       <Footer />
+
+      {showTermsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-4">
+          <div className="bg-card border border-border w-full max-w-xl rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+            <div className="p-6 border-b border-border bg-muted/10">
+              <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+                <ShieldAlert className="h-5 w-5 text-primary" />
+                Persetujuan Ketentuan Layanan & Kebijakan Privasi
+              </h2>
+              <p className="text-xs text-muted-foreground mt-1">
+                Anda harus membaca hingga akhir dokumen dan menyetujui ketentuan di bawah ini untuk menggunakan AnesthesiApp.
+              </p>
+            </div>
+
+            <div 
+              onScroll={(e) => {
+                const target = e.currentTarget
+                const isBottom = target.scrollHeight - target.scrollTop <= target.clientHeight + 10
+                if (isBottom) {
+                  setHasScrolled(true)
+                }
+              }}
+              className="p-6 overflow-y-auto flex-1 text-xs text-muted-foreground whitespace-pre-line leading-relaxed border-b border-border bg-muted/5 font-medium max-h-[40vh]"
+            >
+              {TERMS_AND_PRIVACY_TEXT}
+            </div>
+
+            <div className="p-6 flex flex-col gap-4 bg-muted/10">
+              <label className="flex items-start gap-3 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  disabled={!hasScrolled}
+                  checked={agreed}
+                  onChange={(e) => setAgreed(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary disabled:opacity-50"
+                />
+                <span className={`text-xs leading-normal font-semibold ${!hasScrolled ? "text-muted-foreground/60" : "text-foreground"}`}>
+                  {!hasScrolled 
+                    ? "Silakan scroll/baca teks di atas sampai ke bagian bawah untuk mengaktifkan kotak persetujuan ini." 
+                    : "Saya menyatakan setuju dengan Persyaratan Layanan dan Kebijakan Privasi AnesthesiApp."
+                  }
+                </span>
+              </label>
+
+              <div className="flex justify-end gap-3 mt-2">
+                <Button 
+                  onClick={async () => {
+                    await signOut()
+                    window.location.replace("/login")
+                  }}
+                  variant="ghost" 
+                  className="text-xs font-semibold"
+                >
+                  Keluar
+                </Button>
+                <Button
+                  disabled={!agreed || submittingTerms}
+                  onClick={async () => {
+                    setSubmittingTerms(true)
+                    try {
+                      const { createClient } = await import("@/lib/supabase/client")
+                      const supabase = createClient()
+                      const { error } = await supabase.auth.updateUser({
+                        data: { agreed_to_terms: true }
+                      })
+                      if (error) throw error
+                      setShowTermsModal(false)
+                    } catch (err) {
+                      console.error("Failed to save terms agreement:", err)
+                      toast.error("Gagal menyimpan persetujuan. Silakan coba lagi.")
+                    } finally {
+                      setSubmittingTerms(false)
+                    }
+                  }}
+                  className="gap-1.5 font-bold text-xs"
+                >
+                  {submittingTerms && <Loader2 className="h-3 w-3 animate-spin" />}
+                  Setuju & Lanjutkan
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
