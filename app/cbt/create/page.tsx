@@ -97,6 +97,9 @@ function CBTCreatePageContent() {
   const [explanation, setExplanation] = useState("")
   const [qImageUrl, setQImageUrl] = useState("")
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [discussionFileUrl, setDiscussionFileUrl] = useState("")
+  const [discussionFileName, setDiscussionFileName] = useState("")
+  const [uploadingDiscussionFile, setUploadingDiscussionFile] = useState(false)
 
   const [saving, setSaving] = useState(false)
   const [loadingPackage, setLoadingPackage] = useState(!!editId)
@@ -104,10 +107,11 @@ function CBTCreatePageContent() {
   // Load existing package for editing
   useEffect(() => {
     if (!editId) return
+    const currentEditId = editId
 
     async function loadPkg() {
       try {
-        const p = await getPackage(editId)
+        const p = await getPackage(currentEditId)
         if (p) {
           setName(p.name)
           setDescription(p.description || "")
@@ -148,6 +152,9 @@ function CBTCreatePageContent() {
     setExplanation("")
     setQImageUrl("")
     setUploadingImage(false)
+    setDiscussionFileUrl("")
+    setDiscussionFileName("")
+    setUploadingDiscussionFile(false)
   }
 
   // Load a question into form for editing
@@ -164,6 +171,8 @@ function CBTCreatePageContent() {
     setCategory(q.category as any)
     setExplanation(q.explanation)
     setQImageUrl(q.imageUrl || "")
+    setDiscussionFileUrl(q.discussionFileUrl || "")
+    setDiscussionFileName(q.discussionFileName || "")
   }
 
   // Remove a question
@@ -206,6 +215,8 @@ function CBTCreatePageContent() {
       category,
       explanation: explanation.trim(),
       imageUrl: qImageUrl || undefined,
+      discussionFileUrl: discussionFileUrl || undefined,
+      discussionFileName: discussionFileName || undefined,
     }
 
     if (editIndex !== null) {
@@ -265,6 +276,47 @@ function CBTCreatePageContent() {
     }
   }
 
+  // Upload discussion file to Supabase Storage
+  async function handleDiscussionFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Ukuran file terlalu besar. Maksimum 10MB.")
+      return
+    }
+
+    setUploadingDiscussionFile(true)
+    try {
+      const supabase = createClient()
+      const fileExt = file.name.split(".").pop()
+      const fileName = `${Date.now()}_discussion_${Math.random().toString(36).substring(2, 9)}.${fileExt}`
+      const filePath = `discussions/${fileName}`
+
+      const { data, error } = await supabase.storage
+        .from("cbt-images")
+        .upload(filePath, file, {
+          cacheControl: "3600",
+          upsert: false,
+        })
+
+      if (error) throw error
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("cbt-images")
+        .getPublicUrl(filePath)
+
+      setDiscussionFileUrl(publicUrl)
+      setDiscussionFileName(file.name)
+      toast.success("File pendukung pembahasan berhasil diunggah!")
+    } catch (err) {
+      console.error("Upload error:", err)
+      toast.error("Gagal mengunggah file. Pastikan bucket 'cbt-images' sudah siap di Supabase.")
+    } finally {
+      setUploadingDiscussionFile(false)
+    }
+  }
+
   // Sample JSON format helper
   const sampleJson = `[
   {
@@ -319,6 +371,8 @@ function CBTCreatePageContent() {
           category: q.category || "Farmakologi & Fisiologi",
           explanation: q.explanation || "",
           imageUrl: q.imageUrl || undefined,
+          discussionFileUrl: q.discussionFileUrl || undefined,
+          discussionFileName: q.discussionFileName || undefined,
         }
       })
 
@@ -656,6 +710,70 @@ function CBTCreatePageContent() {
                       onChange={(e) => setExplanation(e.target.value)}
                       className="h-24"
                     />
+                  </div>
+
+                  {/* Explanation File Upload */}
+                  <div className="space-y-2">
+                    <Label htmlFor="discussion-file">File Pendukung Pembahasan (PDF, Gambar, dll. - Opsional)</Label>
+                    <div className="flex flex-col gap-2">
+                      {discussionFileUrl ? (
+                        <div className="flex items-center justify-between p-2.5 rounded-lg border border-emerald-500/20 bg-emerald-500/5 text-emerald-700 dark:text-emerald-400">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <FileText className="h-4 w-4 text-emerald-600 shrink-0" />
+                            <span className="text-xs font-medium truncate">
+                              {discussionFileName || "File Pembahasan"}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-2 text-xs font-semibold text-emerald-600 hover:text-emerald-700 hover:bg-emerald-500/10"
+                              onClick={() => window.open(discussionFileUrl, "_blank")}
+                            >
+                              Buka
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                              onClick={() => {
+                                setDiscussionFileUrl("")
+                                setDiscussionFileName("")
+                              }}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <label
+                            htmlFor="discussion-file-upload"
+                            className="flex flex-1 items-center justify-between h-10 px-3 border border-input rounded-md cursor-pointer bg-background hover:bg-muted/40 transition-colors text-sm text-muted-foreground"
+                          >
+                            <span className="flex items-center gap-2">
+                              {uploadingDiscussionFile ? (
+                                <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                              ) : (
+                                <Upload className="h-4 w-4" />
+                              )}
+                              <span>{uploadingDiscussionFile ? "Mengunggah..." : "Unggah file pendukung pembahasan"}</span>
+                            </span>
+                            <span className="text-[10px] text-muted-foreground/60 font-semibold bg-muted px-2 py-0.5 rounded">Pilih File</span>
+                            <input
+                              id="discussion-file-upload"
+                              type="file"
+                              className="hidden"
+                              onChange={handleDiscussionFileUpload}
+                              disabled={uploadingDiscussionFile}
+                            />
+                          </label>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <Button type="submit" className="w-full gap-2">

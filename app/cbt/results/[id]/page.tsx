@@ -424,6 +424,33 @@ export default function CBTResultsPage() {
                             <strong className="font-bold text-emerald-800">Pembahasan Klinis:</strong> {q.explanation}
                           </div>
                         </div>
+                        {q.discussionFileUrl && (
+                          <div className="mt-3 pt-3 border-t border-emerald-500/10 flex flex-col gap-2">
+                            <span className="text-[10px] text-emerald-800 font-bold uppercase tracking-wider block">File Pendukung Pembahasan:</span>
+                            {/\.(jpg|jpeg|png|webp|gif)$/i.test(q.discussionFileUrl) ? (
+                              <div className="relative w-full max-h-[200px] rounded-lg overflow-hidden border border-emerald-500/20 bg-emerald-500/10 flex items-center justify-center">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={q.discussionFileUrl}
+                                  alt="File Pendukung Pembahasan"
+                                  className="max-h-[200px] w-auto object-contain rounded-md"
+                                />
+                              </div>
+                            ) : (
+                              <Button
+                                asChild
+                                variant="outline"
+                                size="sm"
+                                className="w-fit gap-1.5 text-emerald-700 border-emerald-500/20 bg-emerald-500/10 hover:bg-emerald-500/20 hover:text-emerald-800"
+                              >
+                                <a href={q.discussionFileUrl} target="_blank" rel="noopener noreferrer">
+                                  <FileText className="h-4 w-4 text-emerald-600" />
+                                  <span>{q.discussionFileName || "Unduh / Buka File Pendukung"}</span>
+                                </a>
+                              </Button>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>

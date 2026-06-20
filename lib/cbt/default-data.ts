@@ -22,6 +22,8 @@ export interface CBTQuestion {
     | "Anestesi Rawat Jalan & NORA"
   explanation: string
   imageUrl?: string
+  discussionFileUrl?: string
+  discussionFileName?: string
 }
 
 export interface CBTPackage {
