@@ -21,6 +21,8 @@ import {
   Heart
 } from "lucide-react"
 
+import { LandingCalculator } from "@/components/landing-calculator"
+
 import { createClient } from "@/lib/supabase/server"
 
 export default async function LandingPage() {
@@ -121,39 +123,10 @@ export default async function LandingPage() {
             </dl>
           </div>
 
-          {/* Device mockup */}
-          <div className="relative">
-            <div className="absolute -inset-8 -z-10 rounded-3xl bg-primary/5 blur-2xl" />
-            <Card className="mx-auto w-full max-w-sm overflow-hidden p-0 shadow-xl border border-border/80">
-              <div className="border-b border-border bg-card p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-muted-foreground font-semibold">CBT Exam Prep</p>
-                    <p className="font-bold">National Board Simulation</p>
-                  </div>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-1 text-xs font-semibold text-emerald-600">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Active Hub
-                  </span>
-                </div>
-                <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted">
-                  <div className="h-full w-[85%] rounded-full bg-emerald-500" />
-                </div>
-              </div>
-              <div className="space-y-3 p-4 text-sm font-medium">
-                <MockField label="Exam" value="National Board Practice" />
-                <MockField label="Categories" value="10 Subspecialties" />
-                <MockField label="Time Limit" value="180 Minutes" />
-                <MockField label="AI Features" value="Question Generator" highlight />
-                <MockField label="Media" value="Image Support (CVC/ETT)" />
-                <MockField label="Explanations" value="Full Clinical Insights" />
-              </div>
-              <div className="flex items-center justify-between border-t border-border bg-muted/40 p-3">
-                <Button variant="ghost" size="sm" className="font-semibold">
-                  Dashboard
-                </Button>
-                <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold">Start Exam</Button>
-              </div>
-            </Card>
+          {/* Device mockup / Interactive Calculator */}
+          <div className="relative flex justify-center">
+            <div className="absolute -inset-8 -z-10 rounded-3xl bg-primary/5 blur-2xl animate-pulse" />
+            <LandingCalculator />
           </div>
         </div>
       </section>
