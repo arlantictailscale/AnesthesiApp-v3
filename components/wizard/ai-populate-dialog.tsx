@@ -92,11 +92,16 @@ export function AiPopulateDialog() {
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
-                  <SelectLabel className="font-bold text-xs uppercase text-emerald-600 dark:text-emerald-400 tracking-wider">Free Models</SelectLabel>
-                  {AI_MODELS.filter(m => m.tier === "free").map((m) => (
+                  <SelectLabel className="font-bold text-xs uppercase text-emerald-600 dark:text-emerald-400 tracking-wider">Free Models (Sorted by TPS)</SelectLabel>
+                  {[...AI_MODELS].filter(m => m.tier === "free").sort((a, b) => b.tps - a.tps).map((m) => (
                     <SelectItem key={m.id} value={m.id}>
                       <div className="flex flex-col py-0.5">
-                        <span className="font-medium text-sm text-foreground">{m.label}</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-medium text-sm text-foreground">{m.label}</span>
+                          <span className="text-[9px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-full px-1.5 py-0.2 font-mono font-semibold">
+                            {m.tps} TPS
+                          </span>
+                        </div>
                         <span className="text-[10px] text-muted-foreground font-mono">{m.id}</span>
                       </div>
                     </SelectItem>
@@ -106,14 +111,17 @@ export function AiPopulateDialog() {
                 <SelectSeparator />
                 
                 <SelectGroup>
-                  <SelectLabel className="font-bold text-xs uppercase text-amber-600 dark:text-amber-400 tracking-wider">Paid Models (Sorted by Price)</SelectLabel>
-                  {AI_MODELS.filter(m => m.tier === "paid").map((m) => (
+                  <SelectLabel className="font-bold text-xs uppercase text-amber-600 dark:text-amber-400 tracking-wider">Paid Models (Sorted by TPS)</SelectLabel>
+                  {[...AI_MODELS].filter(m => m.tier === "paid").sort((a, b) => b.tps - a.tps).map((m) => (
                     <SelectItem key={m.id} value={m.id}>
                       <div className="flex flex-col py-0.5">
                         <div className="flex items-center gap-1.5">
                           <span className="font-medium text-sm text-foreground">{m.label}</span>
                           <span className="text-[9px] bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-full px-1.5 py-0.2 font-mono font-semibold">
                             {m.priceLabel}
+                          </span>
+                          <span className="text-[9px] bg-sky-500/10 text-sky-600 dark:text-sky-400 rounded-full px-1.5 py-0.2 font-mono font-semibold">
+                            {m.tps} TPS
                           </span>
                         </div>
                         <span className="text-[10px] text-muted-foreground font-mono">{m.id}</span>

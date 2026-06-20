@@ -162,8 +162,8 @@ export default function CBTResultsPage() {
         <div className="grid gap-6 md:grid-cols-[1fr_2fr] items-start">
           {/* Circular Score card */}
           <Card className="flex flex-col items-center border-border bg-card p-6 shadow-sm">
-            <CardHeader className="text-center pb-2">
-              <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+            <CardHeader className="w-full text-center pb-2 justify-items-center">
+              <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap text-center">
                 Hasil Akhir Anda
               </CardTitle>
             </CardHeader>

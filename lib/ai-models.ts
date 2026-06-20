@@ -6,7 +6,26 @@ export const AI_MODELS = [
     tier: "free",
     price: 0,
     priceLabel: "Free",
+    tps: 150,
     description: "Google Gemini 2.5 Flash, fast and highly accurate clinical data extraction"
+  },
+  {
+    id: "cohere/north-mini-code:free",
+    label: "Cohere North Mini Code (free)",
+    tier: "free",
+    price: 0,
+    priceLabel: "Free",
+    tps: 90,
+    description: "Cohere North Mini Code, agentic coding model optimized for code and terminal tasks"
+  },
+  {
+    id: "nvidia/nemotron-3.5-content-safety:free",
+    label: "Nemotron 3.5 Content Safety (free)",
+    tier: "free",
+    price: 0,
+    priceLabel: "Free",
+    tps: 85,
+    description: "NVIDIA Nemotron 3.5 Content Safety, multimodal guardrail and content moderation model"
   },
   {
     id: "nvidia/nemotron-3-ultra-550b-a55b:free",
@@ -14,6 +33,7 @@ export const AI_MODELS = [
     tier: "free",
     price: 0,
     priceLabel: "Free",
+    tps: 12,
     description: "NVIDIA Nemotron-3 Ultra 550B, high capacity reasoning"
   },
   {
@@ -22,6 +42,7 @@ export const AI_MODELS = [
     tier: "free",
     price: 0,
     priceLabel: "Free",
+    tps: 55,
     description: "OpenRouter Owl Alpha — default model for AnesthesiApp"
   },
   {
@@ -30,6 +51,7 @@ export const AI_MODELS = [
     tier: "free",
     price: 0,
     priceLabel: "Free",
+    tps: 45,
     description: "NVIDIA Nemotron-3 Nano Omni 30B reasoning model"
   },
   {
@@ -38,6 +60,7 @@ export const AI_MODELS = [
     tier: "free",
     price: 0,
     priceLabel: "Free",
+    tps: 60,
     description: "Poolside Laguna M.1 code and reasoning model"
   },
   {
@@ -46,6 +69,7 @@ export const AI_MODELS = [
     tier: "free",
     price: 0,
     priceLabel: "Free",
+    tps: 40,
     description: "Moonshot AI Kimi K2.6 high-context reasoning model"
   },
   {
@@ -54,6 +78,7 @@ export const AI_MODELS = [
     tier: "free",
     price: 0,
     priceLabel: "Free",
+    tps: 48,
     description: "Google Gemma 4 31B Instruct model"
   },
   {
@@ -62,6 +87,7 @@ export const AI_MODELS = [
     tier: "free",
     price: 0,
     priceLabel: "Free",
+    tps: 25,
     description: "NVIDIA Nemotron-3 Super 120B high-capacity assistant"
   },
   {
@@ -70,6 +96,7 @@ export const AI_MODELS = [
     tier: "free",
     price: 0,
     priceLabel: "Free",
+    tps: 30,
     description: "OpenRouter auto-routes to a free model"
   },
 
@@ -80,6 +107,7 @@ export const AI_MODELS = [
     tier: "paid",
     price: 0.0001,
     priceLabel: "< $0.01 / 1M tokens",
+    tps: 32,
     description: "OpenAI GPT OSS 120B parameter model"
   },
   {
@@ -88,6 +116,7 @@ export const AI_MODELS = [
     tier: "paid",
     price: 0.01,
     priceLabel: "$0.01 / 1M tokens",
+    tps: 120,
     description: "inclusionAI Ling 2.6 Flash instant model"
   },
   {
@@ -96,6 +125,7 @@ export const AI_MODELS = [
     tier: "paid",
     price: 0.015,
     priceLabel: "$0.015 / 1M tokens",
+    tps: 100,
     description: "OpenAI GPT-5 Nano lightweight model"
   },
   {
@@ -104,6 +134,7 @@ export const AI_MODELS = [
     tier: "paid",
     price: 0.03,
     priceLabel: "$0.03 / 1M tokens",
+    tps: 70,
     description: "Liquid LFM-2-24B-A2B coding & reasoning model"
   },
   {
@@ -112,15 +143,16 @@ export const AI_MODELS = [
     tier: "paid",
     price: 0.031,
     priceLabel: "$0.03 / 1M tokens",
+    tps: 82,
     description: "OpenAI GPT OSS 20B model"
   },
-
   {
     id: "arcee-ai/trinity-mini",
     label: "Trinity Mini",
     tier: "paid",
     price: 0.045,
     priceLabel: "$0.045 / 1M tokens",
+    tps: 65,
     description: "Arcee AI Trinity Mini reasoning model"
   },
   {
@@ -129,6 +161,7 @@ export const AI_MODELS = [
     tier: "paid",
     price: 0.05,
     priceLabel: "$0.05 / 1M tokens",
+    tps: 110,
     description: "IBM Granite 4.1 8B parameter instruct model"
   },
   {
@@ -137,6 +170,7 @@ export const AI_MODELS = [
     tier: "paid",
     price: 0.06,
     priceLabel: "$0.06 / 1M tokens",
+    tps: 58,
     description: "Google Gemma 4 26B instruct model"
   },
   {
@@ -145,6 +179,7 @@ export const AI_MODELS = [
     tier: "paid",
     price: 0.061,
     priceLabel: "$0.06 / 1M tokens",
+    tps: 130,
     description: "Zhipu AI GLM 4.7 Flash model"
   },
   {
@@ -153,6 +188,7 @@ export const AI_MODELS = [
     tier: "paid",
     price: 0.063,
     priceLabel: "$0.063 / 1M tokens",
+    tps: 22,
     description: "Tencent Hunyuan 3 Preview MoE model"
   },
   {
@@ -161,6 +197,7 @@ export const AI_MODELS = [
     tier: "paid",
     price: 0.065,
     priceLabel: "$0.065 / 1M tokens",
+    tps: 140,
     description: "Alibaba Qwen 3.5 Flash model"
   },
   {
@@ -169,6 +206,7 @@ export const AI_MODELS = [
     tier: "paid",
     price: 0.075,
     priceLabel: "$0.075 / 1M tokens",
+    tps: 75,
     description: "Mistral AI Small 3.2 24B instruct model"
   },
   {
@@ -177,6 +215,7 @@ export const AI_MODELS = [
     tier: "paid",
     price: 0.076,
     priceLabel: "$0.075 / 1M tokens",
+    tps: 80,
     description: "OpenAI GPT OSS Safeguard 20B model"
   },
   {
@@ -185,6 +224,7 @@ export const AI_MODELS = [
     tier: "paid",
     price: 0.077,
     priceLabel: "$0.075 / 1M tokens",
+    tps: 125,
     description: "ByteDance Seed 1.6 Flash model"
   },
   {
@@ -193,6 +233,7 @@ export const AI_MODELS = [
     tier: "paid",
     price: 0.08,
     priceLabel: "$0.08 / 1M tokens",
+    tps: 12,
     description: "inclusionAI Ling 2.6 1T model"
   },
   {
@@ -201,6 +242,7 @@ export const AI_MODELS = [
     tier: "paid",
     price: 0.081,
     priceLabel: "$0.08 / 1M tokens",
+    tps: 11,
     description: "inclusionAI Ring 2.6 1T model"
   },
   {
@@ -209,6 +251,7 @@ export const AI_MODELS = [
     tier: "paid",
     price: 0.082,
     priceLabel: "$0.08 / 1M tokens",
+    tps: 26,
     description: "NVIDIA Nemotron-3 Super 120B parameter assistant"
   },
   {
@@ -217,9 +260,9 @@ export const AI_MODELS = [
     tier: "paid",
     price: 0.098,
     priceLabel: "$0.098 / 1M tokens",
+    tps: 135,
     description: "DeepSeek V4 Flash coding & reasoning model"
   },
-
 ] as const
 
 export type AiModelId = (typeof AI_MODELS)[number]["id"]
