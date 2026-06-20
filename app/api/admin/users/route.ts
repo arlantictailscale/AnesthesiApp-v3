@@ -29,17 +29,30 @@ export async function GET() {
     }
 
     const supabase = await createClient()
-    const { data: users, error } = await supabase
+    const { data: users, error: usersError } = await supabase
       .from("profiles")
       .select("*")
       .order("email", { ascending: true })
 
-    if (error) {
-      console.error("Failed to list users:", error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+    if (usersError) {
+      console.error("Failed to list users:", usersError)
+      return NextResponse.json({ error: usersError.message }, { status: 500 })
     }
 
-    return NextResponse.json({ users })
+    const { data: payments, error: paymentsError } = await supabase
+      .from("supporters")
+      .select(`
+        *,
+        profiles:user_id (email)
+      `)
+      .order("created_at", { ascending: false })
+
+    if (paymentsError) {
+      console.error("Failed to list payments:", paymentsError)
+      return NextResponse.json({ error: paymentsError.message }, { status: 500 })
+    }
+
+    return NextResponse.json({ users, payments })
   } catch (err: any) {
     console.error("API error in GET users:", err)
     return NextResponse.json({ error: err.message || "Internal Server Error" }, { status: 500 })
