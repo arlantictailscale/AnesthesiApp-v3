@@ -35,6 +35,14 @@ export async function POST(request: Request) {
       secretKey: dokuConfig.secretKey,
     })
 
+    console.log("DOKU Status check URL:", requestUrl)
+    console.log("DOKU Status check headers:", {
+      "Client-Id": dokuConfig.clientId,
+      "Request-Id": requestId,
+      "Request-Timestamp": timestamp,
+      "Signature": signature,
+    })
+
     const response = await fetch(requestUrl, {
       method: "GET",
       headers: {
@@ -45,13 +53,21 @@ export async function POST(request: Request) {
       },
     })
 
+    const responseText = await response.text()
+    console.log("DOKU Status API status:", response.status)
+    console.log("DOKU Status API response:", responseText)
+
     if (!response.ok) {
-      const errorText = await response.text()
-      console.error("DOKU status API error:", errorText)
-      return NextResponse.json({ error: `Payment gateway error: ${response.statusText}` }, { status: 502 })
+      return NextResponse.json({ error: `Payment gateway error (${response.status}): ${responseText.substring(0, 200)}` }, { status: 502 })
     }
 
-    const data = await response.json()
+    let data
+    try {
+      data = JSON.parse(responseText)
+    } catch {
+      console.error("DOKU Status API returned non-JSON response:", responseText.substring(0, 500))
+      return NextResponse.json({ error: "Payment gateway returned invalid response" }, { status: 502 })
+    }
     const orderStatus = data.order?.status
     const transactionStatus = data.transaction?.status
 

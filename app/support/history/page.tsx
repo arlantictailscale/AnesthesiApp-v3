@@ -59,7 +59,14 @@ export default function PaymentHistoryPage() {
       })
 
       if (!res.ok) {
-        throw new Error("Failed to verify transaction status")
+        let errorMessage = "Failed to verify transaction status"
+        try {
+          const errData = await res.json()
+          errorMessage = errData.error || errorMessage
+        } catch {
+          // ignore parsing error
+        }
+        throw new Error(errorMessage)
       }
 
       const data = await res.json()
