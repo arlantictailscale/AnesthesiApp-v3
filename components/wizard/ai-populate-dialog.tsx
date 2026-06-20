@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Sparkles, Loader2 } from "lucide-react"
@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { AI_MODELS, DEFAULT_AI_MODEL, type AiModelId } from "@/lib/ai-models"
+import { getSession, getUserProfile } from "@/lib/storage"
 
 export function AiPopulateDialog() {
   const router = useRouter()
@@ -34,6 +35,26 @@ export function AiPopulateDialog() {
   const [description, setDescription] = useState("")
   const [model, setModel] = useState<AiModelId>(DEFAULT_AI_MODEL)
   const [loading, setLoading] = useState(false)
+  const [isSupporter, setIsSupporter] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
+
+  useEffect(() => {
+    async function checkAccess() {
+      try {
+        const session = await getSession()
+        if (session) {
+          const profile = await getUserProfile(session.userId)
+          if (profile) {
+            setIsAdmin(profile.role === "admin")
+            setIsSupporter(!!profile.supporter_tier && profile.supporter_tier !== "none")
+          }
+        }
+      } catch (err) {
+        console.error("Failed to check user access:", err)
+      }
+    }
+    checkAccess()
+  }, [])
 
   async function handleGenerate() {
     const trimmed = description.trim()
@@ -41,6 +62,13 @@ export function AiPopulateDialog() {
       toast.error("Please describe the case first.")
       return
     }
+
+    const modelObj = AI_MODELS.find(m => m.id === model)
+    if (modelObj && modelObj.tier === "paid" && !isSupporter && !isAdmin) {
+      toast.error("Paid models are reserved for Supporter accounts.")
+      return
+    }
+
     setLoading(true)
     try {
       const res = await fetch("/api/ai/populate", {
@@ -113,10 +141,15 @@ export function AiPopulateDialog() {
                 <SelectGroup>
                   <SelectLabel className="font-bold text-xs uppercase text-amber-600 dark:text-amber-400 tracking-wider">Paid Models (Sorted by TPS)</SelectLabel>
                   {[...AI_MODELS].filter(m => m.tier === "paid").sort((a, b) => b.tps - a.tps).map((m) => (
-                    <SelectItem key={m.id} value={m.id}>
+                    <SelectItem key={m.id} value={m.id} disabled={!isSupporter && !isAdmin}>
                       <div className="flex flex-col py-0.5">
                         <div className="flex items-center gap-1.5">
                           <span className="font-medium text-sm text-foreground">{m.label}</span>
+                          {!isSupporter && !isAdmin && (
+                            <span className="text-[9px] bg-red-500/10 text-red-600 dark:text-red-400 rounded-full px-1.5 py-0.2 font-semibold">
+                              Locked (Supporter Only)
+                            </span>
+                          )}
                           <span className="text-[9px] bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-full px-1.5 py-0.2 font-mono font-semibold">
                             {m.priceLabel}
                           </span>

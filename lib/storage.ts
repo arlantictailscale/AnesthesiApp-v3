@@ -235,6 +235,7 @@ export interface UserProfile {
   bio: string | null
   avatar_url: string | null
   supporter_tier?: string | null
+  role?: string | null
   updated_at: string
 }
 
@@ -336,7 +337,7 @@ export type Supporter = {
   id: string
   name: string
   type: 'individual' | 'sponsor'
-  tier: 'Backer' | 'Sponsor' | 'Gold Sponsor' | 'Platinum Sponsor'
+  tier: 'Backer' | 'Sponsor' | 'Gold Sponsor' | 'Platinum Sponsor' | 'Diamond Sponsor'
   amount?: number
   message?: string
   website?: string

@@ -12,8 +12,8 @@ export async function POST(request: Request) {
       status_code,
       gross_amount,
       signature_key,
-      transaction_status,
-      fraud_status,
+      transaction_status: transactionStatus,
+      fraud_status: fraudStatus,
     } = body
 
     if (!order_id || !status_code || !gross_amount || !signature_key) {

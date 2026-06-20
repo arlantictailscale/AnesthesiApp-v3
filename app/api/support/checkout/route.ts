@@ -3,13 +3,27 @@ import { createClient } from "@/lib/supabase/server"
 
 export const runtime = "nodejs"
 
+const TIER_AMOUNTS: Record<string, number> = {
+  "Backer": 50000,
+  "Sponsor": 150000,
+  "Gold Sponsor": 500000,
+  "Platinum Sponsor": 1000000,
+  "Diamond Sponsor": 2500000
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { name, type, tier, amount, message, website } = body
+    const { name, tier, amount, message, website } = body
+    const type = "individual"
 
-    if (!name || !amount || parseFloat(amount) <= 0) {
-      return NextResponse.json({ error: "Invalid name or amount" }, { status: 400 })
+    if (!name || !tier) {
+      return NextResponse.json({ error: "Missing name or tier" }, { status: 400 })
+    }
+
+    const expectedAmount = TIER_AMOUNTS[tier]
+    if (!expectedAmount || Math.round(parseFloat(amount)) !== expectedAmount) {
+      return NextResponse.json({ error: "Invalid tier or tampered amount" }, { status: 400 })
     }
 
     const orderId = `SUPPORT-${crypto.randomUUID().slice(0, 8).toUpperCase()}`

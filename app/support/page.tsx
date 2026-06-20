@@ -14,6 +14,7 @@ import { Heart, Landmark, Globe, Loader2, Sparkles, AlertCircle, Check, HelpCirc
 import Script from "next/script"
 import Link from "next/link"
 import { Logo } from "@/components/logo"
+import { SupporterBadge } from "@/components/supporter-badge"
 
 declare global {
   interface Window {
@@ -31,60 +32,52 @@ declare global {
   }
 }
 
-const getTierDefaultAmount = (type: "individual" | "sponsor", selectedTier: string): string => {
-  if (type === "individual") {
-    return selectedTier === "Backer" ? "50000" : "150000"
-  } else {
-    if (selectedTier === "Backer") return "250000"
-    if (selectedTier === "Sponsor") return "500000"
-    if (selectedTier === "Gold Sponsor") return "1000000"
-    return "2500000"
-  }
+const getTierDefaultAmount = (selectedTier: string): string => {
+  if (selectedTier === "Backer") return "50000"
+  if (selectedTier === "Sponsor") return "150000"
+  if (selectedTier === "Gold Sponsor") return "500000"
+  if (selectedTier === "Platinum Sponsor") return "1000000"
+  return "2500000" // Diamond Sponsor
 }
 
-const getTierFeatures = (type: "individual" | "sponsor", selectedTier: string): string[] => {
-  if (type === "individual") {
-    return selectedTier === "Backer"
-      ? [
-          "Verified Supporter Backer profile badge next to comments & logs",
-          "Your name highlighted on the Premium Members Wall",
-          "Help fund core server hosting and operational costs",
-        ]
-      : [
-          "Verified Premium Sponsor profile badge next to comments & logs",
-          "Your name highlighted on the Premium Members Wall",
-          "Help fund ongoing AI patient simulator training costs",
-          "Priority beta access to upcoming offline tools",
-        ]
-  } else {
-    if (selectedTier === "Backer") {
-      return [
-        "2 Premium Badge seats for residents/staff",
-        "Hospital/Institution text listing on the Wall of Fame",
-        "Help support local clinical training initiatives"
-      ]
-    }
-    if (selectedTier === "Sponsor") {
-      return [
-        "5 Premium Badge seats for residents/staff",
-        "Bronze logo & website showcase on the Wall of Fame",
-        "Help support local clinical training initiatives"
-      ]
-    }
-    if (selectedTier === "Gold Sponsor") {
-      return [
-        "15 Premium Badge seats for residents/staff",
-        "Gold logo & website showcase on the Wall of Fame",
-        "Priority developer onboarding and support for staff setup"
-      ]
-    }
+const getTierFeatures = (selectedTier: string): string[] => {
+  if (selectedTier === "Backer") {
     return [
-      "50 Premium Badge seats for residents/staff",
-      "Sticky hero logo banner & site showcase on the Wall of Fame",
-      "Priority developer service hotline for institutional setup",
-      "Discussion and feedback channel on custom guidelines updates"
+      "Verified Supporter Backer profile badge next to comments & logs",
+      "Your name highlighted on the Premium Members Wall",
+      "Help fund core server hosting and operational costs",
     ]
   }
+  if (selectedTier === "Sponsor") {
+    return [
+      "Verified Supporter Sponsor profile badge next to comments & logs",
+      "Your name highlighted on the Premium Members Wall",
+      "Help fund ongoing AI patient simulator training costs",
+      "Priority beta access to upcoming offline tools",
+    ]
+  }
+  if (selectedTier === "Gold Sponsor") {
+    return [
+      "Verified Gold Member profile badge next to comments & logs",
+      "Access to advanced paid AI models (e.g. GPT OSS 120B, Gemini Flash, etc.)",
+      "Your name highlighted on the Premium Members Wall",
+      "Help support infrastructure development",
+    ]
+  }
+  if (selectedTier === "Platinum Sponsor") {
+    return [
+      "Verified Platinum Member profile badge next to comments & logs",
+      "Access to all paid AI models",
+      "Your name highlighted on the Premium Members Wall",
+      "Priority support and early access to new simulation features",
+    ]
+  }
+  return [
+    "Verified Diamond Member profile badge next to comments & logs",
+    "Unlimited access to all paid AI models",
+    "Your name highlighted on the Premium Members Wall",
+    "Priority feature requests and direct email contact line",
+  ] // Diamond Sponsor
 }
 
 
@@ -95,22 +88,15 @@ export default function SupportUsPage() {
 
   // Form states
   const [name, setName] = useState("")
-  const [type, setType] = useState<"individual" | "sponsor">("individual")
-  const [tier, setTier] = useState<"Backer" | "Sponsor" | "Gold Sponsor" | "Platinum Sponsor">("Backer")
+  const [type] = useState<"individual" | "sponsor">("individual")
+  const [tier, setTier] = useState<"Backer" | "Sponsor" | "Gold Sponsor" | "Platinum Sponsor" | "Diamond Sponsor">("Backer")
   const [amount, setAmount] = useState("50000")
   const [message, setMessage] = useState("")
   const [website, setWebsite] = useState("")
 
-  // Update tier & amount when type changes
-  useEffect(() => {
-    const defaultTier = type === "individual" ? "Backer" : "Gold Sponsor"
-    setTier(defaultTier)
-    setAmount(getTierDefaultAmount(type, defaultTier))
-  }, [type])
-
   const handleTierChange = (newTier: typeof tier) => {
     setTier(newTier)
-    setAmount(getTierDefaultAmount(type, newTier))
+    setAmount(getTierDefaultAmount(newTier))
   }
 
   async function load() {
@@ -210,6 +196,7 @@ export default function SupportUsPage() {
   }
 
   // Group supporters by tier
+  const diamondSponsors = supporters.filter(s => s.tier === "Diamond Sponsor")
   const platinumSponsors = supporters.filter(s => s.tier === "Platinum Sponsor")
   const goldSponsors = supporters.filter(s => s.tier === "Gold Sponsor")
   const sponsors = supporters.filter(s => s.tier === "Sponsor")
@@ -260,37 +247,14 @@ export default function SupportUsPage() {
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                  {/* Account Type Toggle */}
-                  <div className="flex flex-col gap-2">
-                    <Label className="text-xs font-semibold">Account Type</Label>
-                    <div className="grid grid-cols-2 gap-2 bg-muted p-1 rounded-lg">
-                      <Button
-                        type="button"
-                        variant={type === "individual" ? "secondary" : "ghost"}
-                        className="h-8 text-xs font-semibold"
-                        onClick={() => setType("individual")}
-                      >
-                        Individual Supporter
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={type === "sponsor" ? "secondary" : "ghost"}
-                        className="h-8 text-xs font-semibold"
-                        onClick={() => setType("sponsor")}
-                      >
-                        Institution / Hospital
-                      </Button>
-                    </div>
-                  </div>
-
                   {/* Name Input */}
                   <div className="flex flex-col gap-1.5">
                     <Label htmlFor="support-name" className="text-xs font-semibold">
-                      {type === "individual" ? "Your Full Name" : "Institution Name"}
+                      Your Full Name
                     </Label>
                     <Input
                       id="support-name"
-                      placeholder={type === "individual" ? "e.g., Dr. Jane Mercer" : "e.g., Global Anesthesia Group"}
+                      placeholder="e.g., Dr. Jane Mercer"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       required
@@ -299,26 +263,24 @@ export default function SupportUsPage() {
 
                   {/* Access Plan Select */}
                   <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="support-tier" className="text-xs font-semibold">Choose Badge Level</Label>
+                    <div className="flex items-center justify-between mb-1">
+                      <Label htmlFor="support-tier" className="text-xs font-semibold">Choose Badge Level</Label>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] text-muted-foreground font-semibold">Badge Preview:</span>
+                        <SupporterBadge tier={tier === "Gold Sponsor" ? "gold sponsor" : tier === "Platinum Sponsor" ? "platinum sponsor" : tier === "Diamond Sponsor" ? "diamond sponsor" : tier.toLowerCase()} />
+                      </div>
+                    </div>
                     <select
                       id="support-tier"
                       value={tier}
                       onChange={(e) => handleTierChange(e.target.value as any)}
                       className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring font-medium"
                     >
-                      {type === "individual" ? (
-                        <>
-                          <option value="Backer">Supporter Backer (Rp 50.000)</option>
-                          <option value="Sponsor">Supporter Sponsor (Rp 150.000)</option>
-                        </>
-                      ) : (
-                        <>
-                          <option value="Backer">Sponsor Backer (Rp 250.000)</option>
-                          <option value="Sponsor">Bronze Sponsor (Rp 500.000)</option>
-                          <option value="Gold Sponsor">Gold Sponsor (Rp 1.000.000)</option>
-                          <option value="Platinum Sponsor">Platinum Sponsor (Rp 2.500.000)</option>
-                        </>
-                      )}
+                      <option value="Backer">Supporter Backer (Rp 50.000)</option>
+                      <option value="Sponsor">Supporter Sponsor (Rp 150.000)</option>
+                      <option value="Gold Sponsor">Gold Member (Rp 500.000)</option>
+                      <option value="Platinum Sponsor">Platinum Member (Rp 1.000.000)</option>
+                      <option value="Diamond Sponsor">Diamond Member (Rp 2.500.000)</option>
                     </select>
                   </div>
 
@@ -347,7 +309,7 @@ export default function SupportUsPage() {
                       Sponsorship Benefits & Badges:
                     </div>
                     <ul className="flex flex-col gap-1.5 text-[11px] text-muted-foreground pl-1.5 font-medium">
-                      {getTierFeatures(type, tier).map((feature, i) => (
+                      {getTierFeatures(tier).map((feature, i) => (
                         <li key={i} className="flex items-start gap-1.5">
                           <span className="h-1.5 w-1.5 bg-primary rounded-full mt-1.5 shrink-0" />
                           <span>{feature}</span>
@@ -434,6 +396,40 @@ export default function SupportUsPage() {
             ) : (
               <div className="flex flex-col gap-6">
                 
+                {/* Diamond Tier */}
+                {diamondSponsors.length > 0 && (
+                  <div className="flex flex-col gap-3">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 flex items-center gap-2">
+                      <span className="h-1 w-8 bg-indigo-500 rounded-full animate-pulse" />
+                      Diamond Members
+                    </h3>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {diamondSponsors.map((s) => (
+                        <Card key={s.id} className="border-indigo-500/30 bg-gradient-to-b from-indigo-500/[0.03] to-transparent p-5 shadow-xs relative overflow-hidden group hover:border-indigo-500/50 transition-colors">
+                          <div className="absolute right-0 top-0 h-16 w-16 -translate-y-8 translate-x-8 rotate-45 bg-indigo-500/10" />
+                          <div className="flex flex-col gap-1.5">
+                            <span className="font-bold text-sm text-indigo-750 dark:text-indigo-400 flex items-center gap-1.5">
+                              {s.name}
+                              <SupporterBadge tier="diamond sponsor" className="scale-90" />
+                            </span>
+                            {s.amount && (
+                              <span className="text-xs font-mono font-bold text-muted-foreground/80">Rp {s.amount.toLocaleString("id-ID")} Member Tier</span>
+                            )}
+                            {s.message && (
+                              <p className="text-xs text-muted-foreground/90 italic mt-1 leading-relaxed">&ldquo;{s.message}&rdquo;</p>
+                            )}
+                            {s.website && (
+                              <a href={s.website} target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary hover:underline font-semibold flex items-center gap-1 mt-1.5 w-fit">
+                                <Globe className="h-3 w-3" /> Visit website
+                              </a>
+                            )}
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Platinum Tier */}
                 {platinumSponsors.length > 0 && (
                   <div className="flex flex-col gap-3">
@@ -446,9 +442,12 @@ export default function SupportUsPage() {
                         <Card key={s.id} className="border-amber-500/30 bg-gradient-to-b from-amber-500/[0.03] to-transparent p-5 shadow-xs relative overflow-hidden group hover:border-amber-500/50 transition-colors">
                           <div className="absolute right-0 top-0 h-16 w-16 -translate-y-8 translate-x-8 rotate-45 bg-amber-500/10" />
                           <div className="flex flex-col gap-1.5">
-                            <span className="font-bold text-sm text-amber-700 dark:text-amber-400">{s.name}</span>
+                            <span className="font-bold text-sm text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
+                              {s.name}
+                              <SupporterBadge tier="platinum sponsor" className="scale-90" />
+                            </span>
                             {s.amount && (
-                              <span className="text-xs font-mono font-bold text-muted-foreground/80">Rp {s.amount.toLocaleString("id-ID")} License Tier</span>
+                              <span className="text-xs font-mono font-bold text-muted-foreground/80">Rp {s.amount.toLocaleString("id-ID")} Member Tier</span>
                             )}
                             {s.message && (
                               <p className="text-xs text-muted-foreground/90 italic mt-1 leading-relaxed">&ldquo;{s.message}&rdquo;</p>
@@ -476,9 +475,12 @@ export default function SupportUsPage() {
                       {goldSponsors.map((s) => (
                         <Card key={s.id} className="border-yellow-500/20 bg-gradient-to-b from-yellow-500/[0.015] to-transparent p-4 shadow-xs relative hover:border-yellow-500/40 transition-colors">
                           <div className="flex flex-col gap-1.5">
-                            <span className="font-bold text-sm text-yellow-700 dark:text-yellow-400">{s.name}</span>
+                            <span className="font-bold text-sm text-yellow-700 dark:text-yellow-400 flex items-center gap-1.5">
+                              {s.name}
+                              <SupporterBadge tier="gold sponsor" className="scale-90" />
+                            </span>
                             {s.amount && (
-                              <span className="text-xs font-mono font-bold text-muted-foreground/80">Rp {s.amount.toLocaleString("id-ID")} License Tier</span>
+                              <span className="text-xs font-mono font-bold text-muted-foreground/80">Rp {s.amount.toLocaleString("id-ID")} Member Tier</span>
                             )}
                             {s.message && (
                               <p className="text-xs text-muted-foreground/90 italic mt-0.5 leading-relaxed">&ldquo;{s.message}&rdquo;</p>
@@ -506,7 +508,10 @@ export default function SupportUsPage() {
                       {sponsors.map((s) => (
                         <div key={s.id} className="flex flex-col gap-1.5 p-3 rounded-lg border border-border bg-card/40 hover:bg-card/75 transition-colors">
                           <div className="flex flex-wrap items-center justify-between gap-2">
-                            <span className="font-bold text-xs text-foreground">{s.name}</span>
+                            <span className="font-bold text-xs text-foreground flex items-center gap-1.5">
+                              {s.name}
+                              <SupporterBadge tier="sponsor" className="scale-90" />
+                            </span>
                             {s.amount && (
                               <span className="text-[10px] font-mono font-bold text-muted-foreground/80">Rp {s.amount.toLocaleString("id-ID")}</span>
                             )}
@@ -540,7 +545,10 @@ export default function SupportUsPage() {
                           title={s.message ? `Message: "${s.message}"` : undefined}
                         >
                           <div className="flex items-center gap-1.5">
-                            <span className="font-bold text-foreground">{s.name}</span>
+                            <span className="font-bold text-foreground flex items-center gap-1.5">
+                              {s.name}
+                              <SupporterBadge tier="backer" className="scale-90" />
+                            </span>
                             {s.amount && <span className="text-[10px] font-mono font-bold text-muted-foreground/80">Rp {s.amount.toLocaleString("id-ID")}</span>}
                           </div>
                           {s.message && (

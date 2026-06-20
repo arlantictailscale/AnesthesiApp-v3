@@ -268,16 +268,36 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Description is required" }, { status: 400 })
   }
 
-  const requestedModel = body.model ?? DEFAULT_AI_MODEL
-  const model: AiModelId = isAllowedModel(requestedModel) ? requestedModel : DEFAULT_AI_MODEL
-
-  const origin = req.headers.get("origin") ?? "https://anesthesiapp.local"
-
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
+
+  const requestedModel = body.model ?? DEFAULT_AI_MODEL
+  const model: AiModelId = isAllowedModel(requestedModel) ? requestedModel : DEFAULT_AI_MODEL
+
+  // Paid model gatekeeping: only supporters or admins can access paid models
+  const modelObj = AI_MODELS.find((m) => m.id === model)
+  if (modelObj && modelObj.tier === "paid") {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("supporter_tier, role")
+      .eq("id", user.id)
+      .maybeSingle()
+
+    const isSupporter = profile?.supporter_tier && profile.supporter_tier !== "none"
+    const isAdmin = profile?.role === "admin"
+
+    if (!isSupporter && !isAdmin) {
+      return NextResponse.json(
+        { error: "Paid models are reserved for Supporter accounts. Please upgrade your profile on the Support Us page." },
+        { status: 403 }
+      )
+    }
+  }
+
+  const origin = req.headers.get("origin") ?? "https://anesthesiapp.local"
 
   // Insert a shell record with status = 'processing'
   const { data: caseRow, error: insertError } = await supabase
