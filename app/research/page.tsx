@@ -28,6 +28,7 @@ export default function ResearchLibraryPage() {
   const [cases, setCases] = useState<StoredCase[]>([])
   const [loading, setLoading] = useState(true)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
 
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState("")
@@ -63,8 +64,19 @@ export default function ResearchLibraryPage() {
 
   useEffect(() => {
     loadData()
-    getSession().then((session) => {
-      if (session) setCurrentUserId(session.userId)
+    getSession().then(async (session) => {
+      if (session) {
+        setCurrentUserId(session.userId)
+        try {
+          const { getUserProfile } = await import("@/lib/storage")
+          const profile = await getUserProfile(session.userId)
+          if (profile && profile.role === "admin") {
+            setIsAdmin(true)
+          }
+        } catch (err) {
+          console.error("Failed to load profile for role check:", err)
+        }
+      }
     })
   }, [])
 
@@ -73,12 +85,13 @@ export default function ResearchLibraryPage() {
     if (c.status === "processing" || c.status === "failed") return false
 
     const isOwner = currentUserId !== null && c.user_id === currentUserId
-    const displayName = isOwner ? c.patient_name : "Patient [Anonymized]"
+    const displayName = (isOwner || isAdmin) ? c.patient_name : "Patient [Anonymized]"
 
     const matchesSearch =
       (c.diagnosis || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
       (c.procedure_intervention || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (c.anesthesia_management || "").toLowerCase().includes(searchQuery.toLowerCase())
+      (c.anesthesia_management || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      ((isOwner || isAdmin) && (c.patient_name || "").toLowerCase().includes(searchQuery.toLowerCase()))
 
     const matchesSex = selectedSex === "All" || (c.sex || "") === selectedSex
 
@@ -204,14 +217,16 @@ export default function ResearchLibraryPage() {
 
     sortedCases.forEach((c) => {
       const isOwner = currentUserId !== null && c.user_id === currentUserId
-      const displayName = isOwner ? c.patient_name : "Patient [Anonymized]"
+      const displayName = (isOwner || isAdmin) ? c.patient_name : "Patient [Anonymized]"
+      const displayMrn = (isOwner || isAdmin) ? c.medical_record_number : "MRN [Anonymized]"
+      const displayRoom = (isOwner || isAdmin) ? c.room : "Room [Anonymized]"
 
       const row = [
         c.id,
         displayName,
-        c.medical_record_number,
+        displayMrn,
         c.procedure_date,
-        c.room,
+        displayRoom,
         c.sex,
         c.age,
         c.weight_kg,

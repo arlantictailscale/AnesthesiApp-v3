@@ -122,10 +122,22 @@ export default function CaseDetailPage() {
   const [c, setC] = useState<StoredCase | null | undefined>(undefined)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [sharingLoading, setSharingLoading] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
-    getSession().then((session) => {
-      if (session) setCurrentUserId(session.userId)
+    getSession().then(async (session) => {
+      if (session) {
+        setCurrentUserId(session.userId)
+        try {
+          const { getUserProfile } = await import("@/lib/storage")
+          const profile = await getUserProfile(session.userId)
+          if (profile && profile.role === "admin") {
+            setIsAdmin(true)
+          }
+        } catch (err) {
+          console.error("Failed to load profile for role check:", err)
+        }
+      }
     })
   }, [])
 
@@ -239,17 +251,18 @@ export default function CaseDetailPage() {
 
   const isOwner = currentUserId !== null && c !== null && c !== undefined && c.user_id === currentUserId
   const isShared = c ? c.is_shared !== false : true
+  const canSeeDetails = isOwner || isAdmin
 
   const sections: Section[] = [
     {
       title: "General & Patient",
       rows: [
         ["Procedure Date", val(c.procedure_date)],
-        ["Patient", val(isOwner ? c.patient_name : "Patient [Anonymized]")],
+        ["Patient", val(canSeeDetails ? c.patient_name : "Patient [Anonymized]")],
         ["Sex", val(c.sex)],
         ["Age", val(c.age)],
-        ["MRN", val(isOwner ? c.medical_record_number : "MRN [Anonymized]")],
-        ["Room", val(isOwner ? c.room : "Room [Anonymized]")],
+        ["MRN", val(canSeeDetails ? c.medical_record_number : "MRN [Anonymized]")],
+        ["Room", val(canSeeDetails ? c.room : "Room [Anonymized]")],
         ["Weight (kg)", val(c.weight_kg)],
         ["Height (cm)", val(c.height_cm)],
         ["BMI", val(c.bmi)],
@@ -347,7 +360,7 @@ export default function CaseDetailPage() {
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
-                  {isOwner ? c.patient_name : "Patient [Anonymized]"}
+                  {canSeeDetails ? c.patient_name : "Patient [Anonymized]"}
                 </h1>
                 {!isOwner && (
                   <Badge variant="secondary" className="bg-primary/15 text-primary border-primary/20 font-bold text-xs">
@@ -361,7 +374,7 @@ export default function CaseDetailPage() {
                 )}
               </div>
               <p className="text-sm text-muted-foreground mt-0.5">
-                MRN {isOwner ? c.medical_record_number : "MRN [Anonymized]"} · {c.sex} · {c.age}y · Logged{" "}
+                MRN {canSeeDetails ? c.medical_record_number : "MRN [Anonymized]"} · {c.sex} · {c.age}y · Logged{" "}
                 {new Date(c.created_at).toLocaleDateString()}
               </p>
             </div>
