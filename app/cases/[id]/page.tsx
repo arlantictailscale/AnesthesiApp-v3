@@ -248,7 +248,7 @@ export default function CaseDetailPage() {
         ["Patient", val(isOwner ? c.patient_name : "Patient [Anonymized]")],
         ["Sex", val(c.sex)],
         ["Age", val(c.age)],
-        ["MRN", val(c.medical_record_number)],
+        ["MRN", val(isOwner ? c.medical_record_number : "MRN [Anonymized]")],
         ["Room", val(c.room)],
         ["Weight (kg)", val(c.weight_kg)],
         ["Height (cm)", val(c.height_cm)],
@@ -361,7 +361,7 @@ export default function CaseDetailPage() {
                 )}
               </div>
               <p className="text-sm text-muted-foreground mt-0.5">
-                MRN {c.medical_record_number} · {c.sex} · {c.age}y · Logged{" "}
+                MRN {isOwner ? c.medical_record_number : "MRN [Anonymized]"} · {c.sex} · {c.age}y · Logged{" "}
                 {new Date(c.created_at).toLocaleDateString()}
               </p>
             </div>

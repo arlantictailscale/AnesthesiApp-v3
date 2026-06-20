@@ -76,20 +76,20 @@ export default function ResearchLibraryPage() {
     const displayName = isOwner ? c.patient_name : "Patient [Anonymized]"
 
     const matchesSearch =
-      displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.medical_record_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.diagnosis.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.procedure_intervention.toLowerCase().includes(searchQuery.toLowerCase())
+      (c.diagnosis || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (c.procedure_intervention || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (c.anesthesia_management || "").toLowerCase().includes(searchQuery.toLowerCase())
 
-    const matchesSex = selectedSex === "All" || c.sex === selectedSex
+    const matchesSex = selectedSex === "All" || (c.sex || "") === selectedSex
 
     let matchesAge = true
-    if (selectedAgeGroup === "Pediatric") matchesAge = c.age < 18
-    else if (selectedAgeGroup === "Adult") matchesAge = c.age >= 18 && c.age <= 65
-    else if (selectedAgeGroup === "Geriatric") matchesAge = c.age > 65
+    const age = c.age ?? 0
+    if (selectedAgeGroup === "Pediatric") matchesAge = age < 18
+    else if (selectedAgeGroup === "Adult") matchesAge = age >= 18 && age <= 65
+    else if (selectedAgeGroup === "Geriatric") matchesAge = age > 65
 
     const matchesPostOpRoom =
-      selectedPostOpRoom === "All" || c.post_op_room === selectedPostOpRoom
+      selectedPostOpRoom === "All" || (c.post_op_room || "") === selectedPostOpRoom
 
     return matchesSearch && matchesSex && matchesAge && matchesPostOpRoom
   })
@@ -103,7 +103,7 @@ export default function ResearchLibraryPage() {
       return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     }
     if (sortBy === "age") {
-      return b.age - a.age
+      return (b.age ?? 0) - (a.age ?? 0)
     }
     return 0
   })
@@ -312,7 +312,7 @@ export default function ResearchLibraryPage() {
               <div className="relative flex-1">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search by diagnosis, procedure, MRN, etc..."
+                  placeholder="Search by diagnosis, procedure, anesthesia management, etc..."
                   className="pl-8"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -457,11 +457,8 @@ export default function ResearchLibraryPage() {
                   <div className="flex min-w-0 justify-between items-start gap-2 mb-3">
                     <div className="min-w-0">
                       <h3 className="font-bold text-sm truncate pr-2 group-hover:text-primary transition-colors">
-                        {isOwner ? c.patient_name : "Patient [Anonymized]"}
+                        Case Study #{c.id.substring(0, 8)}
                       </h3>
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
-                        MRN {c.medical_record_number}
-                      </p>
                     </div>
                     <div className="flex items-center gap-1 shrink-0 scale-90">
                       <Badge variant="secondary" className="font-bold text-[9px] uppercase">
@@ -490,6 +487,15 @@ export default function ResearchLibraryPage() {
                         <span className="truncate block font-medium">{c.diagnosis}</span>
                       </div>
                     </div>
+                    {c.anesthesia_management && (
+                      <div className="flex gap-2 items-start min-w-0">
+                        <ClipboardList className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                        <div className="min-w-0">
+                          <span className="font-semibold text-foreground block truncate">Anesthesia Management</span>
+                          <span className="truncate block font-medium">{c.anesthesia_management}</span>
+                        </div>
+                      </div>
+                    )}
                     {c.post_op_room && (
                       <div className="flex gap-2 items-start min-w-0">
                         <MapPin className="h-4 w-4 text-primary shrink-0 mt-0.5" />
@@ -505,7 +511,7 @@ export default function ResearchLibraryPage() {
 
                   <div className="border-t border-border pt-3 flex items-center justify-between mt-auto">
                     <span className="text-[10px] text-muted-foreground font-semibold flex items-center gap-1">
-                      <Calendar className="h-3 w-3" /> {new Date(c.procedure_date).toLocaleDateString()}
+                      <Calendar className="h-3 w-3" /> {c.procedure_date ? new Date(c.procedure_date).toLocaleDateString() : "—"}
                     </span>
                     <Button asChild size="sm" variant="ghost" className="h-8 gap-1 text-xs font-bold text-primary group-hover:bg-primary/5">
                       <Link href={`/cases/${c.id}`}>
@@ -523,11 +529,10 @@ export default function ResearchLibraryPage() {
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead>Patient</TableHead>
-                  <TableHead>MRN</TableHead>
                   <TableHead>Sex & Age</TableHead>
                   <TableHead className="max-w-[200px]">Procedure</TableHead>
                   <TableHead className="max-w-[200px]">Diagnosis</TableHead>
+                  <TableHead className="max-w-[200px]">Anesthesia Management</TableHead>
                   <TableHead>Outcome</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -544,13 +549,11 @@ export default function ResearchLibraryPage() {
 
                   return (
                     <TableRow key={c.id} className="group cursor-pointer hover:bg-muted/30 transition-colors">
-                      <TableCell className="font-medium whitespace-normal break-words max-w-[200px]">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <div className="min-w-0">
-                            <span className="text-foreground font-semibold block truncate group-hover:text-primary transition-colors">
-                              {isOwner ? c.patient_name : "Patient [Anonymized]"}
-                            </span>
-                          </div>
+                      <TableCell>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <Badge variant="secondary" className="font-bold text-[9px] uppercase">
+                            {c.sex} · {c.age}y
+                          </Badge>
                           {isOwner && (
                             <Badge variant="outline" className="bg-emerald-500/10 border-emerald-500/20 text-emerald-600 font-bold text-[9px] shrink-0">
                               Mine
@@ -558,19 +561,14 @@ export default function ResearchLibraryPage() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="text-muted-foreground text-xs font-mono">
-                        {c.medical_record_number}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary" className="font-bold text-[9px] uppercase">
-                          {c.sex} · {c.age}y
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="max-w-[200px] whitespace-normal break-words text-muted-foreground text-xs" title={c.procedure_intervention}>
+                      <TableCell className="max-w-[200px] whitespace-normal break-words text-foreground text-xs font-semibold" title={c.procedure_intervention}>
                         {c.procedure_intervention}
                       </TableCell>
                       <TableCell className="max-w-[200px] whitespace-normal break-words text-muted-foreground text-xs" title={c.diagnosis}>
                         {c.diagnosis}
+                      </TableCell>
+                      <TableCell className="max-w-[200px] whitespace-normal break-words text-muted-foreground text-xs" title={c.anesthesia_management}>
+                        {c.anesthesia_management || <span className="text-muted-foreground/50">—</span>}
                       </TableCell>
                       <TableCell>
                         {c.post_op_room ? (
@@ -582,7 +580,7 @@ export default function ResearchLibraryPage() {
                         )}
                       </TableCell>
                       <TableCell className="text-muted-foreground text-xs">
-                        {new Date(c.procedure_date).toLocaleDateString()}
+                        {c.procedure_date ? new Date(c.procedure_date).toLocaleDateString() : "—"}
                       </TableCell>
                       <TableCell className="text-right">
                         <Button asChild variant="ghost" size="sm" className="h-8 gap-1 text-xs font-bold text-primary">
