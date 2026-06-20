@@ -41,31 +41,31 @@ import {
 import { SupporterBadge } from "@/components/supporter-badge"
 
 const TERMS_AND_PRIVACY_TEXT = `
-PERSYARATAN LAYANAN & KEBIJAKAN PRIVASI ANESTHESIAPP
-Terakhir diperbarui: Juni 20, 2026
+ANESTHESIAPP TERMS OF SERVICE & PRIVACY POLICY
+Last updated: June 20, 2026
 
-Selamat datang di AnesthesiApp. Sebelum menggunakan layanan kami, Anda wajib membaca, memahami, dan menyetujui seluruh ketentuan di bawah ini.
+Welcome to AnesthesiApp. Before using our service, you must read, understand, and agree to all of the terms and conditions below.
 
-1. PENAFIAN MEDIS (MEDICAL DISCLAIMER)
-- AnesthesiApp adalah platform simulasi pendidikan, persiapan ujian, dan pencatatan kasus klinis untuk tujuan pembelajaran.
-- Aplikasi ini BUKAN merupakan perangkat medis bersertifikat, Rekam Medis Elektronik (EHR/RME) resmi, atau alat penunjang keputusan klinis.
-- Segala dosis, panduan, dan rumus obat dalam modul Farmakologi dan Guidelines hanya untuk tinjauan akademis. Jangan mengandalkan output aplikasi ini untuk keputusan terapi pasien nyata.
+1. MEDICAL DISCLAIMER
+- AnesthesiApp is an educational simulation, exam preparation, and clinical research case logging platform for study purposes.
+- This application is NOT a certified medical device, an official Electronic Health Record (EHR/EMR), or a clinical decision support tool.
+- All dosages, guidelines, and drug formulas provided in the Pharmacology and Guidelines modules are for academic review only. Never rely on the outputs of this application for real patient care or clinical management.
 
-2. KEBIJAKAN PRIVASI DATA PASIEN & ANONIMISASI (PENTING)
-- Sebagai pengguna yang mencatat kasus klinis, Anda bertanggung jawab penuh untuk menjaga privasi pasien sesuai UU No. 27 Tahun 2022 tentang Pelindungan Data Pribadi (UU PDP) dan regulasi kesehatan lainnya.
-- Anda dilarang keras (NEVER) menginput data identitas pasien nyata (PII/PHI) seperti Nama Lengkap Pasien, Nomor Rekam Medis (MRN) asli, Tanggal Lahir pasien, Alamat rumah, atau Nomor Telepon pasien di bagian mana pun dalam aplikasi ini (termasuk catatan pribadi).
-- Semua kolom nama pasien dan MRN wajib menggunakan nilai samaran, dummy, atau acak (contoh: "Pasien A", "MRN-9999").
-- Layanan kami tidak dirancang untuk menampung rekam medis pasien yang sebenarnya. Kami tidak bertanggung jawab atas segala pelanggaran hukum privasi jika Anda memasukkan identitas asli pasien.
-- Kami berhak menghapus data kasus tanpa pemberitahuan jika terdeteksi mengandung informasi identitas pasien asli.
+2. PATIENT DATA PRIVACY & ANONYMIZATION POLICY (CRITICAL)
+- As a user logging clinical cases, you are solely responsible for maintaining patient privacy and complying with health data protection laws (such as HIPAA in the US, GDPR in the EU, and UU PDP in Indonesia).
+- You are strictly prohibited from entering real personally identifiable information (PII) or protected health information (PHI) — including real patient names, actual medical record numbers (MRN), exact dates of birth, home addresses, or phone numbers — anywhere in this application (including private logs).
+- All patient name and MRN fields must use dummy, fictional, or randomized values (e.g., "Patient A", "MRN-9999").
+- Our service is not designed to host actual clinical patient records. We disclaim all liability under privacy laws if you input real patient identifiers.
+- We reserve the right to inspect and immediately delete any case logs suspected of containing real-world patient data or identified PII.
 
-3. PENGGUNAAN AUTHENTIKASI GOOGLE OAUTH
-- Kami menggunakan Google Sign-In untuk otentikasi akun. Kami hanya mengakses informasi dasar profil Anda (email, nama, foto profil) untuk pembuatan akun.
-- Data Anda disimpan dengan aman menggunakan enkripsi TLS/SSL dan Row-Level Security (RLS) di database Supabase.
+3. GOOGLE OAUTH AUTHENTICATION
+- We use Google Sign-In to authenticate accounts. We only access basic profile information (email, name, profile picture) to set up your account.
+- Your data is stored securely using TLS/SSL encryption and Row-Level Security (RLS) on Supabase databases.
 
-4. HAK DAN PENGHAPUSAN DATA
-- Anda memiliki hak penuh untuk meminta penghapusan seluruh data akun dan catatan kasus Anda dengan menghubungi kami di support@anesthesiapp.my.id. Kami akan memproses penghapusan data Anda dalam waktu 7 hari kerja.
+4. USER RIGHTS AND DATA DELETION
+- You have the full right to request the deletion of all your account data and logged cases by contacting us at support@anesthesiapp.my.id. We will process your data deletion request within 7 business days.
 
-Dengan mencentang kotak di bawah ini dan mengeklik "Setuju dan Lanjutkan", Anda menyatakan bahwa Anda telah membaca, memahami, dan menyetujui seluruh ketentuan di atas.
+By checking the box below and clicking "Agree & Continue", you declare that you have read, understood, and agreed to all the terms above.
 `.trim()
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -432,80 +432,80 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <div className="p-6 border-b border-border bg-muted/10">
               <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
                 <ShieldAlert className="h-5 w-5 text-primary" />
-                Persetujuan Ketentuan Layanan & Kebijakan Privasi
-              </h2>
-              <p className="text-xs text-muted-foreground mt-1">
-                Anda harus membaca hingga akhir dokumen dan menyetujui ketentuan di bawah ini untuk menggunakan AnesthesiApp.
-              </p>
-            </div>
+              Terms of Service & Privacy Policy Agreement
+            </h2>
+            <p className="text-xs text-muted-foreground mt-1">
+              You must read to the end of the document and agree to the terms below to use AnesthesiApp.
+            </p>
+          </div>
 
-            <div 
-              onScroll={(e) => {
-                const target = e.currentTarget
-                const isBottom = target.scrollHeight - target.scrollTop <= target.clientHeight + 10
-                if (isBottom) {
-                  setHasScrolled(true)
+          <div 
+            onScroll={(e) => {
+              const target = e.currentTarget
+              const isBottom = target.scrollHeight - target.scrollTop <= target.clientHeight + 10
+              if (isBottom) {
+                setHasScrolled(true)
+              }
+            }}
+            className="p-6 overflow-y-auto flex-1 text-xs text-muted-foreground whitespace-pre-line leading-relaxed border-b border-border bg-muted/5 font-medium max-h-[40vh]"
+          >
+            {TERMS_AND_PRIVACY_TEXT}
+          </div>
+
+          <div className="p-6 flex flex-col gap-4 bg-muted/10">
+            <label className="flex items-start gap-3 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                disabled={!hasScrolled}
+                checked={agreed}
+                onChange={(e) => setAgreed(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary disabled:opacity-50"
+              />
+              <span className={`text-xs leading-normal font-semibold ${!hasScrolled ? "text-muted-foreground/60" : "text-foreground"}`}>
+                {!hasScrolled 
+                  ? "Please scroll down and read the text above to enable this agreement checkbox." 
+                  : "I agree to the Terms of Service and Privacy Policy of AnesthesiApp."
                 }
-              }}
-              className="p-6 overflow-y-auto flex-1 text-xs text-muted-foreground whitespace-pre-line leading-relaxed border-b border-border bg-muted/5 font-medium max-h-[40vh]"
-            >
-              {TERMS_AND_PRIVACY_TEXT}
-            </div>
+              </span>
+            </label>
 
-            <div className="p-6 flex flex-col gap-4 bg-muted/10">
-              <label className="flex items-start gap-3 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  disabled={!hasScrolled}
-                  checked={agreed}
-                  onChange={(e) => setAgreed(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary disabled:opacity-50"
-                />
-                <span className={`text-xs leading-normal font-semibold ${!hasScrolled ? "text-muted-foreground/60" : "text-foreground"}`}>
-                  {!hasScrolled 
-                    ? "Silakan scroll/baca teks di atas sampai ke bagian bawah untuk mengaktifkan kotak persetujuan ini." 
-                    : "Saya menyatakan setuju dengan Persyaratan Layanan dan Kebijakan Privasi AnesthesiApp."
+            <div className="flex justify-end gap-3 mt-2">
+              <Button 
+                onClick={async () => {
+                  await signOut()
+                  window.location.replace("/login")
+                }}
+                variant="ghost" 
+                className="text-xs font-semibold"
+              >
+                Log Out
+              </Button>
+              <Button
+                disabled={!agreed || submittingTerms}
+                onClick={async () => {
+                  setSubmittingTerms(true)
+                  try {
+                    const { createClient } = await import("@/lib/supabase/client")
+                    const supabase = createClient()
+                    const { error } = await supabase.auth.updateUser({
+                      data: { agreed_to_terms: true }
+                    })
+                    if (error) throw error
+                    setShowTermsModal(false)
+                  } catch (err) {
+                    console.error("Failed to save terms agreement:", err)
+                    toast.error("Failed to save agreement. Please try again.")
+                  } finally {
+                    setSubmittingTerms(false)
                   }
-                </span>
-              </label>
-
-              <div className="flex justify-end gap-3 mt-2">
-                <Button 
-                  onClick={async () => {
-                    await signOut()
-                    window.location.replace("/login")
-                  }}
-                  variant="ghost" 
-                  className="text-xs font-semibold"
-                >
-                  Keluar
-                </Button>
-                <Button
-                  disabled={!agreed || submittingTerms}
-                  onClick={async () => {
-                    setSubmittingTerms(true)
-                    try {
-                      const { createClient } = await import("@/lib/supabase/client")
-                      const supabase = createClient()
-                      const { error } = await supabase.auth.updateUser({
-                        data: { agreed_to_terms: true }
-                      })
-                      if (error) throw error
-                      setShowTermsModal(false)
-                    } catch (err) {
-                      console.error("Failed to save terms agreement:", err)
-                      toast.error("Gagal menyimpan persetujuan. Silakan coba lagi.")
-                    } finally {
-                      setSubmittingTerms(false)
-                    }
-                  }}
-                  className="gap-1.5 font-bold text-xs"
-                >
-                  {submittingTerms && <Loader2 className="h-3 w-3 animate-spin" />}
-                  Setuju & Lanjutkan
-                </Button>
-              </div>
+                }}
+                className="gap-1.5 font-bold text-xs"
+              >
+                {submittingTerms && <Loader2 className="h-3 w-3 animate-spin" />}
+                Agree & Continue
+              </Button>
             </div>
+          </div>
           </div>
         </div>
       )}
