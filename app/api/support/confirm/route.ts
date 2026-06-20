@@ -19,7 +19,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Payment gateway configuration error" }, { status: 500 })
     }
 
-    const requestTarget = `/checkout/v1/payment/check-status/${order_id}`
+    const requestTarget = `/orders/v1/status/${order_id}`
     const requestUrl = `${dokuConfig.baseUrl}${requestTarget}`
 
     const requestId = crypto.randomUUID()
