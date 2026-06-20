@@ -64,14 +64,21 @@ export async function POST(request: Request) {
     const requestTarget = "/checkout/v1/payment"
     const requestUrl = `${dokuConfig.baseUrl}${requestTarget}`
 
-    const origin = new URL(request.url).origin
+    const host = request.headers.get("host") || new URL(request.url).host
+    const proto = request.headers.get("x-forwarded-proto") || "https"
+    const origin = `${proto}://${host}`
     const callbackUrl = `${origin}/support/success?order_id=${orderId}`
 
     const dokuBody = {
       order: {
         amount: Math.round(parseFloat(amount)),
         invoice_number: orderId,
+        currency: "IDR",
         callback_url: callbackUrl,
+        callback_url_if_failed: `${origin}/support?payment=failed`,
+      },
+      payment: {
+        payment_due_date: 60,
       },
       customer: {
         name,
@@ -94,6 +101,9 @@ export async function POST(request: Request) {
       secretKey: dokuConfig.secretKey,
     })
 
+    console.log("DOKU request URL:", requestUrl)
+    console.log("DOKU request body:", bodyString)
+
     const response = await fetch(requestUrl, {
       method: "POST",
       headers: {
@@ -106,13 +116,21 @@ export async function POST(request: Request) {
       body: bodyString,
     })
 
+    const responseText = await response.text()
+    console.log("DOKU API status:", response.status)
+    console.log("DOKU API response:", responseText)
+
     if (!response.ok) {
-      const errorText = await response.text()
-      console.error("DOKU API error:", errorText)
-      return NextResponse.json({ error: `Payment gateway error: ${response.statusText}` }, { status: 502 })
+      return NextResponse.json({ error: `Payment gateway error (${response.status}): ${responseText.substring(0, 200)}` }, { status: 502 })
     }
 
-    const data = await response.json()
+    let data
+    try {
+      data = JSON.parse(responseText)
+    } catch {
+      console.error("DOKU returned non-JSON response:", responseText.substring(0, 500))
+      return NextResponse.json({ error: "Payment gateway returned invalid response" }, { status: 502 })
+    }
     const redirectUrl = data.response?.payment?.url
 
     if (!redirectUrl) {

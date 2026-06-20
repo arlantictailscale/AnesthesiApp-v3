@@ -127,11 +127,20 @@ export default function SupportUsPage() {
       })
 
       if (!res.ok) {
-        const errData = await res.json()
-        throw new Error(errData.error || "Failed to initiate payment")
+        let errorMessage = "Failed to initiate payment"
+        try {
+          const errData = await res.json()
+          errorMessage = errData.error || errorMessage
+        } catch {
+          const text = await res.text()
+          console.error("Non-JSON error response:", text)
+          errorMessage = `Server error (${res.status}). Please try again.`
+        }
+        throw new Error(errorMessage)
       }
 
-      const { redirect_url } = await res.json()
+      const data = await res.json()
+      const redirect_url = data.redirect_url
       toast.dismiss(toastId)
       toast.success("Redirecting to secure payment checkout...")
       
