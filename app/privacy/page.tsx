@@ -61,7 +61,7 @@ export default function PrivacyPolicyPage() {
                   <strong>Personal Profile Information (Google OAuth)</strong>: When registering or authenticating via Google Sign-In, we collect your email address, full name, and your Google account profile picture URL. This is used solely to construct your account and customize your dashboard.
                 </li>
                 <li>
-                  <strong>Clinical Case Logs</strong>: Information regarding the cases you document (procedure details, anesthetics used, diagnostics, post-operative outcome rooms, and optional attached clinical images). All clinical logs must be fully anonymized by the user before submission.
+                  <strong>Clinical Case Logs</strong>: Information regarding the cases you document (procedure details, anesthetics used, diagnostics, post-operative outcome rooms, and optional attached clinical images). <strong>All clinical logs must be fully anonymized or fictionalized by the user. You must never upload real-world Patient Names, actual Medical Record Numbers (MRN), or any other direct patient identifiers anywhere in the application.</strong>
                 </li>
                 <li>
                   <strong>Simulation Statistics</strong>: History of your CBT exam answers, OSCE completion checklists, scores, time elapsed, and reviews or discussion board comments.
@@ -143,7 +143,7 @@ export default function PrivacyPolicyPage() {
                 <HelpCircle className="h-4 w-4 text-primary" /> Questions & Support
               </p>
               <p>
-                For questions regarding data processing or to submit a GDPR/HIPAA deletion request, please reach out directly to our support team at <a href="mailto:support@anesthesiapp.my.id" className="text-primary hover:underline font-bold">support@anesthesiapp.my.id</a>.
+                For questions regarding data processing, to submit a GDPR/UU PDP/HIPAA deletion request, or to report accidental PII uploads, please reach out directly to our support team at <a href="mailto:support@anesthesiapp.my.id" className="text-primary hover:underline font-bold">support@anesthesiapp.my.id</a>.
               </p>
             </section>
 

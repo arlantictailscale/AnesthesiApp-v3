@@ -74,15 +74,17 @@ export default function TermsOfServicePage() {
 
             <section className="space-y-3">
               <h2 className="text-lg font-bold text-foreground flex items-center gap-1.5 border-b pb-1.5">
-                3. Patient Data & Anonymization Policy
+                3. Patient Data & Anonymization Policy (Strict Compliance)
               </h2>
               <p>
-                As a user logging clinical cases, you are strictly responsible for maintaining patient privacy and HIPAA compliance (or regional equivalent laws).
+                As a user logging clinical cases, you are strictly responsible for maintaining patient privacy and complying with health data laws (such as HIPAA in the US and UU PDP in Indonesia).
               </p>
               <ul className="list-disc pl-5 space-y-1.5">
-                <li>You must <strong>NEVER</strong> enter personally identifiable information (PII) such as full patient names, exact home addresses, phone numbers, or actual national ID numbers in public fields.</li>
+                <li>You must <strong>NEVER</strong> enter real personally identifiable information (PII) or protected health information (PHI) — including real patient names, actual medical record numbers (MRN), exact dates of birth, home addresses, or phone numbers — anywhere in the application (including private logs).</li>
+                <li>All entries for patient names, MRNs, and rooms must use dummy, fictional, or randomized values (e.g., "Pasien A", "MRN-9999").</li>
                 <li>All case logs shared to the public Research Hub must be completely anonymized.</li>
-                <li>We reserve the right to delete any logs containing suspect patient data or identified PII immediately.</li>
+                <li>The Service is not certified as a compliant health record system (EHR). We disclaim all liability under HIPAA, UU PDP, or local health regulations if you input real patient identifiers.</li>
+                <li>We reserve the right to inspect and immediately delete any logs containing suspected real-world patient data or identified PII.</li>
               </ul>
             </section>
 
