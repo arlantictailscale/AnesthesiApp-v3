@@ -199,12 +199,12 @@ export default function PaymentHistoryPage() {
 
                 <div className="rounded-xl border border-border/80 bg-card/30 overflow-hidden shadow-xs">
                   {/* Table Header (hidden on mobile) */}
-                  <div className="hidden md:grid grid-cols-12 gap-4 p-4 border-b border-border/60 bg-muted/20 text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                    <div className="col-span-3">Order Details</div>
-                    <div className="col-span-3">Badge Tier</div>
-                    <div className="col-span-2 text-right">Amount</div>
-                    <div className="col-span-2 text-center">Status</div>
-                    <div className="col-span-2 text-right">Action</div>
+                  <div className="hidden md:grid grid-cols-[150px_120px_90px_100px_1fr] gap-4 p-4 border-b border-border/60 bg-muted/20 text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                    <div>Order Details</div>
+                    <div>Badge Tier</div>
+                    <div className="text-right">Amount</div>
+                    <div className="text-center">Status</div>
+                    <div className="text-right">Action</div>
                   </div>
 
                   <div className="divide-y divide-border/60">
@@ -218,10 +218,10 @@ export default function PaymentHistoryPage() {
                       })
 
                       return (
-                        <div key={payment.id} className="grid grid-cols-1 md:grid-cols-12 gap-3 md:gap-4 p-4 items-center hover:bg-muted/10 transition-colors">
+                        <div key={payment.id} className="grid grid-cols-1 md:grid-cols-[150px_120px_90px_100px_1fr] gap-3 md:gap-4 p-4 items-center hover:bg-muted/10 transition-colors">
                           
                           {/* Order Details (ID & Date) */}
-                          <div className="col-span-1 md:col-span-3 flex flex-col gap-1">
+                          <div className="flex flex-col gap-1">
                             <span className="font-mono text-xs font-bold text-foreground">
                               {payment.order_id || "N/A"}
                             </span>
@@ -231,21 +231,23 @@ export default function PaymentHistoryPage() {
                           </div>
 
                           {/* Badge Tier */}
-                          <div className="col-span-1 md:col-span-3 flex items-center gap-2">
+                          <div className="flex flex-col gap-0.5">
                             <span className="text-xs font-bold text-foreground">
                               {payment.tier}
                             </span>
-                            <SupporterBadge tier={payment.tier === "Gold Sponsor" ? "gold sponsor" : payment.tier === "Platinum Sponsor" ? "platinum sponsor" : payment.tier === "Diamond Sponsor" ? "diamond sponsor" : payment.tier.toLowerCase()} className="scale-90" />
+                            <div className="flex items-center">
+                              <SupporterBadge tier={payment.tier === "Gold Sponsor" ? "gold sponsor" : payment.tier === "Platinum Sponsor" ? "platinum sponsor" : payment.tier === "Diamond Sponsor" ? "diamond sponsor" : payment.tier.toLowerCase()} className="scale-95 origin-left" />
+                            </div>
                           </div>
 
                           {/* Amount */}
-                          <div className="col-span-1 md:col-span-2 md:text-right font-semibold text-xs text-foreground">
+                          <div className="md:text-right font-semibold text-xs text-foreground">
                             <span className="md:hidden text-muted-foreground font-medium mr-1.5">Amount:</span>
                             Rp {payment.amount?.toLocaleString("id-ID") || "0"}
                           </div>
 
                           {/* Status Badge */}
-                          <div className="col-span-1 md:col-span-2 flex md:justify-center">
+                          <div className="flex md:justify-center">
                             <span className="md:hidden text-muted-foreground font-medium mr-1.5 self-center">Status:</span>
                             {payment.status === "paid" ? (
                               <Badge className="bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400 gap-1 text-[10px] font-bold px-2.5 py-0.5">
@@ -263,7 +265,7 @@ export default function PaymentHistoryPage() {
                           </div>
 
                           {/* Action Button */}
-                          <div className="col-span-1 md:col-span-2 flex md:justify-end mt-2 md:mt-0">
+                          <div className="flex md:justify-end mt-2 md:mt-0">
                             {payment.status === "pending" && payment.order_id ? (
                               <div className="flex flex-col sm:flex-row gap-1.5 w-full md:w-auto md:justify-end">
                                 {payment.payment_url && (
