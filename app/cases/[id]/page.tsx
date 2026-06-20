@@ -249,7 +249,7 @@ export default function CaseDetailPage() {
         ["Sex", val(c.sex)],
         ["Age", val(c.age)],
         ["MRN", val(isOwner ? c.medical_record_number : "MRN [Anonymized]")],
-        ["Room", val(c.room)],
+        ["Room", val(isOwner ? c.room : "Room [Anonymized]")],
         ["Weight (kg)", val(c.weight_kg)],
         ["Height (cm)", val(c.height_cm)],
         ["BMI", val(c.bmi)],
