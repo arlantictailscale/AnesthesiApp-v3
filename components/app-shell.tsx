@@ -170,7 +170,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isDrugs = pathname?.startsWith("/drugs")
   const isGuidelines = pathname?.startsWith("/guidelines")
   const isResearch = pathname?.startsWith("/research")
-  const isSupport = pathname?.startsWith("/support")
   const isOsce = pathname?.startsWith("/osce")
   const isNew = pathname?.startsWith("/cases/new")
   const isCases = pathname?.startsWith("/cases") && !isNew
@@ -375,26 +374,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       <Link href="/research">
                         <Share2 className="h-4 w-4 shrink-0 text-primary" />
                         Research Hub
-                      </Link>
-                    </Button>
-                    <Button
-                      asChild
-                      variant={isSupport ? "secondary" : "ghost"}
-                      className="justify-start gap-3 w-full"
-                    >
-                      <Link href="/support" className="text-amber-600 dark:text-amber-400 font-semibold">
-                        <Heart className="h-4 w-4 shrink-0 fill-current" />
-                        Support Us
-                      </Link>
-                    </Button>
-                    <Button
-                      asChild
-                      variant={pathname === "/support/history" ? "secondary" : "ghost"}
-                      className="justify-start gap-3 w-full"
-                    >
-                      <Link href="/support/history">
-                        <History className="h-4 w-4 shrink-0 text-primary" />
-                        Payment History
                       </Link>
                     </Button>
                   </nav>
