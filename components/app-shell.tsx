@@ -27,7 +27,9 @@ import {
   Heart,
   Pill,
   ShieldAlert,
-  Loader2
+  Loader2,
+  CreditCard,
+  History
 } from "lucide-react"
 import { Logo } from "@/components/logo"
 import { Footer } from "@/components/footer"
@@ -264,6 +266,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
+                  <Link href="/support/history" className="flex items-center w-full cursor-pointer">
+                    <History className="mr-2 h-4 w-4" /> Payment History
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
                   <Link href="/support" className="flex items-center w-full cursor-pointer text-amber-600 dark:text-amber-400 font-semibold">
                     <Heart className="mr-2 h-4 w-4 fill-current" /> Support Us
                   </Link>
@@ -378,6 +385,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       <Link href="/support" className="text-amber-600 dark:text-amber-400 font-semibold">
                         <Heart className="h-4 w-4 shrink-0 fill-current" />
                         Support Us
+                      </Link>
+                    </Button>
+                    <Button
+                      asChild
+                      variant={pathname === "/support/history" ? "secondary" : "ghost"}
+                      className="justify-start gap-3 w-full"
+                    >
+                      <Link href="/support/history">
+                        <History className="h-4 w-4 shrink-0 text-primary" />
+                        Payment History
                       </Link>
                     </Button>
                   </nav>

@@ -368,4 +368,19 @@ export async function addSupporter(supporter: Omit<Supporter, "id" | "created_at
   return data as Supporter
 }
 
+export async function listUserPayments(): Promise<Supporter[]> {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
+  
+  const { data, error } = await supabase
+    .from("supporters")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+  if (error) throw new Error(error.message)
+  return (data ?? []) as Supporter[]
+}
+
+
 

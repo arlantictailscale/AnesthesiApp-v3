@@ -177,6 +177,11 @@ export default function SupportUsPage() {
           <p className="text-base sm:text-lg text-muted-foreground mt-1">
             AnesthesiApp is built to empower anesthesia practitioners with intelligent OSCE/CBT prep, drug calculators, and case logs. <strong>All features are 100% free for everyone.</strong> Upgrade to a premium plan to obtain a profile badge next to your posts and join our public recognition wall.
           </p>
+          <div className="mt-2">
+            <Link href="/support/history" className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline font-bold bg-primary/5 border border-primary/10 rounded-full px-3 py-1">
+              Already made a payment? View your transaction history & verify status →
+            </Link>
+          </div>
         </div>
 
         {/* Content Columns */}
