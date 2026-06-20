@@ -243,7 +243,7 @@ export function LandingCalculator() {
       {/* Weight Selector Header */}
       <div className="flex flex-col gap-2 border-b border-border/60 pb-4">
         <div className="flex items-center justify-between">
-          <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+          <label htmlFor="patient-weight" className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
             <Sliders className="h-3.5 w-3.5 text-primary" /> Patient Weight
           </label>
           <div className="flex items-baseline gap-1">
@@ -255,6 +255,7 @@ export function LandingCalculator() {
         {/* Sliders & Presets */}
         <div className="flex flex-col gap-3">
           <input
+            id="patient-weight"
             type="range"
             min="1"
             max="150"
@@ -338,12 +339,13 @@ export function LandingCalculator() {
           {/* Dose slider */}
           <div className="flex flex-col gap-1.5 bg-muted/10 border border-border/40 rounded-xl p-3">
             <div className="flex items-center justify-between text-xs font-semibold text-foreground">
-              <span>Target Dose:</span>
+              <label htmlFor="target-bolus-dose" className="font-semibold text-foreground">Target Dose:</label>
               <span className="font-extrabold text-primary">
                 {customBolusDose.toFixed(2)} {selectedBolus.unit.split("/")[0]} / kg
               </span>
             </div>
             <input
+              id="target-bolus-dose"
               type="range"
               min={selectedBolus.minDose}
               max={selectedBolus.maxDose}
@@ -406,9 +408,10 @@ export function LandingCalculator() {
           {/* Dynamic Concentration Configuration Inputs */}
           <div className="grid grid-cols-2 gap-3 bg-muted/10 border border-border/40 rounded-xl p-3">
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-bold text-muted-foreground">Syringe Drug Amount</label>
+              <label htmlFor="syringe-drug-amount" className="text-[10px] font-bold text-muted-foreground">Syringe Drug Amount</label>
               <div className="flex items-center gap-1.5 mt-0.5">
                 <input
+                  id="syringe-drug-amount"
                   type="number"
                   value={syringeAmount}
                   onChange={(e) => setSyringeAmount(Number(e.target.value))}
@@ -418,9 +421,10 @@ export function LandingCalculator() {
               </div>
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-bold text-muted-foreground">Syringe Liquid Vol.</label>
+              <label htmlFor="syringe-liquid-volume" className="text-[10px] font-bold text-muted-foreground">Syringe Liquid Vol.</label>
               <div className="flex items-center gap-1.5 mt-0.5">
                 <input
+                  id="syringe-liquid-volume"
                   type="number"
                   value={syringeVolume}
                   onChange={(e) => setSyringeVolume(Number(e.target.value))}
@@ -434,12 +438,13 @@ export function LandingCalculator() {
           {/* Infusion Rate slider */}
           <div className="flex flex-col gap-1.5 bg-muted/10 border border-border/40 rounded-xl p-3">
             <div className="flex items-center justify-between text-xs font-semibold text-foreground">
-              <span>Target Dose Rate:</span>
+              <label htmlFor="target-infusion-rate" className="font-semibold text-foreground">Target Dose Rate:</label>
               <span className="font-extrabold text-primary">
                 {customRate.toFixed(selectedInf.unit === "mcg/kg/min" ? 2 : 1)} {selectedInf.unit}
               </span>
             </div>
             <input
+              id="target-infusion-rate"
               type="range"
               min={selectedInf.minRate}
               max={selectedInf.maxRate}
