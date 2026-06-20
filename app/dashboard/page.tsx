@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { listCases, getSession, listSharedCases } from "@/lib/storage"
+import { listCases, getSession, listSharedCases, getUserProfile } from "@/lib/storage"
 import { listPackages, listAttempts } from "@/lib/cbt/storage"
 import { listOsceStations, listOsceAttempts } from "@/lib/osce/storage"
 import { listDrugs } from "@/lib/drugs/storage"
@@ -40,6 +40,7 @@ import {
 export default function DashboardPage() {
   const router = useRouter()
   const [email, setEmail] = useState<string | null>(null)
+  const [fullName, setFullName] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   // Data states
@@ -63,6 +64,14 @@ export default function DashboardPage() {
         const session = await getSession()
         if (session) {
           setEmail(session.email)
+          try {
+            const profile = await getUserProfile(session.userId)
+            if (profile && profile.full_name) {
+              setFullName(profile.full_name)
+            }
+          } catch (err) {
+            console.error("Failed to load user profile in dashboard:", err)
+          }
         }
 
         // Fetch cases
@@ -134,7 +143,7 @@ export default function DashboardPage() {
   }
 
   // Get user prefix for welcoming message
-  const userGreeting = email ? email.split("@")[0] : "Doctor"
+  const userGreeting = fullName || (email ? email.split("@")[0] : "Doctor")
   const currentDate = new Date().toLocaleDateString("en-US", {
     weekday: "long",
     year: "numeric",
