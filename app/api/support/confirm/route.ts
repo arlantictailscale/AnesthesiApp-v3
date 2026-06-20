@@ -58,7 +58,7 @@ export async function POST(request: Request) {
     console.log("DOKU Status API response:", responseText)
 
     if (!response.ok) {
-      return NextResponse.json({ error: `Payment gateway error (${response.status}): ${responseText.substring(0, 200)}` }, { status: 502 })
+      return NextResponse.json({ error: `Payment gateway error (${response.status}): ${responseText.substring(0, 200)}` }, { status: 400 })
     }
 
     let data
@@ -66,7 +66,7 @@ export async function POST(request: Request) {
       data = JSON.parse(responseText)
     } catch {
       console.error("DOKU Status API returned non-JSON response:", responseText.substring(0, 500))
-      return NextResponse.json({ error: "Payment gateway returned invalid response" }, { status: 502 })
+      return NextResponse.json({ error: "Payment gateway returned invalid response" }, { status: 400 })
     }
     const orderStatus = data.order?.status
     const transactionStatus = data.transaction?.status
