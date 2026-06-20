@@ -343,6 +343,7 @@ export type Supporter = {
   website?: string
   status: 'pending' | 'paid' | 'failed'
   order_id?: string
+  payment_url?: string
   created_at: string
 }
 

@@ -265,23 +265,36 @@ export default function PaymentHistoryPage() {
                           {/* Action Button */}
                           <div className="col-span-1 md:col-span-2 flex md:justify-end mt-2 md:mt-0">
                             {payment.status === "pending" && payment.order_id ? (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleSyncStatus(payment.order_id!)}
-                                disabled={syncingId === payment.order_id}
-                                className="w-full md:w-auto h-8 text-[11px] gap-1 font-bold text-amber-600 border-amber-500/20 hover:bg-amber-500/5 hover:text-amber-700"
-                              >
-                                {syncingId === payment.order_id ? (
-                                  <>
-                                    <Loader2 className="h-3 w-3 animate-spin" /> Checking
-                                  </>
-                                ) : (
-                                  <>
-                                    <RefreshCw className="h-3 w-3" /> Check Status
-                                  </>
+                              <div className="flex flex-col sm:flex-row gap-1.5 w-full md:w-auto md:justify-end">
+                                {payment.payment_url && (
+                                  <Button
+                                    asChild
+                                    size="sm"
+                                    className="w-full md:w-auto h-8 text-[11px] gap-1 font-bold bg-amber-600 hover:bg-amber-700 text-white shrink-0"
+                                  >
+                                    <a href={payment.payment_url} target="_blank" rel="noopener noreferrer">
+                                      Pay Now
+                                    </a>
+                                  </Button>
                                 )}
-                              </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleSyncStatus(payment.order_id!)}
+                                  disabled={syncingId === payment.order_id}
+                                  className="w-full md:w-auto h-8 text-[11px] gap-1 font-bold text-amber-600 border-amber-500/20 hover:bg-amber-500/5 hover:text-amber-700 shrink-0"
+                                >
+                                  {syncingId === payment.order_id ? (
+                                    <>
+                                      <Loader2 className="h-3 w-3 animate-spin" /> Checking
+                                    </>
+                                  ) : (
+                                    <>
+                                      <RefreshCw className="h-3 w-3" /> Check Status
+                                    </>
+                                  )}
+                                </Button>
+                              </div>
                             ) : (
                               <span className="hidden md:inline text-xs text-muted-foreground/40 font-medium">—</span>
                             )}

@@ -29,30 +29,11 @@ export async function POST(request: Request) {
 
     const orderId = `SUPPORT-${crypto.randomUUID().slice(0, 8).toUpperCase()}`
 
-    // Insert pending Supporter in database
+    // Initialize Supabase and lookup current user credentials
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     const userId = user?.id || null
     const email = user?.email || "anonymous@anesthesiapp.my.id"
-
-    const { error: dbError } = await supabase
-      .from("supporters")
-      .insert({
-        name,
-        type,
-        tier,
-        amount: parseFloat(amount),
-        message: message || null,
-        website: website || null,
-        status: "pending",
-        order_id: orderId,
-        user_id: userId,
-      })
-
-    if (dbError) {
-      console.error("Database error creating supporter:", dbError)
-      return NextResponse.json({ error: dbError.message }, { status: 500 })
-    }
 
     // DOKU API Setup
     const dokuConfig = getDokuConfig()
@@ -136,6 +117,27 @@ export async function POST(request: Request) {
     if (!redirectUrl) {
       console.error("DOKU response missing payment URL:", data)
       return NextResponse.json({ error: "Payment gateway response invalid" }, { status: 400 })
+    }
+
+    // Insert pending Supporter in database WITH payment_url
+    const { error: dbError } = await supabase
+      .from("supporters")
+      .insert({
+        name,
+        type,
+        tier,
+        amount: parseFloat(amount),
+        message: message || null,
+        website: website || null,
+        status: "pending",
+        order_id: orderId,
+        user_id: userId,
+        payment_url: redirectUrl,
+      })
+
+    if (dbError) {
+      console.error("Database error creating supporter:", dbError)
+      return NextResponse.json({ error: dbError.message }, { status: 500 })
     }
 
     return NextResponse.json({
