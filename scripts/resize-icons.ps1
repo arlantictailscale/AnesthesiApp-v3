@@ -28,7 +28,7 @@ function Resize-Image {
     Write-Host "Resized to $width x $height and saved to $outputPath"
 }
 
-$source = "mobile/assets/icon.png"
+$source = "C:\Users\rofiu\.gemini\antigravity-ide\brain\d8c02952-1bac-4d8b-b9f1-0c295f9fedff\media__1782001040160.png"
 if (-not (Test-Path $source)) {
     Write-Error "Source icon not found at $source"
     exit 1
