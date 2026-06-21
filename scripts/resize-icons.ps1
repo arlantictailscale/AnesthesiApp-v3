@@ -34,6 +34,8 @@ if (-not (Test-Path $source)) {
     exit 1
 }
 
+Resize-Image -sourcePath $source -outputPath "public/icon.png" -width 48 -height 48
+Resize-Image -sourcePath $source -outputPath "public/apple-icon.png" -width 180 -height 180
 Resize-Image -sourcePath $source -outputPath "public/icon-192x192.png" -width 192 -height 192
 Resize-Image -sourcePath $source -outputPath "public/icon-512x512.png" -width 512 -height 512
 
