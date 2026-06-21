@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "435106985235",
+    "project_id": "anesthesiapp-fbd08",
+    "storage_bucket": "anesthesiapp-fbd08.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:435106985235:android:23b651e282e370dc50d6e6",
+        "android_client_info": {
+          "package_name": "id.my.anesthesiapp.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA30LkToosz9asj31j_UykCRCDuxb_NbgQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
