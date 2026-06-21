@@ -14,6 +14,14 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 })
 
+export const viewport = {
+  themeColor: "#1e293b",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+}
+
 export const metadata: Metadata = {
   title: {
     default: "AnesthesiApp — Anesthesia Case Logger & Exam Prep",
@@ -38,6 +46,12 @@ export const metadata: Metadata = {
   creator: "AnesthesiApp Team",
   publisher: "AnesthesiApp",
   metadataBase: new URL("https://anesthesiapp.my.id"),
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "AnesthesiApp",
+  },
   icons: {
     icon: "/icon.png",
     apple: "/apple-icon.png",
