@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Toaster } from '@/components/ui/sonner'
 import { WebMcpProvider } from '@/components/webmcp-provider'
+import { PushNotificationManager } from '@/components/push-notification-manager'
 import { Geist, Geist_Mono } from 'next/font/google'
 import './globals.css'
 
@@ -96,6 +97,7 @@ export default function RootLayout({
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} bg-background`}>
       <body className="font-sans antialiased">
         <WebMcpProvider />
+        <PushNotificationManager />
         {children}
         <Toaster />
       </body>

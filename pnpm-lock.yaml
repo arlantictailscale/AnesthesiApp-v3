@@ -11,6 +11,9 @@ importers:
       '@capacitor/core':
         specifier: ^8.4.1
         version: 8.4.1
+      '@capacitor/push-notifications':
+        specifier: ^8.1.1
+        version: 8.1.1(@capacitor/core@8.4.1)
       '@ducanh2912/next-pwa':
         specifier: ^10.2.9
         version: 10.2.9(next@16.2.7(@babel/core@7.29.7)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(webpack@5.107.2(postcss@8.5.6))
@@ -721,6 +724,11 @@ packages:
 
   '@capacitor/core@8.4.1':
     resolution: {integrity: sha512-xqhOGLbTAYeOWK+IDUNSjQJAPapQjRHrIcgk9PYp52or9zFTaaMko31uNi16N6W+CRJ8VrRram6fOYILkBG2Hg==}
+
+  '@capacitor/push-notifications@8.1.1':
+    resolution: {integrity: sha512-WqzjPKIbYbARMN+GC0XMAJcxJpUUzqgzS/Ny8RODLrro38pQhm3GXYwX2Mwd+LZlLY39rGImkCkrKyQSNfuikA==}
+    peerDependencies:
+      '@capacitor/core': '>=8.0.0'
 
   '@date-fns/tz@1.4.1':
     resolution: {integrity: sha512-P5LUNhtbj6YfI3iJjw5EL9eUAG6OitD0W3fWQcpQjDRc/QIsL0tRNuO1PcDvPccWL1fSTXXdE1ds+l95DV/OFA==}
@@ -4411,6 +4419,10 @@ snapshots:
     dependencies:
       tslib: 2.8.1
 
+  '@capacitor/push-notifications@8.1.1(@capacitor/core@8.4.1)':
+    dependencies:
+      '@capacitor/core': 8.4.1
+
   '@date-fns/tz@1.4.1': {}
 
   '@ducanh2912/next-pwa@10.2.9(next@16.2.7(@babel/core@7.29.7)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(webpack@5.107.2(postcss@8.5.6))':
@@ -7374,7 +7386,7 @@ snapshots:
       mime-db: 1.54.0
       neo-async: 2.6.2
       schema-utils: 4.3.3
-      tapable: 2.3.0
+      tapable: 2.3.3
       terser-webpack-plugin: 5.6.1(postcss@8.5.6)(webpack@5.107.2(postcss@8.5.6))
       watchpack: 2.5.2
       webpack-sources: 3.5.0
