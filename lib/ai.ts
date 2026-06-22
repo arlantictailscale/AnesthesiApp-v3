@@ -11,6 +11,7 @@ interface CallAiOptions {
   temperature?: number
   jsonMode?: boolean
   origin?: string
+  timeoutMs?: number
 }
 
 export async function callAiModel({
@@ -19,6 +20,7 @@ export async function callAiModel({
   temperature = 0.7,
   jsonMode = false,
   origin = "https://anesthesiapp.local",
+  timeoutMs = 45000,
 }: CallAiOptions): Promise<{ content: string }> {
   // Check if it's a direct Google Gemini model
   if (model.startsWith("google/gemini-")) {
@@ -62,13 +64,27 @@ export async function callAiModel({
 
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${apiKey}`
 
-    const res = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    })
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+
+    let res: Response
+    try {
+      res = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      })
+    } catch (fetchErr: any) {
+      if (fetchErr.name === "AbortError") {
+        throw new Error(`Gemini API request timed out after ${timeoutMs}ms`)
+      }
+      throw fetchErr
+    } finally {
+      clearTimeout(timeoutId)
+    }
 
     if (!res.ok) {
       const errText = await res.text()
@@ -96,16 +112,30 @@ export async function callAiModel({
     payload.response_format = { type: "json_object" }
   }
 
-  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-      "HTTP-Referer": origin,
-      "X-Title": "AnesthesiApp",
-    },
-    body: JSON.stringify(payload),
-  })
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+
+  let res: Response
+  try {
+    res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": origin,
+        "X-Title": "AnesthesiApp",
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    })
+  } catch (fetchErr: any) {
+    if (fetchErr.name === "AbortError") {
+      throw new Error(`OpenRouter API request timed out after ${timeoutMs}ms`)
+    }
+    throw fetchErr
+  } finally {
+    clearTimeout(timeoutId)
+  }
 
   if (!res.ok) {
     const errText = await res.text()

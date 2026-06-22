@@ -307,28 +307,50 @@ export async function POST(req: Request) {
   }
 
   after(async () => {
+    let actualModelUsed = model
     try {
-      const aiResult = await callAiModel({
-        model,
-        temperature: 0.1,
-        jsonMode: true,
-        origin,
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: description },
-        ],
-      })
-      const content = aiResult.content
-      if (!content) {
-        throw new Error("Empty response from AI model")
-      }
-
+      let content = ""
       let parsed: any
+
       try {
+        const aiResult = await callAiModel({
+          model,
+          temperature: 0.1,
+          jsonMode: true,
+          origin,
+          messages: [
+            { role: "system", content: SYSTEM_PROMPT },
+            { role: "user", content: description },
+          ],
+        })
+        content = aiResult.content
+        if (!content) {
+          throw new Error("Empty response from AI model")
+        }
         parsed = extractJson(content)
-      } catch (err) {
-        console.error("[v0] Failed to parse model JSON:", content)
-        throw err
+      } catch (firstErr) {
+        console.warn(`[v0] AI populate failed with model ${model}, falling back to default model ${DEFAULT_AI_MODEL}. Error:`, firstErr)
+        
+        if (model !== DEFAULT_AI_MODEL) {
+          actualModelUsed = DEFAULT_AI_MODEL
+          const fallbackResult = await callAiModel({
+            model: DEFAULT_AI_MODEL,
+            temperature: 0.1,
+            jsonMode: true,
+            origin,
+            messages: [
+              { role: "system", content: SYSTEM_PROMPT },
+              { role: "user", content: description },
+            ],
+          })
+          content = fallbackResult.content
+          if (!content) {
+            throw new Error("Empty response from fallback AI model")
+          }
+          parsed = extractJson(content)
+        } else {
+          throw firstErr
+        }
       }
 
       // Defensive parsing and coercion of LLM values
@@ -430,7 +452,7 @@ export async function POST(req: Request) {
         .update({
           ...parsedUpdate,
           status: "completed",
-          ai_model: model,
+          ai_model: actualModelUsed,
           ai_duration_seconds: Number(((Date.now() - startTime) / 1000).toFixed(1)),
         })
         .eq("id", caseRow.id)
@@ -442,7 +464,7 @@ export async function POST(req: Request) {
           .update({
             status: "failed",
             error_message: updateError.message,
-            ai_model: model,
+            ai_model: actualModelUsed,
             ai_duration_seconds: Number(((Date.now() - startTime) / 1000).toFixed(1)),
           })
           .eq("id", caseRow.id)
@@ -455,7 +477,7 @@ export async function POST(req: Request) {
         .update({
           status: "failed",
           error_message: errMsg,
-          ai_model: model,
+          ai_model: actualModelUsed,
           ai_duration_seconds: Number(((Date.now() - startTime) / 1000).toFixed(1)),
         })
         .eq("id", caseRow.id)
