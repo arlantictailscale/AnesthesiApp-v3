@@ -984,7 +984,7 @@ export default function AdminPage() {
 
         {/* User Exam History Dialog Modal */}
         <Dialog open={!!selectedUser} onOpenChange={(open) => !open && setSelectedUser(null)}>
-          <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto bg-background/95 backdrop-blur-md border border-border shadow-2xl rounded-2xl p-6">
+          <DialogContent className="sm:max-w-4xl max-h-[85vh] overflow-y-auto overflow-x-hidden bg-background/95 backdrop-blur-md border border-border shadow-2xl rounded-2xl p-6">
             <DialogHeader className="border-b border-border/60 pb-4">
               <DialogTitle className="text-xl font-bold flex items-center gap-2">
                 <History className="h-5 w-5 text-red-500" />
