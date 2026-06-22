@@ -655,7 +655,7 @@ export default function AdminPage() {
               </div>
             </div>
           </>
-        ) : (
+        ) : activeTab === "payments" ? (
           <>
             {/* Payments Stats Grid */}
             <div className="grid gap-4 sm:grid-cols-4">
@@ -850,7 +850,7 @@ export default function AdminPage() {
               </div>
             </div>
           </>
-        )}
+        ) : null}
 
         {activeTab === "cbt" && (
           <div className="space-y-6">
