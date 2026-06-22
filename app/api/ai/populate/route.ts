@@ -1,6 +1,6 @@
 import { NextResponse, after } from "next/server"
 import { AI_MODELS, DEFAULT_AI_MODEL, type AiModelId } from "@/lib/ai-models"
-import { callAiModel } from "@/lib/ai"
+import { callAiModel, extractJson } from "@/lib/ai"
 import { createClient } from "@/lib/supabase/server"
 
 export const runtime = "nodejs"
@@ -241,18 +241,6 @@ function isAllowedModel(id: string): id is AiModelId {
   return AI_MODELS.some((m) => m.id === id)
 }
 
-function extractJson(text: string): unknown {
-  const trimmed = text.trim()
-  // Strip ```json fences if the model added them despite instructions.
-  const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i)
-  const body = fenced ? fenced[1] : trimmed
-  const firstBrace = body.indexOf("{")
-  const lastBrace = body.lastIndexOf("}")
-  if (firstBrace === -1 || lastBrace === -1) {
-    throw new Error("Model did not return JSON")
-  }
-  return JSON.parse(body.slice(firstBrace, lastBrace + 1))
-}
 
 export async function POST(req: Request) {
   const startTime = Date.now()

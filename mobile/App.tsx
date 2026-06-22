@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import {
   StyleSheet,
   Text,
@@ -12,11 +12,40 @@ import {
   Platform,
   Modal,
   FlatList,
+  KeyboardAvoidingView,
 } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
 import Slider from '@react-native-community/slider'
 import { supabase } from './lib/supabase'
 import { builtInPackages, CBTPackage, CBTQuestion } from './lib/cbtData'
+import { builtInOsceStations, OsceStation, OsceAttempt } from './lib/osceData'
+import { builtInDrugs, AnesthesiaDrug } from './lib/drugsData'
+import { builtInGuidelines, AnesthesiaGuideline } from './lib/guidelinesData'
+import {
+  Pill,
+  Activity,
+  Info,
+  AlertTriangle,
+  Sparkles,
+  Sliders,
+  BookOpen,
+  Search,
+  Plus,
+  Trash2,
+  Clock,
+  Send,
+  CheckCircle2,
+  RefreshCw,
+  Award,
+  Check,
+  Heart,
+  Calendar,
+  MapPin,
+  User,
+  LogOut,
+  ChevronRight,
+  MessageSquare,
+} from 'lucide-react-native'
 
 // Types
 type BolusDrug = {
@@ -55,7 +84,7 @@ type StoredCase = {
   patient_name: string
   medical_record_number?: string
   room?: string
-  sex?: 'male' | 'female'
+  sex?: 'male' | 'female' | 'Male' | 'Female'
   age?: number
   weight_kg?: number
   height_cm?: number
@@ -66,9 +95,10 @@ type StoredCase = {
   bleeding?: number
   urine_output?: number
   created_at: string
+  is_shared?: boolean
 }
 
-// Data Definition
+// Data Definition for bedside calculator
 const BOLUS_DRUGS: BolusDrug[] = [
   {
     name: 'Propofol',
@@ -191,7 +221,12 @@ export default function App() {
   const [isRegistering, setIsRegistering] = useState(false)
 
   // Navigation tab
-  const [activeTab, setActiveTab] = useState<'calculator' | 'cases' | 'cbt' | 'dashboard'>('calculator')
+  const [activeTab, setActiveTab] = useState<'calculator' | 'cases' | 'study' | 'resources' | 'dashboard'>('calculator')
+
+  // Sub-tabs
+  const [studyTab, setStudyTab] = useState<'cbt' | 'osce'>('cbt')
+  const [resourcesTab, setResourcesTab] = useState<'drugs' | 'guidelines' | 'shared_cases'>('drugs')
+  const [osceSubTab, setOsceSubTab] = useState<'stations' | 'attempts'>('stations')
 
   // Calculator states
   const [weight, setWeight] = useState(70)
@@ -224,7 +259,6 @@ export default function App() {
     setSyringeVolume(drug.defaultSyringeVolume)
   }
 
-  // Weight presets handler
   const handleWeightPreset = (w: number) => {
     setWeight(w)
   }
@@ -234,6 +268,7 @@ export default function App() {
   const [loadingCases, setLoadingCases] = useState(false)
   const [showNewCaseModal, setShowNewCaseModal] = useState(false)
   const [submittingCase, setSubmittingCase] = useState(false)
+  const [selectedLocalCase, setSelectedLocalCase] = useState<StoredCase | null>(null)
   const [caseForm, setCaseForm] = useState({
     patient_name: '',
     medical_record_number: '',
@@ -270,6 +305,43 @@ export default function App() {
   const [examSubmitted, setExamSubmitted] = useState(false)
   const [examScore, setExamScore] = useState(0)
 
+  // --- OSCE Simulator States ---
+  const [osceStations, setOsceStations] = useState<OsceStation[]>([])
+  const [loadingOsceStations, setLoadingOsceStations] = useState(false)
+  const [activeOsce, setActiveOsce] = useState<OsceStation | null>(null)
+  const [osceActive, setOsceActive] = useState(false)
+  const [osceMessages, setOsceMessages] = useState<{ role: 'user' | 'assistant' | 'system'; content: string }[]>([])
+  const [osceInput, setOsceInput] = useState('')
+  const [osceSending, setOsceSending] = useState(false)
+  const [osceTimeLeft, setOsceTimeLeft] = useState(17 * 60)
+  const [osceCompleted, setOsceCompleted] = useState(false)
+  const [osceEvaluating, setOsceEvaluating] = useState(false)
+  const [osceScorecard, setOsceScorecard] = useState<any>(null)
+  const [osceStartedAt, setOsceStartedAt] = useState('')
+  const [osceAttempts, setOsceAttempts] = useState<OsceAttempt[]>([])
+  const [loadingOsceAttempts, setLoadingOsceAttempts] = useState(false)
+  const [selectedAttempt, setSelectedAttempt] = useState<OsceAttempt | null>(null)
+  
+  const osceChatScrollRef = useRef<ScrollView>(null)
+
+  // --- Drug Library States ---
+  const [drugs, setDrugs] = useState<AnesthesiaDrug[]>([])
+  const [loadingDrugs, setLoadingDrugs] = useState(false)
+  const [drugsSearch, setDrugsSearch] = useState('')
+  const [selectedDrug, setSelectedDrug] = useState<AnesthesiaDrug | null>(null)
+  
+  // --- Guidelines States ---
+  const [guidelines, setGuidelines] = useState<AnesthesiaGuideline[]>([])
+  const [loadingGuidelines, setLoadingGuidelines] = useState(false)
+  const [guidelinesSearch, setGuidelinesSearch] = useState('')
+  const [selectedGuideline, setSelectedGuideline] = useState<AnesthesiaGuideline | null>(null)
+
+  // --- Shared Cases (Research Library) States ---
+  const [sharedCases, setSharedCases] = useState<StoredCase[]>([])
+  const [loadingSharedCases, setLoadingSharedCases] = useState(false)
+  const [sharedSearch, setSharedSearch] = useState('')
+  const [selectedSharedCase, setSelectedSharedCase] = useState<StoredCase | null>(null)
+
   // Supabase Auth listener
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -277,6 +349,11 @@ export default function App() {
       if (session?.user) {
         fetchProfile(session.user.id)
         fetchCases(session.user.id)
+        fetchOsceStations()
+        fetchOsceAttempts(session.user.id)
+        fetchDrugs()
+        fetchGuidelines()
+        fetchSharedCases()
       }
       setLoading(false)
     })
@@ -286,15 +363,50 @@ export default function App() {
       if (session?.user) {
         fetchProfile(session.user.id)
         fetchCases(session.user.id)
+        fetchOsceStations()
+        fetchOsceAttempts(session.user.id)
+        fetchDrugs()
+        fetchGuidelines()
+        fetchSharedCases()
       } else {
         setProfile(null)
         setCases([])
+        setOsceAttempts([])
+        setDrugs([])
+        setGuidelines([])
+        setSharedCases([])
       }
       setLoading(false)
     })
 
     return () => subscription.unsubscribe()
   }, [])
+
+  // Auto-scroll chat to bottom
+  useEffect(() => {
+    if (osceActive) {
+      setTimeout(() => {
+        osceChatScrollRef.current?.scrollToEnd({ animated: true })
+      }, 100)
+    }
+  }, [osceMessages, osceActive, osceSending])
+
+  // OSCE Active simulation Timer logic
+  useEffect(() => {
+    let interval: any = null
+    if (osceActive && osceTimeLeft > 0 && !osceCompleted) {
+      interval = setInterval(() => {
+        setOsceTimeLeft((prev) => {
+          if (prev <= 1) {
+            handleFinishOsce()
+            return 0
+          }
+          return prev - 1
+        })
+      }, 1000)
+    }
+    return () => clearInterval(interval)
+  }, [osceActive, osceCompleted, activeOsce, osceMessages, osceStartedAt])
 
   const fetchProfile = async (userId: string) => {
     try {
@@ -329,6 +441,170 @@ export default function App() {
     }
   }
 
+  // Fetch custom and built-in OSCE stations
+  const fetchOsceStations = async () => {
+    setLoadingOsceStations(true)
+    try {
+      const { data, error } = await supabase
+        .from('osce_stations')
+        .select('*')
+        .order('title', { ascending: true })
+      
+      let dbStations: OsceStation[] = []
+      if (data) {
+        dbStations = data.map((row: any) => ({
+          id: row.id,
+          user_id: row.user_id,
+          title: row.title,
+          category: row.category,
+          duration_minutes: row.duration_minutes,
+          scenario: row.scenario,
+          instructions_participant: row.instructions_participant,
+          instructions_examiner: row.instructions_examiner,
+          rubric: row.rubric,
+          equipment: row.equipment,
+          created_at: row.created_at,
+          updated_at: row.updated_at,
+          creator_email: row.creator_email || undefined,
+        }))
+      }
+      
+      const seenIds = new Set<string>()
+      const allStations = [...dbStations, ...builtInOsceStations].filter((s) => {
+        if (seenIds.has(s.id)) return false
+        seenIds.add(s.id)
+        return true
+      })
+      setOsceStations(allStations)
+    } catch (e) {
+      console.warn('OSCE stations fetch error, falling back to built-in:', e)
+      setOsceStations(builtInOsceStations)
+    } finally {
+      setLoadingOsceStations(false)
+    }
+  }
+
+  // Fetch OSCE attempts
+  const fetchOsceAttempts = async (userId: string) => {
+    setLoadingOsceAttempts(true)
+    try {
+      const { data, error } = await supabase
+        .from('osce_attempts')
+        .select('*')
+        .eq('user_id', userId)
+        .order('completed_at', { ascending: false })
+      if (data) {
+        setOsceAttempts(data as OsceAttempt[])
+      }
+    } catch (e) {
+      console.warn('OSCE attempts fetch error:', e)
+    } finally {
+      setLoadingOsceAttempts(false)
+    }
+  }
+
+  // Fetch Drug Library
+  const fetchDrugs = async () => {
+    setLoadingDrugs(true)
+    try {
+      const { data, error } = await supabase
+        .from('anesthesia_drugs')
+        .select('*')
+        .order('name', { ascending: true })
+      
+      let list: AnesthesiaDrug[] = []
+      if (data) {
+        list = data.map((row: any) => ({
+          id: row.id,
+          user_id: row.user_id,
+          name: row.name,
+          category: row.category,
+          mechanism_of_action: row.mechanism_of_action,
+          pharmacokinetics: row.pharmacokinetics,
+          pharmacodynamics: row.pharmacodynamics,
+          onset_of_action: row.onset_of_action,
+          duration_of_action: row.duration_of_action,
+          induction_dose: row.induction_dose,
+          maintenance_dose: row.maintenance_dose,
+          side_effects: row.side_effects,
+          clinical_considerations: row.clinical_considerations,
+          contraindications: row.contraindications || undefined,
+          infusion_guidelines: row.infusion_guidelines || undefined,
+          is_high_alert: row.is_high_alert || false,
+        }))
+      }
+      
+      const seenIds = new Set<string>()
+      const allDrugs = [...list, ...builtInDrugs].filter((d) => {
+        if (seenIds.has(d.id)) return false
+        seenIds.add(d.id)
+        return true
+      })
+      setDrugs(allDrugs)
+    } catch (e) {
+      console.warn('Drugs fetch error, falling back to built-in:', e)
+      setDrugs(builtInDrugs)
+    } finally {
+      setLoadingDrugs(false)
+    }
+  }
+
+  // Fetch Guidelines
+  const fetchGuidelines = async () => {
+    setLoadingGuidelines(true)
+    try {
+      const { data, error } = await supabase
+        .from('anesthesia_guidelines')
+        .select('*')
+        .order('title', { ascending: true })
+      
+      let list: AnesthesiaGuideline[] = []
+      if (data) {
+        list = data.map((row: any) => ({
+          id: row.id,
+          user_id: row.user_id,
+          title: row.title,
+          organization: row.organization,
+          category: row.category,
+          summary: row.summary,
+          full_content: row.full_content,
+        }))
+      }
+      
+      const seenIds = new Set<string>()
+      const allGuidelines = [...list, ...builtInGuidelines].filter((g) => {
+        if (seenIds.has(g.id)) return false
+        seenIds.add(g.id)
+        return true
+      })
+      setGuidelines(allGuidelines)
+    } catch (e) {
+      console.warn('Guidelines fetch error, falling back to built-in:', e)
+      setGuidelines(builtInGuidelines)
+    } finally {
+      setLoadingGuidelines(false)
+    }
+  }
+
+  // Fetch Shared Peer Cases
+  const fetchSharedCases = async () => {
+    setLoadingSharedCases(true)
+    try {
+      const { data, error } = await supabase
+        .from('anesthesia_cases')
+        .select('*')
+        .eq('is_shared', true)
+        .order('created_at', { ascending: false })
+      if (data) {
+        setSharedCases(data as StoredCase[])
+      }
+    } catch (e) {
+      console.warn('Shared cases fetch error:', e)
+    } finally {
+      setLoadingSharedCases(false)
+    }
+  }
+
   // Auth operations
   const handleSignIn = async () => {
     if (!email || !password) {
@@ -336,7 +612,7 @@ export default function App() {
       return
     }
     setAuthLoading(true)
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
     if (error) {
       Alert.alert('Login Failed', error.message)
     }
@@ -350,7 +626,7 @@ export default function App() {
     }
     setAuthLoading(true)
     const { error } = await supabase.auth.signUp({
-      email,
+      email: email.trim(),
       password,
       options: {
         data: {
@@ -386,7 +662,7 @@ export default function App() {
         patient_name: caseForm.patient_name,
         medical_record_number: caseForm.medical_record_number || null,
         room: caseForm.room || null,
-        sex: caseForm.sex,
+        sex: caseForm.sex === 'male' ? 'Male' : 'Female',
         age: caseForm.age ? Number(caseForm.age) : null,
         weight_kg: caseForm.weight_kg ? Number(caseForm.weight_kg) : null,
         height_cm: caseForm.height_cm ? Number(caseForm.height_cm) : null,
@@ -423,6 +699,7 @@ export default function App() {
         urine_output: '',
       })
       fetchCases(session.user.id)
+      fetchSharedCases()
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Failed to save case')
     } finally {
@@ -445,6 +722,7 @@ export default function App() {
               Alert.alert('Error', error.message)
             } else {
               fetchCases(session.user.id)
+              fetchSharedCases()
             }
           },
         },
@@ -491,7 +769,108 @@ export default function App() {
     }
   }
 
-  // Calculations
+  // --- OSCE Simulator Operations ---
+  const handleStartOsce = (station: OsceStation) => {
+    setActiveOsce(station)
+    setOsceMessages([
+      {
+        role: 'assistant',
+        content: `Halo Dokter, selamat datang di Station ${station.category}. Saya adalah Penguji Anda pada ujian hari ini. \n\nSkenario Anda adalah: \n"${station.scenario}"\n\nTugas Anda:\n${station.instructions_participant}\n\nSilakan mulai dengan memperkenalkan diri dan mengerjakan tugas Anda!`,
+      },
+    ])
+    setOsceInput('')
+    setOsceTimeLeft(station.duration_minutes * 60)
+    setOsceActive(true)
+    setOsceCompleted(false)
+    setOsceScorecard(null)
+    setOsceStartedAt(new Date().toISOString())
+  }
+
+  const handleSendOsceMessage = async () => {
+    if (!osceInput.trim() || osceSending || osceCompleted || !activeOsce) return
+    const userMsg = osceInput.trim()
+    setOsceInput('')
+    const nextMessages = [...osceMessages, { role: 'user' as const, content: userMsg }]
+    setOsceMessages(nextMessages)
+    setOsceSending(true)
+
+    try {
+      const res = await fetch('https://anesthesiapp.my.id/api/ai/osce-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: nextMessages,
+          scenario: activeOsce.scenario,
+          instructions: activeOsce.instructions_participant,
+          rubric: activeOsce.rubric,
+          equipment: activeOsce.equipment,
+        }),
+      })
+
+      if (!res.ok) throw new Error('AI examiner connection error')
+      const data = await res.json()
+      setOsceMessages((prev) => [...prev, { role: 'assistant', content: data.reply }])
+    } catch (e) {
+      Alert.alert('Error', 'Gagal mendapatkan respon dari Penguji AI. Silakan coba lagi.')
+    } finally {
+      setOsceSending(false)
+    }
+  }
+
+  const handleFinishOsce = async () => {
+    if (osceCompleted || osceEvaluating || !activeOsce) return
+    setOsceCompleted(true)
+    setOsceEvaluating(true)
+
+    try {
+      const res = await fetch('https://anesthesiapp.my.id/api/ai/osce-score', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chatHistory: osceMessages,
+          rubric: activeOsce.rubric,
+        }),
+      })
+
+      if (!res.ok) throw new Error('Gagal memproses evaluasi.')
+      const data = await res.json()
+      const ev = data.evaluation
+      setOsceScorecard(ev)
+
+      let total = 0
+      let maxScore = 0
+      activeOsce.rubric.forEach((r) => {
+        const score = ev.scores[r.aspect] ?? 0
+        total += score * r.weight
+        maxScore += 3 * r.weight
+      })
+
+      if (session?.user) {
+        const payload = {
+          user_id: session.user.id,
+          station_id: activeOsce.id,
+          started_at: osceStartedAt,
+          completed_at: new Date().toISOString(),
+          chat_history: osceMessages,
+          scores: ev.scores,
+          feedback: ev.feedback,
+          total_score: total,
+          max_score: maxScore,
+          status: 'completed',
+        }
+
+        const { error } = await supabase.from('osce_attempts').insert(payload)
+        if (error) throw error
+        fetchOsceAttempts(session.user.id)
+      }
+    } catch (err: any) {
+      Alert.alert('Evaluasi Gagal', err.message || 'Evaluasi AI gagal diselesaikan.')
+    } finally {
+      setOsceEvaluating(false)
+    }
+  }
+
+  // Calculator Computations
   const bolusResults = useMemo(() => {
     const totalDose = weight * customBolusDose
     const totalDoseFormatted =
@@ -540,11 +919,37 @@ export default function App() {
 
   const isPediatric = weight < 30
 
+  // Filtered lists for resources tab
+  const filteredDrugs = useMemo(() => {
+    return drugs.filter(
+      (d) =>
+        d.name.toLowerCase().includes(drugsSearch.toLowerCase()) ||
+        d.category.toLowerCase().includes(drugsSearch.toLowerCase())
+    )
+  }, [drugs, drugsSearch])
+
+  const filteredGuidelines = useMemo(() => {
+    return guidelines.filter(
+      (g) =>
+        g.title.toLowerCase().includes(guidelinesSearch.toLowerCase()) ||
+        g.organization.toLowerCase().includes(guidelinesSearch.toLowerCase()) ||
+        g.category.toLowerCase().includes(guidelinesSearch.toLowerCase())
+    )
+  }, [guidelines, guidelinesSearch])
+
+  const filteredSharedCases = useMemo(() => {
+    return sharedCases.filter(
+      (c) =>
+        c.diagnosis.toLowerCase().includes(sharedSearch.toLowerCase()) ||
+        c.procedure_intervention.toLowerCase().includes(sharedSearch.toLowerCase())
+    )
+  }, [sharedCases, sharedSearch])
+
   // Views
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#1E293B" />
+        <ActivityIndicator size="large" color="#BE123C" />
         <Text style={styles.loadingText}>Initializing AnesthesiApp...</Text>
       </View>
     )
@@ -606,7 +1011,7 @@ export default function App() {
             ) : (
               <TouchableOpacity
                 onPress={isRegistering ? handleSignUp : handleSignIn}
-                style={[styles.button, { backgroundColor: '#1E293B' }]}
+                style={[styles.button, { backgroundColor: '#BE123C' }]}
               >
                 <Text style={styles.buttonText}>{isRegistering ? 'Register' : 'Login'}</Text>
               </TouchableOpacity>
@@ -635,64 +1040,7 @@ export default function App() {
       </View>
 
       <ScrollView contentContainerStyle={styles.appContent}>
-        {activeTab === 'dashboard' && (
-          <View style={styles.dashboardContainer}>
-            <View style={styles.card}>
-              <Text style={styles.cardHeader}>User Profile</Text>
-              <Text style={styles.profileText}>
-                <Text style={styles.boldText}>Name:</Text>{' '}
-                {profile?.full_name || session.user.email?.split('@')[0]}
-              </Text>
-              <Text style={styles.profileText}>
-                <Text style={styles.boldText}>Email:</Text> {session.user.email}
-              </Text>
-              <Text style={styles.profileText}>
-                <Text style={styles.boldText}>Role:</Text>{' '}
-                {profile?.role === 'admin' ? 'Administrator' : 'Medical Resident'}
-              </Text>
-
-              {/* Supporter Badge */}
-              <View style={styles.badgeRow}>
-                <Text style={styles.boldText}>Account Tier:</Text>
-                <View
-                  style={[
-                    styles.badge,
-                    {
-                      backgroundColor:
-                        profile?.supporter_tier && profile.supporter_tier !== 'none'
-                          ? '#E2F0D9'
-                          : '#F1F5F9',
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.badgeText,
-                      {
-                        color:
-                          profile?.supporter_tier && profile.supporter_tier !== 'none'
-                            ? '#385723'
-                            : '#64748B',
-                      },
-                    ]}
-                  >
-                    {profile?.supporter_tier && profile.supporter_tier !== 'none'
-                      ? `${profile.supporter_tier.toUpperCase()} SUPPORTER`
-                      : 'FREE TIER'}
-                  </Text>
-                </View>
-              </View>
-            </View>
-
-            <View style={[styles.card, styles.infoCard]}>
-              <Text style={styles.infoCardTitle}>Data Sync Status</Text>
-              <Text style={styles.infoCardBody}>
-                Connected to the unified cloud database. Your case logs and board prep configurations are fully synced with the web app at anesthesiapp.my.id.
-              </Text>
-            </View>
-          </View>
-        )}
-
+        {/* --- CALCULATOR TAB --- */}
         {activeTab === 'calculator' && (
           <View style={styles.calculatorContainer}>
             {/* Patient Weight Card */}
@@ -936,7 +1284,7 @@ export default function App() {
           </View>
         )}
 
-        {/* --- CASE LOGGER TAB --- */}
+        {/* --- MY CASE LOGGER TAB --- */}
         {activeTab === 'cases' && (
           <View style={styles.casesContainer}>
             <View style={styles.rowBetween}>
@@ -959,9 +1307,13 @@ export default function App() {
               </View>
             ) : (
               cases.map((c) => (
-                <View key={c.id} style={styles.caseCard}>
+                <TouchableOpacity 
+                  key={c.id} 
+                  style={styles.caseCard}
+                  onPress={() => setSelectedLocalCase(c)}
+                >
                   <View style={styles.caseCardHeader}>
-                    <View>
+                    <View style={{ flex: 1 }}>
                       <Text style={styles.casePatientName}>
                         {c.patient_name || 'Anonymous Patient'} {c.age ? `(${c.age} yo)` : ''}
                       </Text>
@@ -973,183 +1325,1004 @@ export default function App() {
                   </View>
                   <View style={styles.caseDetailRow}>
                     <Text style={styles.caseDetailLabel}>Diagnosis:</Text>
-                    <Text style={styles.caseDetailValue}>{c.diagnosis}</Text>
+                    <Text style={styles.caseDetailValue} numberOfLines={1}>{c.diagnosis}</Text>
                   </View>
                   <View style={styles.caseDetailRow}>
                     <Text style={styles.caseDetailLabel}>Procedure:</Text>
-                    <Text style={styles.caseDetailValue}>{c.procedure_intervention}</Text>
+                    <Text style={styles.caseDetailValue} numberOfLines={1}>{c.procedure_intervention}</Text>
                   </View>
                   {c.anesthesia_management && (
                     <View style={styles.caseDetailRow}>
                       <Text style={styles.caseDetailLabel}>Anesthesia:</Text>
-                      <Text style={styles.caseDetailValue}>{c.anesthesia_management}</Text>
+                      <Text style={styles.caseDetailValue} numberOfLines={1}>{c.anesthesia_management}</Text>
                     </View>
                   )}
-                </View>
+                </TouchableOpacity>
               ))
             )}
           </View>
         )}
 
-        {/* --- CBT SIMULATOR TAB --- */}
-        {activeTab === 'cbt' && (
-          <View style={styles.cbtContainer}>
-            {!examActive ? (
-              <View>
-                <Text style={styles.cardHeader}>CBT Board Prep Packages</Text>
-                <Text style={{ color: '#64748B', fontSize: 12, marginBottom: 15 }}>
-                  Select an anesthesiology board review package to simulate a timed examination.
+        {/* --- STUDY HUB TAB (CBT & OSCE) --- */}
+        {activeTab === 'study' && (
+          <View style={styles.studyContainer}>
+            <View style={styles.calcTabs}>
+              <TouchableOpacity
+                onPress={() => setStudyTab('cbt')}
+                style={[styles.calcTab, studyTab === 'cbt' && styles.calcTabActive]}
+              >
+                <Text style={[styles.calcTabText, studyTab === 'cbt' && styles.calcTabTextActive]}>
+                  🎓 CBT Mock
                 </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setStudyTab('osce')}
+                style={[styles.calcTab, studyTab === 'osce' && styles.calcTabActive]}
+              >
+                <Text style={[styles.calcTabText, studyTab === 'osce' && styles.calcTabTextActive]}>
+                  🏥 OSCE Arena
+                </Text>
+              </TouchableOpacity>
+            </View>
 
-                {builtInPackages.map((pkg) => (
-                  <View key={pkg.id} style={styles.pkgCard}>
-                    <Text style={styles.pkgName}>{pkg.name}</Text>
-                    <Text style={styles.pkgDesc}>{pkg.description}</Text>
-                    <Text style={styles.pkgQuestionsCount}>
-                      📋 {pkg.questions.length} Questions
-                    </Text>
-                    <TouchableOpacity
-                      onPress={() => handleStartQuiz(pkg)}
-                      style={[styles.button, { backgroundColor: '#BE123C', marginTop: 10 }]}
-                    >
-                      <Text style={styles.buttonText}>Start Examination</Text>
-                    </TouchableOpacity>
-                  </View>
-                ))}
-              </View>
-            ) : (
-              <View>
-                {/* Active Exam Header */}
-                <View style={styles.examHeader}>
-                  <Text style={styles.examTitle}>{selectedCbtPkg?.name}</Text>
-                  <Text style={styles.examProgress}>
-                    Question {currentQuestionIdx + 1} of {selectedCbtPkg?.questions.length}
-                  </Text>
-                </View>
-
-                {!examSubmitted ? (
-                  <View style={styles.card}>
-                    <Text style={styles.questionCategory}>
-                      Category: {selectedCbtPkg?.questions[currentQuestionIdx].category}
-                    </Text>
-                    <Text style={styles.questionText}>
-                      {selectedCbtPkg?.questions[currentQuestionIdx].text}
+            {/* CBT BOARD PREP SECTION */}
+            {studyTab === 'cbt' && (
+              <View style={styles.cbtContainer}>
+                {!examActive ? (
+                  <View>
+                    <Text style={styles.cardHeader}>CBT Board Prep Packages</Text>
+                    <Text style={{ color: '#64748B', fontSize: 12, marginBottom: 15 }}>
+                      Select an anesthesiology board review package to simulate a timed examination.
                     </Text>
 
-                    {/* Options */}
-                    {['A', 'B', 'C', 'D', 'E'].map((opt) => {
-                      const questionId = selectedCbtPkg?.questions[currentQuestionIdx].id || ''
-                      const isSelected = userAnswers[questionId] === opt
-                      const optionText =
-                        (selectedCbtPkg?.questions[currentQuestionIdx].options as any)[opt] || ''
-
-                      return (
+                    {builtInPackages.map((pkg) => (
+                      <View key={pkg.id} style={styles.pkgCard}>
+                        <Text style={styles.pkgName}>{pkg.name}</Text>
+                        <Text style={styles.pkgDesc}>{pkg.description}</Text>
+                        <Text style={styles.pkgQuestionsCount}>
+                          📋 {pkg.questions.length} Questions
+                        </Text>
                         <TouchableOpacity
-                          key={opt}
-                          onPress={() => handleSelectAnswer(opt as any)}
-                          style={[styles.optionRow, isSelected && styles.optionRowSelected]}
+                          onPress={() => handleStartQuiz(pkg)}
+                          style={[styles.button, { backgroundColor: '#BE123C', marginTop: 10 }]}
                         >
-                          <View style={[styles.optionDot, isSelected && styles.optionDotSelected]}>
-                            <Text
-                              style={[
-                                styles.optionLetter,
-                                isSelected && { color: '#FFFFFF', fontWeight: 'bold' },
-                              ]}
-                            >
-                              {opt}
-                            </Text>
-                          </View>
-                          <Text style={[styles.optionText, isSelected && { fontWeight: 'bold' }]}>
-                            {optionText}
-                          </Text>
+                          <Text style={styles.buttonText}>Start Examination</Text>
                         </TouchableOpacity>
-                      )
-                    })}
+                      </View>
+                    ))}
+                  </View>
+                ) : (
+                  <View>
+                    <View style={styles.examHeader}>
+                      <Text style={styles.examTitle}>{selectedCbtPkg?.name}</Text>
+                      <Text style={styles.examProgress}>
+                        Question {currentQuestionIdx + 1} of {selectedCbtPkg?.questions.length}
+                      </Text>
+                    </View>
 
-                    {/* Quiz Navigation Buttons */}
-                    <View style={styles.quizNavRow}>
+                    {!examSubmitted ? (
+                      <View style={styles.card}>
+                        <Text style={styles.questionCategory}>
+                          Category: {selectedCbtPkg?.questions[currentQuestionIdx].category}
+                        </Text>
+                        <Text style={styles.questionText}>
+                          {selectedCbtPkg?.questions[currentQuestionIdx].text}
+                        </Text>
+
+                        {/* Options */}
+                        {['A', 'B', 'C', 'D', 'E'].map((opt) => {
+                          const questionId = selectedCbtPkg?.questions[currentQuestionIdx].id || ''
+                          const isSelected = userAnswers[questionId] === opt
+                          const optionText =
+                            (selectedCbtPkg?.questions[currentQuestionIdx].options as any)[opt] || ''
+
+                          return (
+                            <TouchableOpacity
+                              key={opt}
+                              onPress={() => handleSelectAnswer(opt as any)}
+                              style={[styles.optionRow, isSelected && styles.optionRowSelected]}
+                            >
+                              <View style={[styles.optionDot, isSelected && styles.optionDotSelected]}>
+                                <Text
+                                  style={[
+                                    styles.optionLetter,
+                                    isSelected && { color: '#FFFFFF', fontWeight: 'bold' },
+                                  ]}
+                                >
+                                  {opt}
+                                </Text>
+                              </View>
+                              <Text style={[styles.optionText, isSelected && { fontWeight: 'bold' }]}>
+                                {optionText}
+                              </Text>
+                            </TouchableOpacity>
+                          )
+                        })}
+
+                        {/* Quiz Navigation */}
+                        <View style={styles.quizNavRow}>
+                          <TouchableOpacity
+                            onPress={handleBackQuestion}
+                            disabled={currentQuestionIdx === 0}
+                            style={[styles.quizNavBtn, currentQuestionIdx === 0 && { opacity: 0.4 }]}
+                          >
+                            <Text style={styles.quizNavBtnText}>Back</Text>
+                          </TouchableOpacity>
+
+                          <TouchableOpacity
+                            onPress={handleNextQuestion}
+                            style={[styles.quizNavBtn, { backgroundColor: '#1E293B' }]}
+                          >
+                            <Text style={[styles.quizNavBtnText, { color: '#FFFFFF' }]}>
+                              {currentQuestionIdx === (selectedCbtPkg?.questions.length || 0) - 1
+                                ? 'Submit Exam'
+                                : 'Next'}
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    ) : (
+                      // Results View
+                      <View style={styles.card}>
+                        <Text style={styles.resultHeader}>Exam Result</Text>
+                        <View style={styles.scoreGauge}>
+                          <Text style={styles.scoreText}>{examScore}%</Text>
+                          <Text style={styles.scoreLabel}>Score</Text>
+                        </View>
+
+                        <Text style={{ textAlign: 'center', color: '#64748B', marginVertical: 10 }}>
+                          Review your answers below to study rationales:
+                        </Text>
+
+                        {selectedCbtPkg?.questions.map((q, idx) => {
+                          const userAnswer = userAnswers[q.id]
+                          const isCorrect = userAnswer === q.correctOption
+
+                          return (
+                            <View key={q.id} style={styles.resultItem}>
+                              <Text style={styles.resultItemText}>
+                                {idx + 1}. {q.text}
+                              </Text>
+                              <Text style={styles.userAnswerText}>
+                                Your answer:{' '}
+                                <Text
+                                  style={{
+                                    color: isCorrect ? '#059669' : '#DC2626',
+                                    fontWeight: 'bold',
+                                  }}
+                                >
+                                  {userAnswer || 'Unanswered'}
+                                </Text>
+                              </Text>
+                              {!isCorrect && (
+                                <Text style={styles.correctAnswerText}>
+                                  Correct answer:{' '}
+                                  <Text style={{ color: '#059669', fontWeight: 'bold' }}>
+                                    {q.correctOption}
+                                  </Text>
+                                </Text>
+                              )}
+                              <Text style={styles.explanationText}>
+                                <Text style={{ fontWeight: 'bold', color: '#1E293B' }}>Rationale: </Text>
+                                {q.explanation}
+                              </Text>
+                            </View>
+                          )
+                        })}
+
+                        <TouchableOpacity
+                          onPress={() => setExamActive(false)}
+                          style={[styles.button, { backgroundColor: '#1E293B', marginTop: 15 }]}
+                        >
+                          <Text style={styles.buttonText}>Finish review</Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </View>
+                )}
+              </View>
+            )}
+
+            {/* OSCE PREP SIMULATOR SECTION */}
+            {studyTab === 'osce' && (
+              <View style={styles.osceContainer}>
+                {!osceActive ? (
+                  <View>
+                    <View style={styles.calcTabs}>
                       <TouchableOpacity
-                        onPress={handleBackQuestion}
-                        disabled={currentQuestionIdx === 0}
-                        style={[styles.quizNavBtn, currentQuestionIdx === 0 && { opacity: 0.4 }]}
+                        onPress={() => setOsceSubTab('stations')}
+                        style={[styles.calcTab, osceSubTab === 'stations' && styles.calcTabActive]}
                       >
-                        <Text style={styles.quizNavBtnText}>Back</Text>
+                        <Text style={[styles.calcTabText, osceSubTab === 'stations' && styles.calcTabTextActive]}>
+                          📋 Stations
+                        </Text>
                       </TouchableOpacity>
-
                       <TouchableOpacity
-                        onPress={handleNextQuestion}
-                        style={[styles.quizNavBtn, { backgroundColor: '#1E293B' }]}
+                        onPress={() => setOsceSubTab('attempts')}
+                        style={[styles.calcTab, osceSubTab === 'attempts' && styles.calcTabActive]}
                       >
-                        <Text style={[styles.quizNavBtnText, { color: '#FFFFFF' }]}>
-                          {currentQuestionIdx === (selectedCbtPkg?.questions.length || 0) - 1
-                            ? 'Submit Exam'
-                            : 'Next'}
+                        <Text style={[styles.calcTabText, osceSubTab === 'attempts' && styles.calcTabTextActive]}>
+                          🏆 History ({osceAttempts.length})
                         </Text>
                       </TouchableOpacity>
                     </View>
+
+                    {osceSubTab === 'stations' && (
+                      <View>
+                        {loadingOsceStations ? (
+                          <ActivityIndicator size="small" color="#BE123C" style={{ marginVertical: 20 }} />
+                        ) : (
+                          osceStations.map((station) => (
+                            <View key={station.id} style={styles.pkgCard}>
+                              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Text style={styles.questionCategory}>{station.category}</Text>
+                                <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#64748B' }}>
+                                  ⏱️ {station.duration_minutes} Mins
+                                </Text>
+                              </View>
+                              <Text style={[styles.pkgName, { marginTop: 4 }]}>{station.title}</Text>
+                              <Text style={[styles.pkgDesc, { fontSize: 11 }]} numberOfLines={3}>
+                                {station.scenario}
+                              </Text>
+                              <TouchableOpacity
+                                onPress={() => handleStartOsce(station)}
+                                style={[styles.button, { backgroundColor: '#BE123C', marginTop: 12 }]}
+                              >
+                                <Text style={styles.buttonText}>Mulai Simulasi OSCE</Text>
+                              </TouchableOpacity>
+                            </View>
+                          ))
+                        )}
+                      </View>
+                    )}
+
+                    {osceSubTab === 'attempts' && (
+                      <View>
+                        {loadingOsceAttempts ? (
+                          <ActivityIndicator size="small" color="#BE123C" style={{ marginVertical: 20 }} />
+                        ) : osceAttempts.length === 0 ? (
+                          <View style={[styles.card, { alignItems: 'center', paddingVertical: 25 }]}>
+                            <Text style={{ color: '#64748B', fontWeight: 'bold', fontSize: 12 }}>
+                              Belum ada riwayat latihan OSCE.
+                            </Text>
+                          </View>
+                        ) : (
+                          osceAttempts.map((att) => {
+                            const matched = osceStations.find((s) => s.id === att.station_id)
+                            const title = matched ? matched.title : 'OSCE Station'
+                            const pct = Math.round((att.total_score / att.max_score) * 100)
+                            return (
+                              <TouchableOpacity
+                                key={att.id}
+                                style={styles.caseCard}
+                                onPress={() => setSelectedAttempt(att)}
+                              >
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <Text style={[styles.casePatientName, { flex: 1, marginRight: 8 }]} numberOfLines={1}>
+                                    {title}
+                                  </Text>
+                                  <Text style={{ fontSize: 14, fontWeight: '900', color: pct >= 80 ? '#059669' : pct >= 60 ? '#D97706' : '#DC2626' }}>
+                                    {pct}%
+                                  </Text>
+                                </View>
+                                <Text style={{ fontSize: 11, color: '#64748B', marginTop: 4 }}>
+                                  Skor: {att.total_score} / {att.max_score}
+                                </Text>
+                                <Text style={[styles.tipBody, { marginTop: 6, fontStyle: 'italic' }]} numberOfLines={2}>
+                                  "{att.feedback}"
+                                </Text>
+                              </TouchableOpacity>
+                            )
+                          })
+                        )}
+                      </View>
+                    )}
                   </View>
                 ) : (
-                  // Results View
-                  <View style={styles.card}>
-                    <Text style={styles.resultHeader}>Exam Result</Text>
-                    <View style={styles.scoreGauge}>
-                      <Text style={styles.scoreText}>{examScore}%</Text>
-                      <Text style={styles.scoreLabel}>Score</Text>
-                    </View>
-
-                    <Text style={{ textAlign: 'center', color: '#64748B', marginVertical: 10 }}>
-                      Review your answers below to study rationales:
-                    </Text>
-
-                    {selectedCbtPkg?.questions.map((q, idx) => {
-                      const userAnswer = userAnswers[q.id]
-                      const isCorrect = userAnswer === q.correctOption
-
-                      return (
-                        <View key={q.id} style={styles.resultItem}>
-                          <Text style={styles.resultItemText}>
-                            {idx + 1}. {q.text}
+                  // Active OSCE Chat Arena
+                  <KeyboardAvoidingView 
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    style={{ flex: 1 }}
+                  >
+                    <View style={styles.card}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#F1F5F9', paddingBottom: 10, marginBottom: 10 }}>
+                        <View style={{ flex: 1, marginRight: 8 }}>
+                          <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#BE123C', textTransform: 'uppercase' }}>
+                            {activeOsce?.category}
                           </Text>
-                          <Text style={styles.userAnswerText}>
-                            Your answer:{' '}
-                            <Text
-                              style={{
-                                color: isCorrect ? '#059669' : '#DC2626',
-                                fontWeight: 'bold',
-                              }}
-                            >
-                              {userAnswer || 'Unanswered'}
-                            </Text>
-                          </Text>
-                          {!isCorrect && (
-                            <Text style={styles.correctAnswerText}>
-                              Correct answer:{' '}
-                              <Text style={{ color: '#059669', fontWeight: 'bold' }}>
-                                {q.correctOption}
-                              </Text>
-                            </Text>
-                          )}
-                          <Text style={styles.explanationText}>
-                            <Text style={{ fontWeight: 'bold', color: '#1E293B' }}>Rationale: </Text>
-                            {q.explanation}
+                          <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#1E293B' }} numberOfLines={1}>
+                            {activeOsce?.title}
                           </Text>
                         </View>
-                      )
-                    })}
+                        {!osceCompleted && (
+                          <View style={{ alignItems: 'flex-end' }}>
+                            <Text style={{ fontSize: 14, fontWeight: '900', color: osceTimeLeft < 180 ? '#DC2626' : '#1E293B' }}>
+                              {Math.floor(osceTimeLeft / 60).toString().padStart(2, '0')}:
+                              {(osceTimeLeft % 60).toString().padStart(2, '0')}
+                            </Text>
+                            <TouchableOpacity onPress={handleFinishOsce} style={{ marginTop: 2 }}>
+                              <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#DC2626' }}>Akhiri</Text>
+                            </TouchableOpacity>
+                          </View>
+                        )}
+                      </View>
 
-                    <TouchableOpacity
-                      onPress={() => setExamActive(false)}
-                      style={[styles.button, { backgroundColor: '#1E293B', marginTop: 15 }]}
-                    >
-                      <Text style={styles.buttonText}>Finish review</Text>
-                    </TouchableOpacity>
-                  </View>
+                      {/* Chat messages */}
+                      <ScrollView 
+                        ref={osceChatScrollRef} 
+                        style={{ height: 280, backgroundColor: '#F8FAFC', borderRadius: 8, padding: 8, marginBottom: 10 }}
+                        contentContainerStyle={{ paddingBottom: 10 }}
+                      >
+                        {osceMessages.map((msg, idx) => {
+                          const isExaminer = msg.role === 'assistant'
+                          return (
+                            <View 
+                              key={idx} 
+                              style={{ 
+                                alignSelf: isExaminer ? 'flex-start' : 'flex-end', 
+                                backgroundColor: isExaminer ? '#FFFFFF' : '#BE123C', 
+                                borderRadius: 8, 
+                                padding: 8, 
+                                marginVertical: 4, 
+                                maxWidth: '85%',
+                                borderWidth: isExaminer ? 1 : 0,
+                                borderColor: '#E2E8F0',
+                              }}
+                            >
+                              <Text style={{ fontSize: 9, fontWeight: 'bold', color: isExaminer ? '#64748B' : '#FECDD3', textTransform: 'uppercase', marginBottom: 2 }}>
+                                {isExaminer ? 'Penguji' : 'Dokter (Anda)'}
+                              </Text>
+                              <Text style={{ fontSize: 12, color: isExaminer ? '#334155' : '#FFFFFF', lineHeight: 18 }}>
+                                {msg.content}
+                              </Text>
+                            </View>
+                          )
+                        })}
+                        {osceSending && (
+                          <View style={{ alignSelf: 'flex-start', backgroundColor: '#FFFFFF', borderRadius: 8, padding: 8, marginVertical: 4, borderWidth: 1, borderColor: '#E2E8F0', flexDirection: 'row', alignItems: 'center' }}>
+                            <ActivityIndicator size="small" color="#BE123C" style={{ marginRight: 6 }} />
+                            <Text style={{ fontSize: 10, color: '#64748B', fontWeight: 'bold' }}>Penguji sedang menganalisis...</Text>
+                          </View>
+                        )}
+                      </ScrollView>
+
+                      {/* Chat Input */}
+                      {!osceCompleted ? (
+                        <View style={{ flexDirection: 'row', gap: 6 }}>
+                          <TextInput
+                            value={osceInput}
+                            onChangeText={setOsceInput}
+                            placeholder="Ketik tindakan medis atau penjelasan Anda..."
+                            style={[styles.input, { flex: 1, height: 40 }]}
+                            onSubmitEditing={handleSendOsceMessage}
+                          />
+                          <TouchableOpacity 
+                            onPress={handleSendOsceMessage}
+                            style={{ backgroundColor: '#BE123C', width: 40, height: 40, borderRadius: 10, justifyContent: 'center', alignItems: 'center' }}
+                          >
+                            <Send size={16} color="#FFFFFF" />
+                          </TouchableOpacity>
+                        </View>
+                      ) : (
+                        <View style={{ backgroundColor: '#F1F5F9', padding: 8, borderRadius: 8, alignItems: 'center' }}>
+                          <Text style={{ fontSize: 11, fontStyle: 'italic', color: '#64748B', fontWeight: 'bold' }}>
+                            Ujian Selesai. Obrolan dikunci.
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+
+                    {/* Evaluation Scorecard Overlay */}
+                    {osceCompleted && osceScorecard && (
+                      <View style={[styles.card, { borderTopWidth: 3, borderTopColor: '#BE123C', marginTop: 10 }]}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+                          <Award size={24} color="#BE123C" style={{ marginRight: 8 }} />
+                          <View>
+                            <Text style={{ fontSize: 15, fontWeight: 'bold', color: '#1E293B' }}>Hasil Evaluasi AI</Text>
+                            <Text style={{ fontSize: 11, color: '#64748B' }}>Umpan balik aspek klinis dan komunikasi</Text>
+                          </View>
+                        </View>
+
+                        {/* Overall Feedback */}
+                        <View style={{ backgroundColor: '#FFFBEB', padding: 10, borderRadius: 8, marginBottom: 12 }}>
+                          <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#B45309' }}>Ulasan Global:</Text>
+                          <Text style={{ fontSize: 11, color: '#78350F', marginTop: 2, lineHeight: 16 }}>
+                            "{osceScorecard.feedback}"
+                          </Text>
+                        </View>
+
+                        {/* Aspect Breakdown */}
+                        <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#1E293B', marginBottom: 6 }}>
+                          Rincian Nilai per Aspek:
+                        </Text>
+                        {osceScorecard.breakdown && osceScorecard.breakdown.map((item: any, idx: number) => (
+                          <View key={idx} style={{ borderBottomWidth: 1, borderBottomColor: '#F1F5F9', paddingVertical: 8 }}>
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#334155', flex: 1, marginRight: 8 }}>
+                                {item.aspect}
+                              </Text>
+                              <Text style={{ fontSize: 11, fontWeight: 'bold', color: item.score === 3 ? '#059669' : item.score >= 1 ? '#D97706' : '#DC2626' }}>
+                                Skor: {item.score} / {item.max_score}
+                              </Text>
+                            </View>
+                            {item.feedback ? (
+                              <Text style={{ fontSize: 10, color: '#64748B', marginTop: 2 }}>
+                                {item.feedback}
+                              </Text>
+                            ) : null}
+                          </View>
+                        ))}
+
+                        <TouchableOpacity
+                          onPress={() => setOsceActive(false)}
+                          style={[styles.button, { backgroundColor: '#1E293B', marginTop: 15 }]}
+                        >
+                          <Text style={styles.buttonText}>Tutup dan Selesai</Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
+
+                    {osceEvaluating && (
+                      <View style={{ padding: 20, alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 10, marginTop: 10 }}>
+                        <ActivityIndicator size="large" color="#BE123C" />
+                        <Text style={{ marginTop: 10, fontSize: 13, fontWeight: 'bold', color: '#1E293B' }}>
+                          Mengevaluasi Kinerja Klinis Anda...
+                        </Text>
+                        <Text style={{ fontSize: 11, color: '#64748B', textAlign: 'center', marginTop: 4 }}>
+                          Sistem sedang memproses transkrip obrolan dengan rubrik penilaian.
+                        </Text>
+                      </View>
+                    )}
+                  </KeyboardAvoidingView>
                 )}
               </View>
             )}
           </View>
         )}
+
+        {/* --- RESOURCES TAB (DRUGS, GUIDELINES, RESEARCH CASES) --- */}
+        {activeTab === 'resources' && (
+          <View style={styles.resourcesContainer}>
+            <View style={styles.calcTabs}>
+              <TouchableOpacity
+                onPress={() => setResourcesTab('drugs')}
+                style={[styles.calcTab, resourcesTab === 'drugs' && styles.calcTabActive]}
+              >
+                <Text style={[styles.calcTabText, resourcesTab === 'drugs' && styles.calcTabTextActive]}>
+                  💊 Drugs
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setResourcesTab('guidelines')}
+                style={[styles.calcTab, resourcesTab === 'guidelines' && styles.calcTabActive]}
+              >
+                <Text style={[styles.calcTabText, resourcesTab === 'guidelines' && styles.calcTabTextActive]}>
+                  📖 Guidelines
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setResourcesTab('shared_cases')}
+                style={[styles.calcTab, resourcesTab === 'shared_cases' && styles.calcTabActive]}
+              >
+                <Text style={[styles.calcTabText, resourcesTab === 'shared_cases' && styles.calcTabTextActive]}>
+                  🔬 Shared Cases
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* DRUG LIBRARY TAB */}
+            {resourcesTab === 'drugs' && (
+              <View>
+                <TextInput
+                  value={drugsSearch}
+                  onChangeText={setDrugsSearch}
+                  placeholder="Cari obat generik atau golongan..."
+                  style={[styles.input, { marginBottom: 12 }]}
+                />
+
+                {loadingDrugs ? (
+                  <ActivityIndicator size="small" color="#BE123C" />
+                ) : (
+                  filteredDrugs.map((drug) => (
+                    <TouchableOpacity
+                      key={drug.id}
+                      style={styles.caseCard}
+                      onPress={() => setSelectedDrug(drug)}
+                    >
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Text style={styles.casePatientName}>{drug.name}</Text>
+                        {drug.is_high_alert && (
+                          <View style={{ backgroundColor: '#FEE2E2', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+                            <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#EF4444' }}>HIGH ALERT</Text>
+                          </View>
+                        )}
+                      </View>
+                      <Text style={{ fontSize: 11, color: '#64748B', marginTop: 2 }}>{drug.category}</Text>
+                      <Text style={{ fontSize: 11, color: '#475569', marginTop: 4 }} numberOfLines={1}>
+                        Induction: {drug.induction_dose}
+                      </Text>
+                    </TouchableOpacity>
+                  ))
+                )}
+              </View>
+            )}
+
+            {/* GUIDELINES TAB */}
+            {resourcesTab === 'guidelines' && (
+              <View>
+                <TextInput
+                  value={guidelinesSearch}
+                  onChangeText={setGuidelinesSearch}
+                  placeholder="Cari pedoman klinis (Difficult Airway, ACLS...)"
+                  style={[styles.input, { marginBottom: 12 }]}
+                />
+
+                {loadingGuidelines ? (
+                  <ActivityIndicator size="small" color="#BE123C" />
+                ) : (
+                  filteredGuidelines.map((guideline) => (
+                    <TouchableOpacity
+                      key={guideline.id}
+                      style={styles.caseCard}
+                      onPress={() => setSelectedGuideline(guideline)}
+                    >
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Text style={styles.casePatientName}>{guideline.title}</Text>
+                        <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#BE123C' }}>
+                          {guideline.organization}
+                        </Text>
+                      </View>
+                      <Text style={{ fontSize: 11, color: '#64748B', marginTop: 4 }}>Category: {guideline.category}</Text>
+                      <Text style={[styles.tipBody, { marginTop: 4 }]} numberOfLines={2}>
+                        {guideline.summary}
+                      </Text>
+                    </TouchableOpacity>
+                  ))
+                )}
+              </View>
+            )}
+
+            {/* SHARED PEER CASES TAB */}
+            {resourcesTab === 'shared_cases' && (
+              <View>
+                <TextInput
+                  value={sharedSearch}
+                  onChangeText={setSharedSearch}
+                  placeholder="Cari diagnosis atau prosedur klinis..."
+                  style={[styles.input, { marginBottom: 12 }]}
+                />
+
+                {loadingSharedCases ? (
+                  <ActivityIndicator size="small" color="#BE123C" />
+                ) : filteredSharedCases.length === 0 ? (
+                  <View style={[styles.card, { alignItems: 'center', paddingVertical: 25 }]}>
+                    <Text style={{ color: '#64748B', fontWeight: 'bold', fontSize: 12 }}>
+                      Belum ada kasus dibagikan di library.
+                    </Text>
+                  </View>
+                ) : (
+                  filteredSharedCases.map((c) => (
+                    <TouchableOpacity
+                      key={c.id}
+                      style={styles.caseCard}
+                      onPress={() => setSelectedSharedCase(c)}
+                    >
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Text style={styles.casePatientName}>Case Study #{c.id.substring(0, 8)}</Text>
+                        <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#64748B' }}>
+                          {c.sex} · {c.age}y
+                        </Text>
+                      </View>
+                      <View style={{ marginTop: 6 }}>
+                        <Text style={{ fontSize: 11, color: '#334155' }} numberOfLines={1}>
+                          <Text style={{ fontWeight: 'bold' }}>Diagnosis: </Text>{c.diagnosis}
+                        </Text>
+                        <Text style={{ fontSize: 11, color: '#334155', marginTop: 2 }} numberOfLines={1}>
+                          <Text style={{ fontWeight: 'bold' }}>Procedure: </Text>{c.procedure_intervention}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  ))
+                )}
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* --- DASHBOARD & PROFILE TAB --- */}
+        {activeTab === 'dashboard' && (
+          <View style={styles.dashboardContainer}>
+            <View style={styles.card}>
+              <Text style={styles.cardHeader}>User Profile</Text>
+              <Text style={styles.profileText}>
+                <Text style={styles.boldText}>Name:</Text>{' '}
+                {profile?.full_name || session.user.email?.split('@')[0]}
+              </Text>
+              <Text style={styles.profileText}>
+                <Text style={styles.boldText}>Email:</Text> {session.user.email}
+              </Text>
+              <Text style={styles.profileText}>
+                <Text style={styles.boldText}>Role:</Text>{' '}
+                {profile?.role === 'admin' ? 'Administrator' : 'Medical Resident'}
+              </Text>
+
+              {/* Supporter Badge */}
+              <View style={styles.badgeRow}>
+                <Text style={styles.boldText}>Account Tier:</Text>
+                <View
+                  style={[
+                    styles.badge,
+                    {
+                      backgroundColor:
+                        profile?.supporter_tier && profile.supporter_tier !== 'none'
+                          ? '#E2F0D9'
+                          : '#F1F5F9',
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.badgeText,
+                      {
+                        color:
+                          profile?.supporter_tier && profile.supporter_tier !== 'none'
+                            ? '#385723'
+                            : '#64748B',
+                      },
+                    ]}
+                  >
+                    {profile?.supporter_tier && profile.supporter_tier !== 'none'
+                      ? `${profile.supporter_tier.toUpperCase()} SUPPORTER`
+                      : 'FREE TIER'}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={[styles.card, styles.infoCard]}>
+              <Text style={styles.infoCardTitle}>Data Sync Status</Text>
+              <Text style={styles.infoCardBody}>
+                Connected to the unified cloud database. Your case logs and board prep configurations are fully synced with the web app at anesthesiapp.my.id.
+              </Text>
+            </View>
+          </View>
+        )}
       </ScrollView>
+
+      {/* --- DETAIL MODALS FOR RESOURCES AND CASES --- */}
+
+      {/* Drug Details Modal */}
+      {selectedDrug && (
+        <Modal visible={true} animationType="slide" presentationStyle="pageSheet">
+          <SafeAreaView style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{selectedDrug.name}</Text>
+              <TouchableOpacity onPress={() => setSelectedDrug(null)} style={styles.modalCloseBtn}>
+                <Text style={styles.modalCloseText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.modalScroll} contentContainerStyle={styles.modalScrollContent}>
+              <View style={[styles.card, { backgroundColor: '#F8FAFC' }]}>
+                <Text style={styles.inputLabel}>Golongan / Kategori</Text>
+                <Text style={{ fontSize: 14, color: '#1E293B', fontWeight: 'bold' }}>{selectedDrug.category}</Text>
+                {selectedDrug.is_high_alert && (
+                  <View style={{ backgroundColor: '#FEE2E2', padding: 6, borderRadius: 6, marginTop: 8 }}>
+                    <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#EF4444' }}>⚠️ HIGH ALERT MEDICATION</Text>
+                  </View>
+                )}
+              </View>
+
+              <View style={styles.card}>
+                <Text style={styles.cardHeader}>Informasi Dosis</Text>
+                <View style={{ borderBottomWidth: 1, borderBottomColor: '#F1F5F9', paddingBottom: 8, marginBottom: 8 }}>
+                  <Text style={styles.inputLabel}>Dosis Induksi</Text>
+                  <Text style={{ fontSize: 13, color: '#334155' }}>{selectedDrug.induction_dose}</Text>
+                </View>
+                <View>
+                  <Text style={styles.inputLabel}>Dosis Rumatan / Maintenance</Text>
+                  <Text style={{ fontSize: 13, color: '#334155' }}>{selectedDrug.maintenance_dose}</Text>
+                </View>
+              </View>
+
+              <View style={styles.card}>
+                <Text style={styles.cardHeader}>Onset & Durasi</Text>
+                <View style={{ flexDirection: 'row', gap: 20 }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.inputLabel}>Mulai Kerja (Onset)</Text>
+                    <Text style={{ fontSize: 13, color: '#334155', fontWeight: 'bold' }}>{selectedDrug.onset_of_action}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.inputLabel}>Durasi Kerja</Text>
+                    <Text style={{ fontSize: 13, color: '#334155', fontWeight: 'bold' }}>{selectedDrug.duration_of_action}</Text>
+                  </View>
+                </View>
+              </View>
+
+              <View style={styles.card}>
+                <Text style={styles.cardHeader}>Mekanisme Aksi (Mechanism of Action)</Text>
+                <Text style={{ fontSize: 12, color: '#475569', lineHeight: 18 }}>{selectedDrug.mechanism_of_action}</Text>
+              </View>
+
+              <View style={styles.card}>
+                <Text style={styles.cardHeader}>Farmakokinetika & Farmakodinamika</Text>
+                <Text style={styles.inputLabel}>Farmakokinetika</Text>
+                <Text style={{ fontSize: 12, color: '#475569', lineHeight: 18, marginBottom: 10 }}>{selectedDrug.pharmacokinetics}</Text>
+                <Text style={styles.inputLabel}>Farmakodinamika</Text>
+                <Text style={{ fontSize: 12, color: '#475569', lineHeight: 18 }}>{selectedDrug.pharmacodynamics}</Text>
+              </View>
+
+              <View style={styles.card}>
+                <Text style={[styles.cardHeader, { color: '#DC2626' }]}>Efek Samping (Side Effects)</Text>
+                <Text style={{ fontSize: 12, color: '#475569', lineHeight: 18 }}>{selectedDrug.side_effects}</Text>
+              </View>
+
+              <View style={[styles.card, { borderColor: '#F59E0B', backgroundColor: '#FFFBEB' }]}>
+                <Text style={[styles.cardHeader, { color: '#D97706' }]}>Pertimbangan Klinis (Clinical Notes)</Text>
+                <Text style={{ fontSize: 12, color: '#78350F', lineHeight: 18 }}>{selectedDrug.clinical_considerations}</Text>
+              </View>
+
+              {selectedDrug.contraindications ? (
+                <View style={[styles.card, { borderColor: '#EF4444', backgroundColor: '#FDF2F8' }]}>
+                  <Text style={[styles.cardHeader, { color: '#BE185D' }]}>Kontraindikasi</Text>
+                  <Text style={{ fontSize: 12, color: '#9D174D', lineHeight: 18 }}>{selectedDrug.contraindications}</Text>
+                </View>
+              ) : null}
+
+              {selectedDrug.infusion_guidelines ? (
+                <View style={[styles.card, { borderColor: '#3B82F6', backgroundColor: '#EFF6FF' }]}>
+                  <Text style={[styles.cardHeader, { color: '#1D4ED8' }]}>Panduan Infusi (Infusion Guide)</Text>
+                  <Text style={{ fontSize: 12, color: '#1E40AF', lineHeight: 18 }}>{selectedDrug.infusion_guidelines}</Text>
+                </View>
+              ) : null}
+            </ScrollView>
+          </SafeAreaView>
+        </Modal>
+      )}
+
+      {/* Guidelines Details Modal */}
+      {selectedGuideline && (
+        <Modal visible={true} animationType="slide" presentationStyle="pageSheet">
+          <SafeAreaView style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <View style={{ flex: 1, marginRight: 8 }}>
+                <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#BE123C' }}>{selectedGuideline.organization}</Text>
+                <Text style={styles.modalTitle} numberOfLines={1}>{selectedGuideline.title}</Text>
+              </View>
+              <TouchableOpacity onPress={() => setSelectedGuideline(null)} style={styles.modalCloseBtn}>
+                <Text style={styles.modalCloseText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.modalScroll} contentContainerStyle={styles.modalScrollContent}>
+              <View style={[styles.card, { backgroundColor: '#F8FAFC' }]}>
+                <Text style={styles.inputLabel}>Kategori</Text>
+                <Text style={{ fontSize: 13, color: '#1E293B', fontWeight: 'bold' }}>{selectedGuideline.category}</Text>
+              </View>
+
+              <View style={styles.card}>
+                <Text style={styles.cardHeader}>Ringkasan (Summary)</Text>
+                <Text style={{ fontSize: 12, color: '#475569', lineHeight: 18 }}>{selectedGuideline.summary}</Text>
+              </View>
+
+              <View style={styles.card}>
+                <Text style={styles.cardHeader}>Konten Lengkap</Text>
+                <Text style={{ fontSize: 12, color: '#334155', lineHeight: 20 }}>
+                  {selectedGuideline.full_content}
+                </Text>
+              </View>
+            </ScrollView>
+          </SafeAreaView>
+        </Modal>
+      )}
+
+      {/* Shared Case details Modal */}
+      {selectedSharedCase && (
+        <Modal visible={true} animationType="slide" presentationStyle="pageSheet">
+          <SafeAreaView style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Shared Case Details</Text>
+              <TouchableOpacity onPress={() => setSelectedSharedCase(null)} style={styles.modalCloseBtn}>
+                <Text style={styles.modalCloseText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.modalScroll} contentContainerStyle={styles.modalScrollContent}>
+              <View style={[styles.card, { backgroundColor: '#F8FAFC' }]}>
+                <Text style={styles.inputLabel}>Case ID</Text>
+                <Text style={{ fontSize: 11, color: '#64748B' }}>{selectedSharedCase.id}</Text>
+                <View style={{ flexDirection: 'row', gap: 20, marginTop: 10 }}>
+                  <View>
+                    <Text style={styles.inputLabel}>Sex</Text>
+                    <Text style={{ fontSize: 13, color: '#1E293B', fontWeight: 'bold' }}>{selectedSharedCase.sex}</Text>
+                  </View>
+                  <View>
+                    <Text style={styles.inputLabel}>Age</Text>
+                    <Text style={{ fontSize: 13, color: '#1E293B', fontWeight: 'bold' }}>{selectedSharedCase.age} years</Text>
+                  </View>
+                  {selectedSharedCase.weight_kg ? (
+                    <View>
+                      <Text style={styles.inputLabel}>Weight</Text>
+                      <Text style={{ fontSize: 13, color: '#1E293B', fontWeight: 'bold' }}>{selectedSharedCase.weight_kg} kg</Text>
+                    </View>
+                  ) : null}
+                  {selectedSharedCase.bmi ? (
+                    <View>
+                      <Text style={styles.inputLabel}>BMI</Text>
+                      <Text style={{ fontSize: 13, color: '#1E293B', fontWeight: 'bold' }}>{selectedSharedCase.bmi} kg/m²</Text>
+                    </View>
+                  ) : null}
+                </View>
+              </View>
+
+              <View style={styles.card}>
+                <Text style={styles.cardHeader}>Clinical Diagnosis</Text>
+                <Text style={{ fontSize: 13, color: '#334155' }}>{selectedSharedCase.diagnosis}</Text>
+              </View>
+
+              <View style={styles.card}>
+                <Text style={styles.cardHeader}>Planned Procedure / Intervention</Text>
+                <Text style={{ fontSize: 13, color: '#334155' }}>{selectedSharedCase.procedure_intervention}</Text>
+              </View>
+
+              {selectedSharedCase.anesthesia_management ? (
+                <View style={styles.card}>
+                  <Text style={styles.cardHeader}>Anesthesia Management</Text>
+                  <Text style={{ fontSize: 13, color: '#334155' }}>{selectedSharedCase.anesthesia_management}</Text>
+                </View>
+              ) : null}
+
+              <View style={styles.card}>
+                <Text style={styles.cardHeader}>Outcomes & Stats</Text>
+                <View style={{ flexDirection: 'row', gap: 20 }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.inputLabel}>Bleeding</Text>
+                    <Text style={{ fontSize: 13, color: '#334155' }}>
+                      {selectedSharedCase.bleeding ? `${selectedSharedCase.bleeding} ml` : '—'}
+                    </Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.inputLabel}>Urine Output</Text>
+                    <Text style={{ fontSize: 13, color: '#334155' }}>
+                      {selectedSharedCase.urine_output ? `${selectedSharedCase.urine_output} ml` : '—'}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            </ScrollView>
+          </SafeAreaView>
+        </Modal>
+      )}
+
+      {/* Local Logged Case details Modal */}
+      {selectedLocalCase && (
+        <Modal visible={true} animationType="slide" presentationStyle="pageSheet">
+          <SafeAreaView style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Logged Case details</Text>
+              <TouchableOpacity onPress={() => setSelectedLocalCase(null)} style={styles.modalCloseBtn}>
+                <Text style={styles.modalCloseText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.modalScroll} contentContainerStyle={styles.modalScrollContent}>
+              <View style={[styles.card, { backgroundColor: '#F8FAFC' }]}>
+                <Text style={styles.inputLabel}>Patient Name / Initial</Text>
+                <Text style={{ fontSize: 15, color: '#1E293B', fontWeight: 'bold' }}>{selectedLocalCase.patient_name}</Text>
+                <View style={{ flexDirection: 'row', gap: 20, marginTop: 10 }}>
+                  <View>
+                    <Text style={styles.inputLabel}>Sex</Text>
+                    <Text style={{ fontSize: 13, color: '#1E293B', fontWeight: 'bold' }}>{selectedLocalCase.sex}</Text>
+                  </View>
+                  <View>
+                    <Text style={styles.inputLabel}>Age</Text>
+                    <Text style={{ fontSize: 13, color: '#1E293B', fontWeight: 'bold' }}>{selectedLocalCase.age} years</Text>
+                  </View>
+                  {selectedLocalCase.weight_kg ? (
+                    <View>
+                      <Text style={styles.inputLabel}>Weight</Text>
+                      <Text style={{ fontSize: 13, color: '#1E293B', fontWeight: 'bold' }}>{selectedLocalCase.weight_kg} kg</Text>
+                    </View>
+                  ) : null}
+                  {selectedLocalCase.bmi ? (
+                    <View>
+                      <Text style={styles.inputLabel}>BMI</Text>
+                      <Text style={{ fontSize: 13, color: '#1E293B', fontWeight: 'bold' }}>{selectedLocalCase.bmi} kg/m²</Text>
+                    </View>
+                  ) : null}
+                </View>
+              </View>
+
+              <View style={styles.card}>
+                <Text style={styles.cardHeader}>Clinical Diagnosis</Text>
+                <Text style={{ fontSize: 13, color: '#334155' }}>{selectedLocalCase.diagnosis}</Text>
+              </View>
+
+              <View style={styles.card}>
+                <Text style={styles.cardHeader}>Planned Procedure / Intervention</Text>
+                <Text style={{ fontSize: 13, color: '#334155' }}>{selectedLocalCase.procedure_intervention}</Text>
+              </View>
+
+              {selectedLocalCase.anesthesia_management ? (
+                <View style={styles.card}>
+                  <Text style={styles.cardHeader}>Anesthesia Management</Text>
+                  <Text style={{ fontSize: 13, color: '#334155' }}>{selectedLocalCase.anesthesia_management}</Text>
+                </View>
+              ) : null}
+
+              <View style={styles.card}>
+                <Text style={styles.cardHeader}>Outcomes & Stats</Text>
+                <View style={{ flexDirection: 'row', gap: 20 }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.inputLabel}>Bleeding</Text>
+                    <Text style={{ fontSize: 13, color: '#334155' }}>
+                      {selectedLocalCase.bleeding ? `${selectedLocalCase.bleeding} ml` : '—'}
+                    </Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.inputLabel}>Urine Output</Text>
+                    <Text style={{ fontSize: 13, color: '#334155' }}>
+                      {selectedLocalCase.urine_output ? `${selectedLocalCase.urine_output} ml` : '—'}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            </ScrollView>
+          </SafeAreaView>
+        </Modal>
+      )}
+
+      {/* Past OSCE Attempt Details Modal */}
+      {selectedAttempt && (
+        <Modal visible={true} animationType="slide" presentationStyle="pageSheet">
+          <SafeAreaView style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <View style={{ flex: 1, marginRight: 8 }}>
+                <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#BE123C' }}>OSCE History Detail</Text>
+                <Text style={styles.modalTitle} numberOfLines={1}>
+                  {osceStations.find((s) => s.id === selectedAttempt.station_id)?.title || 'OSCE Station'}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setSelectedAttempt(null)} style={styles.modalCloseBtn}>
+                <Text style={styles.modalCloseText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.modalScroll} contentContainerStyle={styles.modalScrollContent}>
+              <View style={[styles.card, { backgroundColor: '#F8FAFC', borderLeftWidth: 4, borderLeftColor: '#BE123C' }]}>
+                <Text style={styles.inputLabel}>Skor Akhir Latihan</Text>
+                <Text style={{ fontSize: 24, fontWeight: '900', color: '#BE123C' }}>
+                  {Math.round((selectedAttempt.total_score / selectedAttempt.max_score) * 100)}%
+                </Text>
+                <Text style={{ fontSize: 11, color: '#64748B', marginTop: 4 }}>
+                  Skor Kumulatif: {selectedAttempt.total_score} / {selectedAttempt.max_score}
+                </Text>
+                <Text style={{ fontSize: 10, color: '#94A3B8', marginTop: 4 }}>
+                  Diselesaikan pada: {new Date(selectedAttempt.completed_at).toLocaleString()}
+                </Text>
+              </View>
+
+              <View style={styles.card}>
+                <Text style={styles.cardHeader}>Global Feedback Penguji</Text>
+                <Text style={{ fontSize: 12, color: '#334155', fontStyle: 'italic', lineHeight: 18 }}>
+                  "{selectedAttempt.feedback}"
+                </Text>
+              </View>
+
+              <View style={styles.card}>
+                <Text style={styles.cardHeader}>Rincian Penilaian Aspek</Text>
+                {Object.keys(selectedAttempt.scores).map((aspect, idx) => (
+                  <View key={idx} style={{ borderBottomWidth: 1, borderBottomColor: '#F1F5F9', paddingVertical: 8 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                      <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#475569', flex: 1, marginRight: 8 }}>
+                        {aspect}
+                      </Text>
+                      <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#BE123C' }}>
+                        Skor: {selectedAttempt.scores[aspect]} / 3
+                      </Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            </ScrollView>
+          </SafeAreaView>
+        </Modal>
+      )}
 
       {/* --- NEW CASE WIZARD MODAL --- */}
       <Modal visible={showNewCaseModal} animationType="slide" presentationStyle="pageSheet">
@@ -1351,7 +2524,7 @@ export default function App() {
           style={[styles.bottomTab, activeTab === 'calculator' && styles.bottomTabActive]}
         >
           <Text style={[styles.bottomTabText, activeTab === 'calculator' && styles.bottomTabTextActive]}>
-            🧮 Calculator
+            🧮 Calc
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -1359,15 +2532,23 @@ export default function App() {
           style={[styles.bottomTab, activeTab === 'cases' && styles.bottomTabActive]}
         >
           <Text style={[styles.bottomTabText, activeTab === 'cases' && styles.bottomTabTextActive]}>
-            📝 Case Logger
+            📝 Cases
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          onPress={() => setActiveTab('cbt')}
-          style={[styles.bottomTab, activeTab === 'cbt' && styles.bottomTabActive]}
+          onPress={() => setActiveTab('study')}
+          style={[styles.bottomTab, activeTab === 'study' && styles.bottomTabActive]}
         >
-          <Text style={[styles.bottomTabText, activeTab === 'cbt' && styles.bottomTabTextActive]}>
-            🎓 CBT Prep
+          <Text style={[styles.bottomTabText, activeTab === 'study' && styles.bottomTabTextActive]}>
+            🎓 Study
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => setActiveTab('resources')}
+          style={[styles.bottomTab, activeTab === 'resources' && styles.bottomTabActive]}
+        >
+          <Text style={[styles.bottomTabText, activeTab === 'resources' && styles.bottomTabTextActive]}>
+            📚 Resources
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -1393,7 +2574,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 15,
     fontSize: 14,
-    color: '#64748B',
+    color: '#BE123C',
     fontWeight: 'bold',
   },
   container: {
@@ -1442,16 +2623,16 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   cardHeader: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '800',
     color: '#1E293B',
-    marginBottom: 15,
+    marginBottom: 12,
   },
   inputGroup: {
     marginBottom: 15,
   },
   inputLabel: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: 'bold',
     color: '#64748B',
     textTransform: 'uppercase',
@@ -1462,7 +2643,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    fontSize: 14,
+    fontSize: 13,
     color: '#1E293B',
     borderWidth: 1,
     borderColor: '#E2E8F0',
@@ -1571,7 +2752,7 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   cardLabel: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: 'bold',
     color: '#64748B',
     textTransform: 'uppercase',
@@ -1654,7 +2835,7 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   calcTabText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: 'bold',
     color: '#64748B',
   },
@@ -1708,7 +2889,7 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   outputLabel: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: 'bold',
     color: '#64748B',
     textTransform: 'uppercase',
@@ -1834,6 +3015,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E2E8F0',
     marginBottom: 12,
+    width: '100%',
   },
   caseCardHeader: {
     flexDirection: 'row',
@@ -1894,6 +3076,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E2E8F0',
     marginBottom: 15,
+    width: '100%',
   },
   pkgName: {
     fontSize: 15,
@@ -1938,7 +3121,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#BE123C',
     textTransform: 'uppercase',
-    marginBottom: 10,
+    marginBottom: 4,
   },
   questionText: {
     fontSize: 14,
@@ -2078,7 +3261,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#1E293B',
   },
@@ -2086,7 +3269,7 @@ const styles = StyleSheet.create({
     padding: 6,
   },
   modalCloseText: {
-    color: '#64748B',
+    color: '#BE123C',
     fontSize: 14,
     fontWeight: 'bold',
   },
@@ -2105,5 +3288,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#FFFFFF',
+  },
+
+  // --- OSCE & Resources Extra Styles ---
+  studyContainer: {
+    flex: 1,
+  },
+  osceContainer: {
+    flex: 1,
+  },
+  resourcesContainer: {
+    flex: 1,
   },
 })
