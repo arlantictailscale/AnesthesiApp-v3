@@ -25,9 +25,29 @@ import {
   Clock,
   CheckCircle2,
   XCircle,
-  Landmark
+  Landmark,
+  Edit2,
+  Trash2,
+  Plus,
+  BookOpen,
+  Calendar,
+  ExternalLink,
+  History,
+  Award
 } from "lucide-react"
 import Link from "next/link"
+import { listPackages, deletePackage } from "@/lib/cbt/storage"
+import { listOsceStations, deleteOsceStation } from "@/lib/osce/storage"
+import type { CBTPackage } from "@/lib/cbt/default-data"
+import type { OsceStation } from "@/lib/osce/default-data"
+import { createClient } from "@/lib/supabase/client"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 interface UserProfile {
   id: string
@@ -58,9 +78,11 @@ interface PaymentRecord {
 }
 
 export default function AdminPage() {
-  const [activeTab, setActiveTab] = useState<"users" | "payments">("users")
+  const [activeTab, setActiveTab] = useState<"users" | "payments" | "cbt" | "osce">("users")
   const [users, setUsers] = useState<UserProfile[]>([])
   const [payments, setPayments] = useState<PaymentRecord[]>([])
+  const [cbtPackages, setCbtPackages] = useState<CBTPackage[]>([])
+  const [osceStations, setOsceStations] = useState<OsceStation[]>([])
   const [loading, setLoading] = useState(true)
   const [authorized, setAuthorized] = useState(false)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
@@ -73,7 +95,80 @@ export default function AdminPage() {
   const [updatingId, setUpdatingId] = useState<string | null>(null)
   const [syncingOrderId, setSyncingOrderId] = useState<string | null>(null)
 
+  // Selected user for attempts history modal
+  const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null)
+  const [userCbtAttempts, setUserCbtAttempts] = useState<any[]>([])
+  const [userOsceAttempts, setUserOsceAttempts] = useState<any[]>([])
+  const [loadingAttempts, setLoadingAttempts] = useState(false)
+  const [attemptsTab, setAttemptsTab] = useState<"cbt" | "osce">("cbt")
+
   const router = useRouter()
+
+  useEffect(() => {
+    if (!selectedUser) {
+      setUserCbtAttempts([])
+      setUserOsceAttempts([])
+      return
+    }
+
+    async function fetchAttempts() {
+      setLoadingAttempts(true)
+      try {
+        const supabase = createClient()
+        
+        // 1. Fetch CBT attempts
+        const { data: cbtData, error: cbtError } = await supabase
+          .from("cbt_attempts")
+          .select("*")
+          .eq("user_id", selectedUser.id)
+          .order("created_at", { ascending: false })
+
+        if (cbtError) throw cbtError
+
+        const mappedCbt = (cbtData || []).map((row: any) => {
+          const pkg = cbtPackages.find((p) => p.id === row.package_id)
+          return {
+            id: row.id,
+            user_id: row.user_id,
+            package_id: row.package_id,
+            package_name: pkg ? pkg.name : "Paket Kustom",
+            score: Number(row.score),
+            total_questions: row.total_questions,
+            correct_count: row.correct_count,
+            time_spent: row.time_spent,
+            created_at: row.created_at,
+          }
+        })
+        setUserCbtAttempts(mappedCbt)
+
+        // 2. Fetch OSCE attempts
+        const { data: osceData, error: osceError } = await supabase
+          .from("osce_attempts")
+          .select("*")
+          .eq("user_id", selectedUser.id)
+          .order("completed_at", { ascending: false })
+
+        if (osceError) throw osceError
+
+        const mappedOsce = (osceData || []).map((row: any) => {
+          const station = osceStations.find((s) => s.id === row.station_id)
+          return {
+            ...row,
+            station_title: station ? station.title : "Stasiun OSCE",
+          }
+        })
+        setUserOsceAttempts(mappedOsce)
+
+      } catch (err) {
+        console.error("Failed to load user attempts:", err)
+        toast.error("Gagal memuat riwayat ujian pengguna.")
+      } finally {
+        setLoadingAttempts(false)
+      }
+    }
+
+    fetchAttempts()
+  }, [selectedUser, cbtPackages, osceStations])
 
   // Verify auth and load all data
   async function loadAdminData() {
@@ -101,6 +196,12 @@ export default function AdminPage() {
       const data = await res.json()
       setUsers(data.users || [])
       setPayments(data.payments || [])
+
+      const pkgs = await listPackages()
+      setCbtPackages(pkgs)
+      const stns = await listOsceStations()
+      setOsceStations(stns)
+
       setAuthorized(true)
     } catch (err: any) {
       console.error(err)
@@ -273,6 +374,40 @@ export default function AdminPage() {
     }
   }, [users, payments])
 
+  const defaultCbtPackages = useMemo(() => {
+    return cbtPackages.filter(p => p.user_id === null || p.id === "default-national-exam")
+  }, [cbtPackages])
+
+  const defaultOsceStations = useMemo(() => {
+    return osceStations.filter(s => s.user_id === null)
+  }, [osceStations])
+
+  async function handleDeleteCbtPackage(id: string) {
+    if (!confirm("Apakah Anda yakin ingin menghapus paket CBT utama ini dari database?")) return
+    const toastId = toast.loading("Menghapus paket CBT...")
+    try {
+      await deletePackage(id)
+      toast.success("Paket CBT berhasil dihapus.", { id: toastId })
+      const pkgs = await listPackages()
+      setCbtPackages(pkgs)
+    } catch (err: any) {
+      toast.error(err.message || "Gagal menghapus paket CBT.", { id: toastId })
+    }
+  }
+
+  async function handleDeleteOsceStation(id: string) {
+    if (!confirm("Apakah Anda yakin ingin menghapus stasiun OSCE utama ini dari database?")) return
+    const toastId = toast.loading("Menghapus stasiun OSCE...")
+    try {
+      await deleteOsceStation(id)
+      toast.success("Stasiun OSCE berhasil dihapus.", { id: toastId })
+      const stns = await listOsceStations()
+      setOsceStations(stns)
+    } catch (err: any) {
+      toast.error(err.message || "Gagal menghapus stasiun OSCE.", { id: toastId })
+    }
+  }
+
   if (loading) {
     return (
       <AppShell>
@@ -330,18 +465,30 @@ export default function AdminPage() {
         </div>
 
         {/* Tabs Control */}
-        <div className="grid grid-cols-2 p-1 bg-card/25 rounded-xl border border-border/80 max-w-md">
+        <div className="grid grid-cols-2 sm:grid-cols-4 p-1 bg-card/25 rounded-xl border border-border/80 w-full max-w-2xl gap-1">
           <button
             onClick={() => setActiveTab("users")}
             className={`flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-lg transition-all ${activeTab === "users" ? "bg-background text-foreground shadow-xs border border-border/30" : "text-muted-foreground hover:text-foreground"}`}
           >
-            <Users className="h-3.5 w-3.5" /> User Directory ({stats.totalUsers})
+            <Users className="h-3.5 w-3.5" /> Users ({stats.totalUsers})
           </button>
           <button
             onClick={() => setActiveTab("payments")}
             className={`flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-lg transition-all ${activeTab === "payments" ? "bg-background text-foreground shadow-xs border border-border/30" : "text-muted-foreground hover:text-foreground"}`}
           >
-            <CreditCard className="h-3.5 w-3.5" /> Transaction Ledger ({stats.totalPayments})
+            <CreditCard className="h-3.5 w-3.5" /> Payments ({stats.totalPayments})
+          </button>
+          <button
+            onClick={() => setActiveTab("cbt")}
+            className={`flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-lg transition-all ${activeTab === "cbt" ? "bg-background text-foreground shadow-xs border border-border/30" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            <BookOpen className="h-3.5 w-3.5" /> Default CBT ({defaultCbtPackages.length})
+          </button>
+          <button
+            onClick={() => setActiveTab("osce")}
+            className={`flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-lg transition-all ${activeTab === "osce" ? "bg-background text-foreground shadow-xs border border-border/30" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            <ShieldCheck className="h-3.5 w-3.5" /> Default OSCE ({defaultOsceStations.length})
           </button>
         </div>
 
@@ -398,7 +545,7 @@ export default function AdminPage() {
             {/* Users table */}
             <div className="rounded-xl border border-border/80 bg-card/30 overflow-hidden shadow-xs">
               {/* Table Header (hidden on mobile) */}
-              <div className="hidden md:grid grid-cols-[1.2fr_120px_200px_1fr] gap-4 p-4 border-b border-border/60 bg-muted/20 text-xs font-bold text-muted-foreground uppercase tracking-wider">
+              <div className="hidden md:grid grid-cols-[1.1fr_100px_180px_1.5fr] gap-4 p-4 border-b border-border/60 bg-muted/20 text-xs font-bold text-muted-foreground uppercase tracking-wider">
                 <div>User Credentials</div>
                 <div>Role</div>
                 <div>Subscription Tier</div>
@@ -412,7 +559,7 @@ export default function AdminPage() {
                   </div>
                 ) : (
                   filteredUsers.map((profile) => (
-                    <div key={profile.id} className="grid grid-cols-1 md:grid-cols-[1.2fr_120px_200px_1fr] gap-3 md:gap-4 p-4 items-center hover:bg-muted/10 transition-colors">
+                    <div key={profile.id} className="grid grid-cols-1 md:grid-cols-[1.1fr_100px_180px_1.5fr] gap-3 md:gap-4 p-4 items-center hover:bg-muted/10 transition-colors">
                       
                       {/* User Credentials */}
                       <div className="flex flex-col min-w-0">
@@ -456,7 +603,7 @@ export default function AdminPage() {
                       </div>
 
                       {/* Action Controls */}
-                      <div className="flex flex-col sm:flex-row gap-2 md:justify-end mt-2 md:mt-0">
+                      <div className="flex flex-col sm:flex-row gap-2 md:justify-end mt-2 md:mt-0 items-end">
                         {/* Role Control */}
                         <div className="flex flex-col gap-1 w-full sm:w-auto">
                           <label className="text-[9px] font-bold text-muted-foreground uppercase">Set Permission Role</label>
@@ -464,7 +611,7 @@ export default function AdminPage() {
                             value={profile.role || "user"}
                             disabled={updatingId === profile.id || profile.id === currentUserId}
                             onChange={(e) => handleRoleChange(profile.id, e.target.value)}
-                            className="bg-background border border-border/80 rounded-lg text-[11px] font-bold px-2 py-1 outline-none text-foreground w-full sm:w-28 cursor-pointer disabled:opacity-50"
+                            className="bg-background border border-border/80 rounded-lg text-[11px] font-bold px-2 py-1.5 outline-none text-foreground w-full sm:w-28 cursor-pointer disabled:opacity-50"
                           >
                             <option value="user">User</option>
                             <option value="admin">Admin</option>
@@ -478,7 +625,7 @@ export default function AdminPage() {
                             value={profile.supporter_tier || "none"}
                             disabled={updatingId === profile.id}
                             onChange={(e) => handleTierChange(profile.id, e.target.value)}
-                            className="bg-background border border-border/80 rounded-lg text-[11px] font-bold px-2 py-1 outline-none text-foreground w-full sm:w-36 cursor-pointer disabled:opacity-50"
+                            className="bg-background border border-border/80 rounded-lg text-[11px] font-bold px-2 py-1.5 outline-none text-foreground w-full sm:w-36 cursor-pointer disabled:opacity-50"
                           >
                             <option value="none">None (Regular Plan)</option>
                             <option value="backer">Backer</option>
@@ -487,6 +634,18 @@ export default function AdminPage() {
                             <option value="platinum sponsor">Platinum Sponsor</option>
                             <option value="diamond sponsor">Diamond Sponsor</option>
                           </select>
+                        </div>
+
+                        {/* View History Button */}
+                        <div className="flex flex-col gap-1 w-full sm:w-auto justify-end">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setSelectedUser(profile)}
+                            className="text-[11px] font-bold h-[31px] px-3 gap-1 hover:bg-muted"
+                          >
+                            <History className="h-3.5 w-3.5" /> Riwayat
+                          </Button>
                         </div>
                       </div>
 
@@ -692,6 +851,311 @@ export default function AdminPage() {
             </div>
           </>
         )}
+
+        {activeTab === "cbt" && (
+          <div className="space-y-6">
+            {/* Header / Create Shortcut */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-card/30 border border-border/80 rounded-xl p-4 shadow-xs">
+              <div>
+                <h3 className="font-bold text-sm text-foreground">Manajemen Soal CBT Utama</h3>
+                <p className="text-xs text-muted-foreground mt-1">Daftar paket soal Computer-Based Test bawaan sistem yang tersedia secara nasional untuk seluruh pengguna.</p>
+              </div>
+              <Button asChild className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs h-9 gap-1.5 shrink-0 shadow-xs">
+                <Link href="/cbt/create">
+                  <Plus className="h-4 w-4" /> Buat Paket Default Baru
+                </Link>
+              </Button>
+            </div>
+
+            {/* List */}
+            <div className="rounded-xl border border-border/80 bg-card/30 overflow-hidden shadow-xs">
+              <div className="hidden md:grid grid-cols-[1fr_2fr_120px_150px] gap-4 p-4 border-b border-border/60 bg-muted/20 text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                <div>Nama Paket</div>
+                <div>Deskripsi</div>
+                <div>Jumlah Soal</div>
+                <div className="text-right">Aksi / Kontrol</div>
+              </div>
+              <div className="divide-y divide-border/60">
+                {defaultCbtPackages.length === 0 ? (
+                  <div className="p-8 text-center text-sm text-muted-foreground font-semibold">
+                    Tidak ada paket CBT utama yang ditemukan.
+                  </div>
+                ) : (
+                  defaultCbtPackages.map((pkg) => (
+                    <div key={pkg.id} className="grid grid-cols-1 md:grid-cols-[1fr_2fr_120px_150px] gap-3 md:gap-4 p-4 items-center hover:bg-muted/10 transition-colors">
+                      <div className="flex flex-col">
+                        <span className="font-bold text-xs text-foreground">{pkg.name}</span>
+                        <span className="text-[9px] text-muted-foreground font-mono mt-1 uppercase">ID: {pkg.id}</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground line-clamp-2">
+                        {pkg.description || <span className="italic text-muted-foreground/45">Tidak ada deskripsi</span>}
+                      </div>
+                      <div className="text-xs font-semibold text-foreground">
+                        {pkg.questions.length} Butir Soal
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button asChild size="sm" variant="outline" className="h-8 text-xs font-bold border-border/80 hover:bg-muted">
+                          <Link href={`/cbt/create?edit=${pkg.id}`}>
+                            <Edit2 className="h-3.5 w-3.5 mr-1" /> Edit
+                          </Link>
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDeleteCbtPackage(pkg.id)}
+                          className="h-8 text-xs font-bold"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "osce" && (
+          <div className="space-y-6">
+            {/* Header / Create Shortcut */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-card/30 border border-border/80 rounded-xl p-4 shadow-xs">
+              <div>
+                <h3 className="font-bold text-sm text-foreground">Manajemen Stasiun OSCE Utama</h3>
+                <p className="text-xs text-muted-foreground mt-1">Daftar stasiun ujian OSCE bawaan sistem yang tersedia secara nasional untuk seluruh pengguna.</p>
+              </div>
+              <Button asChild className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs h-9 gap-1.5 shrink-0 shadow-xs">
+                <Link href="/osce/create">
+                  <Plus className="h-4 w-4" /> Buat Stasiun Default Baru
+                </Link>
+              </Button>
+            </div>
+
+            {/* List */}
+            <div className="rounded-xl border border-border/80 bg-card/30 overflow-hidden shadow-xs">
+              <div className="hidden md:grid grid-cols-[1.5fr_1fr_120px_150px] gap-4 p-4 border-b border-border/60 bg-muted/20 text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                <div>Nama Stasiun</div>
+                <div>Kategori</div>
+                <div>Aspek Rubrik</div>
+                <div className="text-right">Aksi / Kontrol</div>
+              </div>
+              <div className="divide-y divide-border/60">
+                {defaultOsceStations.length === 0 ? (
+                  <div className="p-8 text-center text-sm text-muted-foreground font-semibold">
+                    Tidak ada stasiun OSCE utama yang ditemukan.
+                  </div>
+                ) : (
+                  defaultOsceStations.map((station) => (
+                    <div key={station.id} className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr_120px_150px] gap-3 md:gap-4 p-4 items-center hover:bg-muted/10 transition-colors">
+                      <div className="flex flex-col">
+                        <span className="font-bold text-xs text-foreground">{station.title}</span>
+                        <span className="text-[9px] text-muted-foreground font-mono mt-1 uppercase">ID: {station.id}</span>
+                      </div>
+                      <div>
+                        <Badge variant="secondary" className="text-[10px] font-semibold bg-primary/10 text-primary border-primary/20">
+                          {station.category}
+                        </Badge>
+                      </div>
+                      <div className="text-xs font-semibold text-foreground">
+                        {station.rubric?.length || 0} Aspek Penilaian
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button asChild size="sm" variant="outline" className="h-8 text-xs font-bold border-border/80 hover:bg-muted">
+                          <Link href={`/osce/create?edit=${station.id}`}>
+                            <Edit2 className="h-3.5 w-3.5 mr-1" /> Edit
+                          </Link>
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDeleteOsceStation(station.id)}
+                          className="h-8 text-xs font-bold"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* User Exam History Dialog Modal */}
+        <Dialog open={!!selectedUser} onOpenChange={(open) => !open && setSelectedUser(null)}>
+          <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto bg-background/95 backdrop-blur-md border border-border shadow-2xl rounded-2xl p-6">
+            <DialogHeader className="border-b border-border/60 pb-4">
+              <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                <History className="h-5 w-5 text-red-500" />
+                Riwayat Ujian Pengguna
+              </DialogTitle>
+              {selectedUser && (
+                <DialogDescription className="text-xs text-muted-foreground mt-1">
+                  Nama: <span className="font-semibold text-foreground">{selectedUser.full_name || "Tanpa Nama"}</span> · Email: <span className="font-semibold text-foreground">{selectedUser.email}</span>
+                </DialogDescription>
+              )}
+            </DialogHeader>
+
+            {selectedUser && (
+              <div className="space-y-6 mt-4">
+                {/* Segmented Tab Controls */}
+                <div className="flex p-1 bg-card/45 rounded-xl border border-border/80 w-full max-w-xs gap-1">
+                  <button
+                    onClick={() => setAttemptsTab("cbt")}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-lg transition-all ${attemptsTab === "cbt" ? "bg-background text-foreground shadow-xs border border-border/30" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    <BookOpen className="h-3.5 w-3.5" /> CBT Simulator ({userCbtAttempts.length})
+                  </button>
+                  <button
+                    onClick={() => setAttemptsTab("osce")}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-lg transition-all ${attemptsTab === "osce" ? "bg-background text-foreground shadow-xs border border-border/30" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    <ShieldCheck className="h-3.5 w-3.5" /> OSCE Prep ({userOsceAttempts.length})
+                  </button>
+                </div>
+
+                {loadingAttempts ? (
+                  <div className="flex h-[30vh] flex-col items-center justify-center gap-3">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <p className="text-xs text-muted-foreground font-medium">Memuat riwayat ujian...</p>
+                  </div>
+                ) : attemptsTab === "cbt" ? (
+                  /* CBT Attempts List */
+                  userCbtAttempts.length === 0 ? (
+                    <div className="p-8 text-center border border-dashed border-border rounded-xl bg-card/20">
+                      <p className="text-muted-foreground text-xs font-medium">Belum ada riwayat CBT untuk pengguna ini.</p>
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-border bg-card/30 overflow-hidden shadow-xs">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs text-left">
+                          <thead className="bg-muted text-[10px] uppercase font-bold text-muted-foreground border-b border-border">
+                            <tr>
+                              <th className="px-4 py-3">Paket Ujian</th>
+                              <th className="px-4 py-3">Tanggal</th>
+                              <th className="px-4 py-3">Durasi</th>
+                              <th className="px-4 py-3">Skor</th>
+                              <th className="px-4 py-3 text-right">Detail</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-border/60">
+                            {userCbtAttempts.map((att) => {
+                              const minutes = Math.floor(att.time_spent / 60)
+                              const seconds = att.time_spent % 60
+                              const durationStr = `${minutes}m ${seconds}s`
+                              const isPassed = att.score >= 70
+
+                              return (
+                                <tr key={att.id} className="hover:bg-muted/10 transition-colors">
+                                  <td className="px-4 py-3.5 font-semibold text-foreground max-w-[200px] truncate">
+                                    {att.package_name}
+                                  </td>
+                                  <td className="px-4 py-3.5 text-muted-foreground whitespace-nowrap">
+                                    <div className="flex items-center gap-1">
+                                      <Calendar className="h-3 w-3" />
+                                      {new Date(att.created_at).toLocaleDateString("id-ID", {
+                                        day: "numeric",
+                                        month: "short",
+                                        year: "numeric",
+                                        hour: "2-digit",
+                                        minute: "2-digit"
+                                      })}
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-3.5 text-muted-foreground whitespace-nowrap">
+                                    <div className="flex items-center gap-1">
+                                      <Clock className="h-3 w-3" />
+                                      {durationStr}
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-3.5 whitespace-nowrap">
+                                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${isPassed ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"}`}>
+                                      {att.score}% · {isPassed ? "LULUS" : "GAGAL"}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3.5 text-right whitespace-nowrap">
+                                    <Button asChild variant="outline" size="sm" className="h-7 text-[10px] font-bold px-2 py-1 gap-1">
+                                      <a href={`/cbt/results/${att.id}`} target="_blank" rel="noopener noreferrer">
+                                        Detail <ExternalLink className="h-2.5 w-2.5" />
+                                      </a>
+                                    </Button>
+                                  </td>
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )
+                ) : (
+                  /* OSCE Attempts List */
+                  userOsceAttempts.length === 0 ? (
+                    <div className="p-8 text-center border border-dashed border-border rounded-xl bg-card/20">
+                      <p className="text-muted-foreground text-xs font-medium">Belum ada riwayat OSCE untuk pengguna ini.</p>
+                    </div>
+                  ) : (
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {userOsceAttempts.map((a) => {
+                        const pct = Math.round((a.total_score / a.max_score) * 100)
+                        let scoreColor = "text-red-500 bg-red-500/10"
+                        if (pct >= 80) scoreColor = "text-emerald-500 bg-emerald-500/10"
+                        else if (pct >= 60) scoreColor = "text-yellow-600 bg-yellow-500/10"
+
+                        const diffSec = Math.round((new Date(a.completed_at).getTime() - new Date(a.started_at).getTime()) / 1000)
+                        const min = Math.floor(diffSec / 60)
+                        const sec = diffSec % 60
+                        const durationStr = `${min}m ${sec}s`
+
+                        return (
+                          <Card key={a.id} className="p-3.5 border border-border bg-card/40 hover:bg-card/60 transition-all text-xs flex flex-col justify-between">
+                            <div>
+                              <div className="flex justify-between items-start gap-2 mb-2">
+                                <span className="font-bold text-foreground line-clamp-1 block text-left" title={a.station_title}>
+                                  {a.station_title}
+                                </span>
+                                <Badge className={`font-extrabold text-[11px] px-1.5 py-0.5 shrink-0 rounded-md ${scoreColor}`} variant="outline">
+                                  {pct}%
+                                </Badge>
+                              </div>
+                              
+                              <div className="grid grid-cols-2 gap-1 text-[10px] text-muted-foreground font-semibold border-b border-border/40 pb-2 mb-2">
+                                <div className="flex items-center gap-1">
+                                  <Calendar className="h-3 w-3" />
+                                  <span>{new Date(a.completed_at).toLocaleDateString()}</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  <span>{durationStr}</span>
+                                </div>
+                              </div>
+                              
+                              {a.feedback && (
+                                <p className="text-[10px] text-muted-foreground line-clamp-3 italic leading-relaxed mb-3 text-left">
+                                  "{a.feedback}"
+                                </p>
+                              )}
+                            </div>
+
+                            <div className="flex justify-between items-center mt-auto pt-2 border-t border-border/40">
+                              <span className="text-[10px] font-bold text-foreground">Score: {a.total_score}/{a.max_score}</span>
+                              <Button asChild variant="outline" size="sm" className="h-7 text-[10px] font-bold px-2 py-1 gap-1">
+                                <a href={`/osce/practice/${a.station_id}?attempt=${a.id}`} target="_blank" rel="noopener noreferrer">
+                                  Buka Evaluasi <ExternalLink className="h-2.5 w-2.5" />
+                                </a>
+                              </Button>
+                            </div>
+                          </Card>
+                        )
+                      })}
+                    </div>
+                  )
+                )}
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
 
       </div>
     </AppShell>

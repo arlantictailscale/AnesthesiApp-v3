@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { DEFAULT_AI_MODEL } from "@/lib/ai-models"
-import { callAiModel, extractJson } from "@/lib/ai"
+import { callAiModel } from "@/lib/ai"
 
 export const runtime = "nodejs"
 export const maxDuration = 60
@@ -39,6 +39,17 @@ JSON Schema Response:
 }
 `.trim()
 
+function extractJson(text: string): any {
+  const trimmed = text.trim()
+  const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i)
+  const body = fenced ? fenced[1] : trimmed
+  const firstBrace = body.indexOf("{")
+  const lastBrace = body.lastIndexOf("}")
+  if (firstBrace === -1 || lastBrace === -1) {
+    throw new Error("Model did not return a valid JSON object")
+  }
+  return JSON.parse(body.slice(firstBrace, lastBrace + 1))
+}
 
 export async function POST(req: Request) {
   let body: {

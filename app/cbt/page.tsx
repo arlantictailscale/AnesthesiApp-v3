@@ -55,6 +55,7 @@ export default function CBTDashboardPage() {
   const [loading, setLoading] = useState(true)
   const [activeProgressMap, setActiveProgressMap] = useState<Record<string, boolean>>({})
   const [currentUser, setCurrentUser] = useState<any>(null)
+  const [userRole, setUserRole] = useState<string>("user")
   const [ratingsMap, setRatingsMap] = useState<Record<string, { average: number; count: number }>>({})
   const [discussionPkg, setDiscussionPkg] = useState<CBTPackage | null>(null)
 
@@ -71,6 +72,15 @@ export default function CBTDashboardPage() {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       setCurrentUser(user)
+
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .maybeSingle()
+        setUserRole(profile?.role || "user")
+      }
 
       // Load ratings in parallel
       const ratingsData = await Promise.all(
@@ -320,7 +330,7 @@ export default function CBTDashboardPage() {
                           <span>{rInfo.count > 0 ? rInfo.average : "0.0"}</span>
                           <span className="text-[10px] text-muted-foreground font-normal">({rInfo.count})</span>
                         </div>
-                        {!isDefault && (!pkg.creator_email || (currentUser?.email && pkg.creator_email === currentUser.email)) && (
+                        {((!isDefault && (!pkg.creator_email || (currentUser?.email && pkg.creator_email === currentUser.email))) || userRole === "admin") && (
                           <div className="flex items-center gap-0.5 shrink-0">
                             <Button
                               asChild

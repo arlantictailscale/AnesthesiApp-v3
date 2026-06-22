@@ -103,6 +103,25 @@ function CBTCreatePageContent() {
 
   const [saving, setSaving] = useState(false)
   const [loadingPackage, setLoadingPackage] = useState(!!editId)
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [isDefault, setIsDefault] = useState(false)
+
+  // Check admin status
+  useEffect(() => {
+    async function checkAdmin() {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .maybeSingle()
+        setIsAdmin(profile?.role === "admin")
+      }
+    }
+    checkAdmin()
+  }, [])
 
   // Load existing package for editing
   useEffect(() => {
@@ -116,6 +135,7 @@ function CBTCreatePageContent() {
           setName(p.name)
           setDescription(p.description || "")
           setQuestions(p.questions)
+          setIsDefault(p.user_id === null)
         } else {
           toast.error("Paket soal tidak ditemukan.")
           router.push("/cbt")
@@ -448,10 +468,10 @@ function CBTCreatePageContent() {
     setSaving(true)
     try {
       if (editId) {
-        await updatePackage(editId, name.trim(), description.trim(), questions)
+        await updatePackage(editId, name.trim(), description.trim(), questions, isDefault)
         toast.success("Paket ujian kustom berhasil diperbarui!")
       } else {
-        await createPackage(name.trim(), description.trim(), questions)
+        await createPackage(name.trim(), description.trim(), questions, isDefault)
         toast.success("Paket ujian kustom berhasil disimpan dan dipublikasikan!")
       }
       router.push("/cbt")
@@ -555,6 +575,20 @@ function CBTCreatePageContent() {
                     className="h-16"
                   />
                 </div>
+                {isAdmin && (
+                  <div className="flex items-center gap-2 border border-dashed border-red-500/20 bg-red-500/5 p-3 rounded-lg mt-4">
+                    <input
+                      type="checkbox"
+                      id="is-default-pkg"
+                      checked={isDefault}
+                      onChange={(e) => setIsDefault(e.target.checked)}
+                      className="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500 cursor-pointer"
+                    />
+                    <Label htmlFor="is-default-pkg" className="text-xs font-bold text-red-600 dark:text-red-400 cursor-pointer">
+                      Simpan sebagai Paket Utama / Sistem (Default) - Admin Only
+                    </Label>
+                  </div>
+                )}
               </CardContent>
             </Card>
 

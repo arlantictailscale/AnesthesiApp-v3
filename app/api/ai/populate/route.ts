@@ -1,6 +1,6 @@
 import { NextResponse, after } from "next/server"
 import { AI_MODELS, DEFAULT_AI_MODEL, type AiModelId } from "@/lib/ai-models"
-import { callAiModel, extractJson } from "@/lib/ai"
+import { callAiModel } from "@/lib/ai"
 import { createClient } from "@/lib/supabase/server"
 
 export const runtime = "nodejs"
@@ -241,6 +241,18 @@ function isAllowedModel(id: string): id is AiModelId {
   return AI_MODELS.some((m) => m.id === id)
 }
 
+function extractJson(text: string): unknown {
+  const trimmed = text.trim()
+  // Strip ```json fences if the model added them despite instructions.
+  const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i)
+  const body = fenced ? fenced[1] : trimmed
+  const firstBrace = body.indexOf("{")
+  const lastBrace = body.lastIndexOf("}")
+  if (firstBrace === -1 || lastBrace === -1) {
+    throw new Error("Model did not return JSON")
+  }
+  return JSON.parse(body.slice(firstBrace, lastBrace + 1))
+}
 
 export async function POST(req: Request) {
   const startTime = Date.now()
@@ -307,50 +319,28 @@ export async function POST(req: Request) {
   }
 
   after(async () => {
-    let actualModelUsed = model
     try {
-      let content = ""
-      let parsed: any
+      const aiResult = await callAiModel({
+        model,
+        temperature: 0.1,
+        jsonMode: true,
+        origin,
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: description },
+        ],
+      })
+      const content = aiResult.content
+      if (!content) {
+        throw new Error("Empty response from AI model")
+      }
 
+      let parsed: any
       try {
-        const aiResult = await callAiModel({
-          model,
-          temperature: 0.1,
-          jsonMode: true,
-          origin,
-          messages: [
-            { role: "system", content: SYSTEM_PROMPT },
-            { role: "user", content: description },
-          ],
-        })
-        content = aiResult.content
-        if (!content) {
-          throw new Error("Empty response from AI model")
-        }
         parsed = extractJson(content)
-      } catch (firstErr) {
-        console.warn(`[v0] AI populate failed with model ${model}, falling back to default model ${DEFAULT_AI_MODEL}. Error:`, firstErr)
-        
-        if (model !== DEFAULT_AI_MODEL) {
-          actualModelUsed = DEFAULT_AI_MODEL
-          const fallbackResult = await callAiModel({
-            model: DEFAULT_AI_MODEL,
-            temperature: 0.1,
-            jsonMode: true,
-            origin,
-            messages: [
-              { role: "system", content: SYSTEM_PROMPT },
-              { role: "user", content: description },
-            ],
-          })
-          content = fallbackResult.content
-          if (!content) {
-            throw new Error("Empty response from fallback AI model")
-          }
-          parsed = extractJson(content)
-        } else {
-          throw firstErr
-        }
+      } catch (err) {
+        console.error("[v0] Failed to parse model JSON:", content)
+        throw err
       }
 
       // Defensive parsing and coercion of LLM values
@@ -452,7 +442,7 @@ export async function POST(req: Request) {
         .update({
           ...parsedUpdate,
           status: "completed",
-          ai_model: actualModelUsed,
+          ai_model: model,
           ai_duration_seconds: Number(((Date.now() - startTime) / 1000).toFixed(1)),
         })
         .eq("id", caseRow.id)
@@ -464,7 +454,7 @@ export async function POST(req: Request) {
           .update({
             status: "failed",
             error_message: updateError.message,
-            ai_model: actualModelUsed,
+            ai_model: model,
             ai_duration_seconds: Number(((Date.now() - startTime) / 1000).toFixed(1)),
           })
           .eq("id", caseRow.id)
@@ -477,7 +467,7 @@ export async function POST(req: Request) {
         .update({
           status: "failed",
           error_message: errMsg,
-          ai_model: actualModelUsed,
+          ai_model: model,
           ai_duration_seconds: Number(((Date.now() - startTime) / 1000).toFixed(1)),
         })
         .eq("id", caseRow.id)

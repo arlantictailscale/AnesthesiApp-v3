@@ -101,6 +101,25 @@ function OSCECreatePageContent() {
 
   const [saving, setSaving] = useState(false)
   const [loadingStation, setLoadingStation] = useState(!!editId)
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [isDefault, setIsDefault] = useState(false)
+
+  // Check admin status
+  useEffect(() => {
+    async function checkAdmin() {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .maybeSingle()
+        setIsAdmin(profile?.role === "admin")
+      }
+    }
+    checkAdmin()
+  }, [])
 
   // Load existing station for editing
   useEffect(() => {
@@ -118,6 +137,7 @@ function OSCECreatePageContent() {
           setInstructionsExaminer(s.instructions_examiner)
           setEquipmentList(s.equipment || [])
           setRubricItems(s.rubric || [])
+          setIsDefault(s.user_id === null)
         } else {
           toast.error("Stasiun OSCE tidak ditemukan.")
           router.push("/osce")
@@ -345,10 +365,10 @@ function OSCECreatePageContent() {
       }
 
       if (editId) {
-        await updateOsceStation(editId, stationPayload)
+        await updateOsceStation(editId, stationPayload, isDefault)
         toast.success("Stasiun OSCE kustom berhasil diperbarui!")
       } else {
-        await createOsceStation(stationPayload)
+        await createOsceStation(stationPayload, isDefault)
         toast.success("Stasiun OSCE kustom berhasil disimpan dan dipublikasikan!")
       }
       router.push("/osce")
@@ -514,6 +534,20 @@ function OSCECreatePageContent() {
                     className="h-20"
                   />
                 </div>
+                {isAdmin && (
+                  <div className="flex items-center gap-2 border border-dashed border-red-500/20 bg-red-500/5 p-3 rounded-lg mt-4">
+                    <input
+                      type="checkbox"
+                      id="is-default-station"
+                      checked={isDefault}
+                      onChange={(e) => setIsDefault(e.target.checked)}
+                      className="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500 cursor-pointer"
+                    />
+                    <Label htmlFor="is-default-station" className="text-xs font-bold text-red-600 dark:text-red-400 cursor-pointer">
+                      Simpan sebagai Stasiun Utama / Sistem (Default) - Admin Only
+                    </Label>
+                  </div>
+                )}
               </CardContent>
             </Card>
 

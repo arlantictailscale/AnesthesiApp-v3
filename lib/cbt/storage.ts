@@ -102,6 +102,7 @@ export async function listPackages(): Promise<CBTPackage[]> {
         description: row.description || "",
         questions: row.questions as CBTQuestion[],
         creator_email: row.creator_email || undefined,
+        user_id: row.user_id,
       }))
     }
   } catch (err) {
@@ -133,12 +134,14 @@ export async function createPackage(
   name: string,
   description: string,
   questions: CBTQuestion[],
+  isDefault: boolean = false,
 ): Promise<CBTPackage> {
   const newPkg: CBTPackage = {
     id: generateId(),
     name,
     description,
     questions,
+    user_id: isDefault ? null : undefined,
   }
 
   let savedInDb = false
@@ -148,13 +151,14 @@ export async function createPackage(
     const { data: { user } } = await supabase.auth.getUser()
 
     if (user) {
-      newPkg.creator_email = user.email || undefined
+      newPkg.creator_email = isDefault ? undefined : (user.email || undefined)
+      newPkg.user_id = isDefault ? null : user.id
       const payload = {
         name,
         description,
         questions,
-        user_id: user.id,
-        creator_email: user.email || null,
+        user_id: isDefault ? null : user.id,
+        creator_email: isDefault ? null : (user.email || null),
       }
       const { data, error } = await supabase
         .from("cbt_packages")
@@ -191,12 +195,14 @@ export async function updatePackage(
   name: string,
   description: string,
   questions: CBTQuestion[],
+  isDefault: boolean = false,
 ): Promise<CBTPackage> {
   const updatedPkg: CBTPackage = {
     id,
     name,
     description,
     questions,
+    user_id: isDefault ? null : undefined,
   }
 
   let savedInDb = false
@@ -206,13 +212,30 @@ export async function updatePackage(
     const { data: { user } } = await supabase.auth.getUser()
 
     if (user) {
-      updatedPkg.creator_email = user.email || undefined
+      // Get existing to determine original user_id if we aren't forcing default
+      let finalUserId: string | null = user.id
+      if (isDefault) {
+        finalUserId = null
+      } else {
+        const { data: existingPkg } = await supabase
+          .from("cbt_packages")
+          .select("user_id")
+          .eq("id", id)
+          .maybeSingle()
+        if (existingPkg) {
+          finalUserId = existingPkg.user_id
+        }
+      }
+
+      updatedPkg.creator_email = finalUserId === null ? undefined : (user.email || undefined)
+      updatedPkg.user_id = finalUserId
+
       const payload = {
         name,
         description,
         questions,
-        user_id: user.id,
-        creator_email: user.email || null,
+        user_id: finalUserId,
+        creator_email: finalUserId === null ? null : (user.email || null),
       }
       
       const { data, error } = await supabase

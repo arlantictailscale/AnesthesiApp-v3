@@ -193,14 +193,15 @@ export async function saveOsceAttempt(
  * Creates and saves a new custom OSCE station
  */
 export async function createOsceStation(
-  station: Omit<OsceStation, "id" | "user_id" | "created_at" | "updated_at">
+  station: Omit<OsceStation, "id" | "user_id" | "created_at" | "updated_at">,
+  isDefault: boolean = false
 ): Promise<OsceStation> {
   const newStation: OsceStation = {
     ...station,
     id: typeof crypto !== "undefined" && typeof crypto.randomUUID === "function" 
       ? crypto.randomUUID() 
       : Math.random().toString(36).substring(2, 15),
-    user_id: "",
+    user_id: isDefault ? null : "",
   }
 
   let savedInDb = false
@@ -210,8 +211,8 @@ export async function createOsceStation(
     const { data: { user } } = await supabase.auth.getUser()
 
     if (user) {
-      newStation.user_id = user.id
-      newStation.creator_email = user.email || undefined
+      newStation.user_id = isDefault ? null : user.id
+      newStation.creator_email = isDefault ? undefined : (user.email || undefined)
       const payload = {
         title: station.title,
         category: station.category,
@@ -221,8 +222,8 @@ export async function createOsceStation(
         instructions_examiner: station.instructions_examiner,
         rubric: station.rubric,
         equipment: station.equipment,
-        user_id: user.id,
-        creator_email: user.email || null,
+        user_id: isDefault ? null : user.id,
+        creator_email: isDefault ? null : (user.email || null),
       }
       const { data, error } = await supabase
         .from("osce_stations")
@@ -256,7 +257,8 @@ export async function createOsceStation(
  */
 export async function updateOsceStation(
   id: string,
-  station: Partial<Omit<OsceStation, "id" | "user_id" | "created_at" | "updated_at">>
+  station: Partial<Omit<OsceStation, "id" | "created_at" | "updated_at">>,
+  isDefault: boolean = false
 ): Promise<OsceStation> {
   let savedInDb = false
   let updatedStation: OsceStation | null = null
@@ -266,9 +268,25 @@ export async function updateOsceStation(
     const { data: { user } } = await supabase.auth.getUser()
 
     if (user) {
+      // Get existing to determine original user_id if we aren't forcing default
+      let finalUserId: string | null = user.id
+      if (isDefault) {
+        finalUserId = null
+      } else {
+        const { data: existing } = await supabase
+          .from("osce_stations")
+          .select("user_id")
+          .eq("id", id)
+          .maybeSingle()
+        if (existing) {
+          finalUserId = existing.user_id
+        }
+      }
+
       const payload = {
         ...station,
-        creator_email: user.email || null,
+        user_id: finalUserId,
+        creator_email: finalUserId === null ? null : (user.email || null),
         updated_at: new Date().toISOString(),
       }
       

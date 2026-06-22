@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { DEFAULT_AI_MODEL } from "@/lib/ai-models"
-import { callAiModel, extractJson } from "@/lib/ai"
+import { callAiModel } from "@/lib/ai"
 
 export const runtime = "nodejs"
 export const maxDuration = 60
@@ -69,6 +69,17 @@ Note:
 3. Checklists should have detailed concrete items in Bahasa Indonesia to verify candidates' performance.
 `
 
+function extractJson(text: string): unknown {
+  const trimmed = text.trim()
+  const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i)
+  const body = fenced ? fenced[1] : trimmed
+  const firstBrace = body.indexOf("{")
+  const lastBrace = body.lastIndexOf("}")
+  if (firstBrace === -1 || lastBrace === -1) {
+    throw new Error("Model did not return a JSON object")
+  }
+  return JSON.parse(body.slice(firstBrace, lastBrace + 1))
+}
 
 export async function POST(req: Request) {
   let body: { topic?: string }
