@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { listSupporters, type Supporter } from "@/lib/storage"
+import { listSupporters, getSession, getUserProfile, type Supporter } from "@/lib/storage"
 import { Heart, Landmark, Globe, Loader2, Sparkles, AlertCircle, Check, HelpCircle } from "lucide-react"
 import Link from "next/link"
 import { Logo } from "@/components/logo"
@@ -86,6 +86,18 @@ export default function SupportUsPage() {
     try {
       const data = await listSupporters()
       setSupporters(data)
+
+      const session = await getSession()
+      if (session) {
+        const profile = await getUserProfile(session.userId)
+        if (profile) {
+          if (profile.full_name) {
+            setName(profile.full_name)
+          } else if (session.email) {
+            setName(session.email.split("@")[0])
+          }
+        }
+      }
     } catch (err) {
       console.error(err)
     } finally {

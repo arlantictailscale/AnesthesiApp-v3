@@ -32,8 +32,13 @@ export async function POST(request: Request) {
     // Initialize Supabase and lookup current user credentials
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    const userId = user?.id || null
-    const email = user?.email || "anonymous@anesthesiapp.my.id"
+    
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized. Please log in to make a support contribution." }, { status: 401 })
+    }
+
+    const userId = user.id
+    const email = user.email || "anonymous@anesthesiapp.my.id"
 
     // iPaymu API Setup
     const ipaymuConfig = getIPaymuConfig()
