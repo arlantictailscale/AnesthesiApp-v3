@@ -83,7 +83,7 @@ export default function PaymentHistoryPage() {
       await loadPayments()
     } catch (err) {
       console.error(err)
-      const message = err instanceof Error ? err.message : "Failed to sync payment status with DOKU."
+      const message = err instanceof Error ? err.message : "Failed to sync payment status with iPaymu."
       toast.error(message, { id: toastId })
     } finally {
       setSyncingId(null)
@@ -113,7 +113,7 @@ export default function PaymentHistoryPage() {
           <div>
             <h1 className="text-3xl font-extrabold tracking-tight text-foreground md:text-4xl">Payment History</h1>
             <p className="text-sm text-muted-foreground mt-1.5">
-              Manage your supporter subscriptions, check pending DOKU payments, and view badge statuses.
+              Manage your supporter subscriptions, check pending iPaymu payments, and view badge statuses.
             </p>
           </div>
           <Button onClick={loadPayments} variant="outline" size="sm" className="gap-1.5 h-9 font-semibold shrink-0">
@@ -313,9 +313,9 @@ export default function PaymentHistoryPage() {
                   <div className="flex gap-3 items-start text-xs text-muted-foreground leading-normal">
                     <AlertCircle className="h-4.5 w-4.5 text-primary shrink-0 mt-0.5" />
                     <div>
-                      <p className="font-bold text-foreground mb-1">DOKU Payment Settlements</p>
+                      <p className="font-bold text-foreground mb-1">iPaymu Payment Settlements</p>
                       <p>
-                        Most payments settle within seconds. If you made a payment but your badge remains "Pending", use the <strong>"Check Status"</strong> button next to the order above to pull the latest state from DOKU. For support queries, please contact <span className="font-semibold text-foreground">support@anesthesiapp.my.id</span>.
+                        Most payments settle within seconds. If you made a payment but your badge remains "Pending", use the <strong>"Check Status"</strong> button next to the order above to pull the latest state from iPaymu. For support queries, please contact <span className="font-semibold text-foreground">support@anesthesiapp.my.id</span>.
                       </p>
                     </div>
                   </div>

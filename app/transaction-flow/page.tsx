@@ -76,7 +76,7 @@ export default function TransactionFlowPage() {
             <div className="text-xs sm:text-right text-muted-foreground font-mono bg-muted/40 p-3 rounded-lg border">
               <div>Document ID: AA-TX-FLOW-2026</div>
               <div>Generated: June 20, 2026</div>
-              <div>Gateway Partner: DOKU Checkout</div>
+              <div>Gateway Partner: iPaymu</div>
             </div>
           </div>
         </div>
@@ -144,7 +144,7 @@ export default function TransactionFlowPage() {
             </div>
             <div className="p-3 bg-muted/30 border rounded-lg flex flex-col items-center gap-2 justify-center">
               <CreditCard className="h-5 w-5 text-primary" />
-              <span>4. DOKU Checkout Page</span>
+              <span>4. iPaymu Checkout Page</span>
             </div>
             <div className="p-3 bg-emerald-500/10 border-emerald-500/20 border rounded-lg flex flex-col items-center gap-2 justify-center text-emerald-800 dark:text-emerald-400">
               <CheckCircle2 className="h-5 w-5 text-emerald-500" />
@@ -209,12 +209,12 @@ export default function TransactionFlowPage() {
               <h3 className="font-bold text-base">Initiate Secure Checkout Session</h3>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              The user enters their billing name and profile details and clicks **"Upgrade & Pay"**. The frontend posts a request to the backend API endpoint (<code>/api/support/checkout</code>). The server creates a pending record in the Supabase database and requests a secure checkout session URL from the DOKU payment endpoints.
+              The user enters their billing name and profile details and clicks **"Upgrade & Pay"**. The frontend posts a request to the backend API endpoint (<code>/api/support/checkout</code>). The server creates a pending record in the Supabase database and requests a secure checkout session URL from the iPaymu payment endpoints.
             </p>
             <div className="rounded-lg border bg-muted/20 p-4 font-mono text-[9px] text-muted-foreground space-y-1">
-              <div className="border-b pb-1 font-bold text-foreground">Backend Request to DOKU Checkout API</div>
-              <div>POST https://api-sandbox.doku.com/checkout/v1/payment</div>
-              <div>Body: &#123; "order": &#123; "invoice_number": "SUPPORT-8C2A", "amount": 150000, "callback_url": "..." &#125;, "customer": &#123; "name": "Dr. Jane Mercer", "email": "jane@example.com" &#125; &#125;</div>
+              <div className="border-b pb-1 font-bold text-foreground">Backend Request to iPaymu Checkout API</div>
+              <div>POST https://sandbox.ipaymu.com/api/v2/payment</div>
+              <div>Body: &#123; "product": ["Sponsor"], "price": [150000], "referenceId": "SUPPORT-8C2A", "notifyUrl": "...", "returnUrl": "..." &#125;</div>
             </div>
           </div>
 
@@ -222,14 +222,14 @@ export default function TransactionFlowPage() {
           <div className="border rounded-xl p-5 bg-card print-card flex flex-col gap-3">
             <div className="flex items-center gap-2">
               <span className="h-6 w-6 rounded-full bg-primary/10 text-primary font-mono font-bold flex items-center justify-center text-xs">04</span>
-              <h3 className="font-bold text-base">DOKU Checkout Page Redirect</h3>
+              <h3 className="font-bold text-base">iPaymu Checkout Page Redirect</h3>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              The user is redirected to the DOKU-hosted Checkout page. The user is displayed the merchant details, order ID, and the exact price in IDR. They complete the transaction using QRIS, Credit Card, ShopeePay, GoPay, or Virtual Accounts.
+              The user is redirected to the iPaymu-hosted Checkout page. The user is displayed the merchant details, order ID, and the exact price in IDR. They complete the transaction using QRIS, Credit Card, ShopeePay, GoPay, or Virtual Accounts.
             </p>
             <div className="rounded-lg border border-amber-500/20 bg-amber-500/[0.02] p-4 font-mono text-[10px] space-y-1.5 max-w-sm mx-auto w-full">
               <div className="flex items-center justify-between border-b pb-1">
-                <span className="font-bold text-amber-700">DOKU Secure Checkout Payment</span>
+                <span className="font-bold text-amber-700">iPaymu Secure Checkout Payment</span>
                 <span className="text-[8px] bg-amber-500/10 text-amber-600 px-1 font-bold rounded">ORDER: SUPPORT-8C2A</span>
               </div>
               <div className="text-[12px] font-bold text-center py-2 text-foreground">
@@ -249,7 +249,7 @@ export default function TransactionFlowPage() {
               <h3 className="font-bold text-base">Settlement Verification & Profile Badge Activation</h3>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Upon successful payment, DOKU redirects the user back to `/support/success`. The client triggers the server validation API (<code>/api/support/confirm</code>), which verifies the settlement with the DOKU Check Status API. Once settled, the server updates the database record state to `paid` and upgrades the user's supporter status to display their premium badge on comments & logs immediately.
+              Upon successful payment, iPaymu redirects the user back to `/support/success`. The client triggers the server validation API (<code>/api/support/confirm</code>), which verifies the settlement with the iPaymu Check Transaction API. Once settled, the server updates the database record state to `paid` and upgrades the user's supporter status to display their premium badge on comments & logs immediately.
             </p>
             <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/[0.02] p-4 font-mono text-[10px] space-y-1.5 max-w-sm mx-auto w-full text-center">
               <div className="h-8 w-8 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center mx-auto">

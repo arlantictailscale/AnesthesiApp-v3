@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { getDokuConfig, generateSignature } from "@/lib/doku"
+import { getIPaymuConfig, generateBodyHash, generateIPaymuSignature } from "@/lib/ipaymu"
 
 export const runtime = "nodejs"
 
@@ -13,49 +13,75 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing order_id" }, { status: 400 })
     }
 
-    const dokuConfig = getDokuConfig()
-    if (!dokuConfig.clientId || !dokuConfig.secretKey) {
-      console.error("DOKU configuration is missing keys")
+    const supabase = await createClient()
+    const { data: supporter, error: fetchError } = await supabase
+      .from("supporters")
+      .select("*")
+      .eq("order_id", order_id)
+      .maybeSingle()
+
+    if (fetchError || !supporter) {
+      console.error("Supporter record not found:", fetchError)
+      return NextResponse.json({ error: "Transaction not found" }, { status: 404 })
+    }
+
+    if (!supporter.payment_url) {
+      console.error("Supporter payment URL is missing")
+      return NextResponse.json({ error: "Payment URL is missing" }, { status: 400 })
+    }
+
+    const sessionId = supporter.payment_url.split("/").pop()
+    if (!sessionId) {
+      console.error("Could not parse Session ID from payment URL:", supporter.payment_url)
+      return NextResponse.json({ error: "Invalid payment session" }, { status: 400 })
+    }
+
+    const ipaymuConfig = getIPaymuConfig()
+    if (!ipaymuConfig.va || !ipaymuConfig.apiKey) {
+      console.error("iPaymu configuration is missing keys")
       return NextResponse.json({ error: "Payment gateway configuration error" }, { status: 500 })
     }
 
-    const requestTarget = `/orders/v1/status/${order_id}`
-    const requestUrl = `${dokuConfig.baseUrl}${requestTarget}`
+    const requestTarget = "/api/v2/transaction"
+    const requestUrl = `${ipaymuConfig.baseUrl}${requestTarget}`
 
-    const requestId = crypto.randomUUID()
-    const timestamp = new Date().toISOString().split(".")[0] + "Z" // format YYYY-MM-DDTHH:mm:ssZ
+    const ipaymuBody = {
+      transactionId: sessionId,
+      account: ipaymuConfig.va,
+    }
 
-    // For GET request, digest is empty string
-    const signature = generateSignature({
-      clientId: dokuConfig.clientId,
-      requestId,
-      timestamp,
-      target: requestTarget,
-      digest: "",
-      secretKey: dokuConfig.secretKey,
-    })
+    const bodyString = JSON.stringify(ipaymuBody)
+    const bodyHash = generateBodyHash(bodyString)
 
-    console.log("DOKU Status check URL:", requestUrl)
-    console.log("DOKU Status check headers:", {
-      "Client-Id": dokuConfig.clientId,
-      "Request-Id": requestId,
-      "Request-Timestamp": timestamp,
-      "Signature": signature,
-    })
+    const now = new Date()
+    const timestamp = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, "0"),
+      String(now.getDate()).padStart(2, "0"),
+      String(now.getHours()).padStart(2, "0"),
+      String(now.getMinutes()).padStart(2, "0"),
+      String(now.getSeconds()).padStart(2, "0"),
+    ].join("")
+
+    const signature = generateIPaymuSignature("POST", ipaymuConfig.va, bodyHash, ipaymuConfig.apiKey)
+
+    console.log("iPaymu Check Status request URL:", requestUrl)
+    console.log("iPaymu Check Status request body:", bodyString)
 
     const response = await fetch(requestUrl, {
-      method: "GET",
+      method: "POST",
       headers: {
-        "Client-Id": dokuConfig.clientId,
-        "Request-Id": requestId,
-        "Request-Timestamp": timestamp,
-        "Signature": signature,
+        "Content-Type": "application/json",
+        "va": ipaymuConfig.va,
+        "signature": signature,
+        "timestamp": timestamp,
       },
+      body: bodyString,
     })
 
     const responseText = await response.text()
-    console.log("DOKU Status API status:", response.status)
-    console.log("DOKU Status API response:", responseText)
+    console.log("iPaymu Check Status API status:", response.status)
+    console.log("iPaymu Check Status API response:", responseText)
 
     if (!response.ok) {
       return NextResponse.json({ error: `Payment gateway error (${response.status}): ${responseText.substring(0, 200)}` }, { status: 400 })
@@ -65,25 +91,30 @@ export async function POST(request: Request) {
     try {
       data = JSON.parse(responseText)
     } catch {
-      console.error("DOKU Status API returned non-JSON response:", responseText.substring(0, 500))
+      console.error("iPaymu Check Status returned non-JSON response:", responseText.substring(0, 500))
       return NextResponse.json({ error: "Payment gateway returned invalid response" }, { status: 400 })
     }
-    const orderStatus = data.order?.status
-    const transactionStatus = data.transaction?.status
+
+    if (data.Status !== 200 || !data.Data) {
+      console.error("iPaymu transaction check failed:", data)
+      return NextResponse.json({ error: data.Message || "Payment gateway check failed" }, { status: 400 })
+    }
+
+    const paidStatus = data.Data.PaidStatus // e.g. "paid", "unpaid"
+    const transactionStatus = Number(data.Data.Status) // e.g. 1 (success), 0 (pending), 2 (failed/cancelled)
 
     let dbStatus: "pending" | "paid" | "failed" = "pending"
 
-    if (transactionStatus === "SUCCESS") {
+    if (paidStatus === "paid" || [1, 6, 7].includes(transactionStatus)) {
       dbStatus = "paid"
-    } else if (transactionStatus === "FAILED" || orderStatus === "ORDER_EXPIRED") {
+    } else if (paidStatus === "expired" || paidStatus === "failed" || [2].includes(transactionStatus)) {
       dbStatus = "failed"
-    } else if (transactionStatus === "PENDING" || orderStatus === "ORDER_GENERATED") {
+    } else {
       dbStatus = "pending"
     }
 
     // Update the database only if state changed
-    if (dbStatus !== "pending") {
-      const supabase = await createClient()
+    if (dbStatus !== supporter.status) {
       const { data: updatedSupporters, error: dbError } = await supabase
         .from("supporters")
         .update({ status: dbStatus })
@@ -113,7 +144,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       status: dbStatus,
-      transaction_status: transactionStatus || orderStatus || "unknown",
+      transaction_status: paidStatus || data.Data.StatusDesc || "unknown",
     })
 
   } catch (err) {

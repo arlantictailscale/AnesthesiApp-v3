@@ -1,75 +1,153 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { getDokuConfig, generateDigest, generateSignature } from "@/lib/doku"
+import { getIPaymuConfig } from "@/lib/ipaymu"
+import crypto from "crypto"
 
 export const runtime = "nodejs"
+
+async function checkIPaymuStatus(sessionId: string, ipaymuConfig: any) {
+  try {
+    const requestTarget = "/api/v2/transaction"
+    const requestUrl = `${ipaymuConfig.baseUrl}${requestTarget}`
+    const ipaymuBody = {
+      transactionId: sessionId,
+      account: ipaymuConfig.va,
+    }
+    const bodyString = JSON.stringify(ipaymuBody)
+    const bodyHash = crypto.createHash("sha256").update(bodyString, "utf8").digest("hex")
+    
+    const now = new Date()
+    const timestamp = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, "0"),
+      String(now.getDate()).padStart(2, "0"),
+      String(now.getHours()).padStart(2, "0"),
+      String(now.getMinutes()).padStart(2, "0"),
+      String(now.getSeconds()).padStart(2, "0"),
+    ].join("")
+    
+    const signature = crypto.createHmac("sha256", ipaymuConfig.apiKey)
+      .update(`POST:${ipaymuConfig.va}:${bodyHash}:${ipaymuConfig.apiKey}`, "utf8")
+      .digest("hex")
+
+    const response = await fetch(requestUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "va": ipaymuConfig.va,
+        "signature": signature,
+        "timestamp": timestamp,
+      },
+      body: bodyString,
+    })
+
+    if (!response.ok) return null
+    const text = await response.text()
+    const data = JSON.parse(text)
+    if (data.Status === 200) return data.Data
+  } catch (err) {
+    console.error("Error double-checking transaction status:", err)
+  }
+  return null
+}
 
 export async function POST(request: Request) {
   try {
     const rawBody = await request.text()
-    let body: any
-    try {
-      body = JSON.parse(rawBody)
-    } catch (parseErr) {
-      console.error("Failed to parse webhook JSON body:", parseErr)
-      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 })
-    }
-
+    
     const headers = request.headers
-    const clientIdHeader = headers.get("client-id")
-    const requestIdHeader = headers.get("request-id")
-    const timestampHeader = headers.get("request-timestamp")
-    const signatureHeader = headers.get("signature") || headers.get("x-signature")
+    const signatureHeader = headers.get("x-signature") || headers.get("signature")
 
-    if (!clientIdHeader || !requestIdHeader || !timestampHeader || !signatureHeader) {
-      console.warn("[Webhook Validation Failed] Missing required security headers")
-      return NextResponse.json({ error: "Missing required security headers" }, { status: 400 })
-    }
-
-    const dokuConfig = getDokuConfig()
-    if (!dokuConfig.clientId || !dokuConfig.secretKey) {
-      console.error("DOKU configuration is missing keys")
+    const ipaymuConfig = getIPaymuConfig()
+    if (!ipaymuConfig.va || !ipaymuConfig.apiKey) {
+      console.error("iPaymu configuration is missing keys")
       return NextResponse.json({ error: "Payment gateway configuration error" }, { status: 500 })
     }
 
-    // Verify signature to prevent fraud:
-    const digest = generateDigest(rawBody)
-    const requestTarget = new URL(request.url).pathname
+    // Verify signature:
+    let isSignatureValid = false
+    if (signatureHeader) {
+      const computedSignature = crypto
+        .createHmac("sha256", ipaymuConfig.apiKey)
+        .update(rawBody, "utf8")
+        .digest("hex")
 
-    const computedSignature = generateSignature({
-      clientId: clientIdHeader,
-      requestId: requestIdHeader,
-      timestamp: timestampHeader,
-      target: requestTarget,
-      digest,
-      secretKey: dokuConfig.secretKey,
-    })
-
-    if (computedSignature !== signatureHeader) {
-      console.warn(`[Webhook Validation Failed] Computed: ${computedSignature}, Received: ${signatureHeader}`)
-      return NextResponse.json({ error: "Invalid signature key" }, { status: 403 })
+      if (computedSignature === signatureHeader) {
+        isSignatureValid = true
+      } else {
+        console.warn(`[Support Webhook] Signature mismatch. Received: ${signatureHeader}, Computed: ${computedSignature}`)
+      }
     }
 
-    const order_id = body.transaction?.invoice_number
-    const transactionStatus = body.transaction?.status
+    // Parse URL-encoded body
+    const params = new URLSearchParams(rawBody)
+    const order_id = params.get("reference_id")
+    const trx_id = params.get("trx_id")
+    const sid = params.get("sid")
+    const status = params.get("status")
+    const statusCodeStr = params.get("status_code")
 
-    if (!order_id || !transactionStatus) {
-      return NextResponse.json({ error: "Missing required notification fields" }, { status: 400 })
+    if (!order_id) {
+      return NextResponse.json({ error: "Missing required reference_id field" }, { status: 400 })
     }
 
-    let dbStatus: "pending" | "paid" | "failed" = "pending"
+    let isSuccess = false
+    let isFailed = false
 
-    if (transactionStatus === "SUCCESS") {
-      dbStatus = "paid"
-    } else if (transactionStatus === "FAILED") {
-      dbStatus = "failed"
-    } else if (transactionStatus === "PENDING") {
-      dbStatus = "pending"
+    if (isSignatureValid) {
+      // Signature is valid, we can trust the callback body directly
+      if (statusCodeStr === "1" || status === "berhasil") {
+        isSuccess = true
+      } else if (statusCodeStr === "-2" || status === "gagal" || status === "expired") {
+        isFailed = true
+      }
+    } else {
+      // If signature validation fails, perform a fallback direct transaction status check
+      if (sid) {
+        console.log(`[Support Webhook] Webhook signature verification failed. Verifying with iPaymu API directly...`)
+        const transactionData = await checkIPaymuStatus(sid, ipaymuConfig)
+        if (transactionData) {
+          const paidStatus = transactionData.PaidStatus // e.g. "paid", "unpaid"
+          const transactionStatus = Number(transactionData.Status) // e.g. 1 (success), 2 (failed)
+          
+          if (paidStatus === "paid" || [1, 6, 7].includes(transactionStatus)) {
+            isSuccess = true
+            console.log(`[Support Webhook] Direct API verification success: Transaction ${sid} is paid.`)
+          } else if (paidStatus === "expired" || paidStatus === "failed" || [2].includes(transactionStatus)) {
+            isFailed = true
+            console.log(`[Support Webhook] Direct API verification failure: Transaction ${sid} is failed.`)
+          }
+        }
+      }
     }
 
-    // If state changed, update database record
-    if (dbStatus !== "pending") {
-      const supabase = await createClient()
+    if (!isSuccess && !isFailed) {
+      // If signature is invalid and we couldn't confirm status, reject request
+      if (!isSignatureValid) {
+        return NextResponse.json({ error: "Invalid signature key and verification failed" }, { status: 403 })
+      }
+      // If signature is valid but transaction is pending, return success (do not update status)
+      return NextResponse.json({ success: true, status: "pending" })
+    }
+
+    const dbStatus = isSuccess ? "paid" : "failed"
+
+    const supabase = await createClient()
+    
+    // Get current supporter status
+    const { data: currentSupporter, error: findError } = await supabase
+      .from("supporters")
+      .select("status")
+      .eq("order_id", order_id)
+      .maybeSingle()
+
+    if (findError) {
+      console.error("Database find error on webhook:", findError)
+      return NextResponse.json({ error: findError.message }, { status: 500 })
+    }
+
+    // Only update if status is changing
+    if (currentSupporter && currentSupporter.status !== dbStatus) {
       const { data: updatedSupporters, error: dbError } = await supabase
         .from("supporters")
         .update({ status: dbStatus })

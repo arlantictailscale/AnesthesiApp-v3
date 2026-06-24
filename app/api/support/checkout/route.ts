@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { getDokuConfig, generateDigest, generateSignature } from "@/lib/doku"
+import { getIPaymuConfig, generateBodyHash, generateIPaymuSignature } from "@/lib/ipaymu"
 
 export const runtime = "nodejs"
 
@@ -35,71 +35,71 @@ export async function POST(request: Request) {
     const userId = user?.id || null
     const email = user?.email || "anonymous@anesthesiapp.my.id"
 
-    // DOKU API Setup
-    const dokuConfig = getDokuConfig()
-    if (!dokuConfig.clientId || !dokuConfig.secretKey) {
-      console.error("DOKU configuration is missing keys")
+    // iPaymu API Setup
+    const ipaymuConfig = getIPaymuConfig()
+    if (!ipaymuConfig.va || !ipaymuConfig.apiKey) {
+      console.error("iPaymu configuration is missing keys")
       return NextResponse.json({ error: "Payment gateway configuration error" }, { status: 500 })
     }
 
-    const requestTarget = "/checkout/v1/payment"
-    const requestUrl = `${dokuConfig.baseUrl}${requestTarget}`
+    const requestTarget = "/api/v2/payment"
+    const requestUrl = `${ipaymuConfig.baseUrl}${requestTarget}`
 
     const host = request.headers.get("host") || new URL(request.url).host
     const proto = request.headers.get("x-forwarded-proto") || "https"
     const origin = `${proto}://${host}`
     const callbackUrl = `${origin}/support/success?order_id=${orderId}`
 
-    const dokuBody = {
-      order: {
-        amount: Math.round(parseFloat(amount)),
-        invoice_number: orderId,
-        currency: "IDR",
-        callback_url: callbackUrl,
-        callback_url_if_failed: `${origin}/support?payment=failed`,
-      },
-      payment: {
-        payment_due_date: 60,
-      },
-      customer: {
-        name,
-        email,
-      },
+    const ipaymuBody = {
+      product: [tier],
+      qty: ["1"],
+      price: [Math.round(parseFloat(amount))],
+      description: [`Supporter Subscription - ${tier}`],
+      referenceId: orderId,
+      returnUrl: callbackUrl,
+      notifyUrl: `${origin}/api/support/webhook`,
+      cancelUrl: `${origin}/support?payment=failed`,
+      buyerName: name,
+      buyerEmail: email,
+      buyerPhone: "08123456789",
+      expired: "24",
+      feeDirection: "MERCHANT",
+      lang: "id",
     }
 
-    const bodyString = JSON.stringify(dokuBody)
-    const digest = generateDigest(bodyString)
+    const bodyString = JSON.stringify(ipaymuBody)
+    const bodyHash = generateBodyHash(bodyString)
     
-    const requestId = crypto.randomUUID()
-    const timestamp = new Date().toISOString().split(".")[0] + "Z" // format YYYY-MM-DDTHH:mm:ssZ
+    // Generate YYYYMMDDHHmmss timestamp
+    const now = new Date()
+    const timestamp = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, "0"),
+      String(now.getDate()).padStart(2, "0"),
+      String(now.getHours()).padStart(2, "0"),
+      String(now.getMinutes()).padStart(2, "0"),
+      String(now.getSeconds()).padStart(2, "0"),
+    ].join("")
 
-    const signature = generateSignature({
-      clientId: dokuConfig.clientId,
-      requestId,
-      timestamp,
-      target: requestTarget,
-      digest,
-      secretKey: dokuConfig.secretKey,
-    })
+    const signature = generateIPaymuSignature("POST", ipaymuConfig.va, bodyHash, ipaymuConfig.apiKey)
 
-    console.log("DOKU request URL:", requestUrl)
-    console.log("DOKU request body:", bodyString)
+    console.log("iPaymu request URL:", requestUrl)
+    console.log("iPaymu request body:", bodyString)
 
     const response = await fetch(requestUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Client-Id": dokuConfig.clientId,
-        "Request-Id": requestId,
-        "Request-Timestamp": timestamp,
-        "Signature": signature,
+        "va": ipaymuConfig.va,
+        "signature": signature,
+        "timestamp": timestamp,
       },
       body: bodyString,
     })
 
     const responseText = await response.text()
-    console.log("DOKU API status:", response.status)
-    console.log("DOKU API response:", responseText)
+    console.log("iPaymu API status:", response.status)
+    console.log("iPaymu API response:", responseText)
 
     if (!response.ok) {
       return NextResponse.json({ error: `Payment gateway error (${response.status}): ${responseText.substring(0, 200)}` }, { status: 400 })
@@ -109,15 +109,16 @@ export async function POST(request: Request) {
     try {
       data = JSON.parse(responseText)
     } catch {
-      console.error("DOKU returned non-JSON response:", responseText.substring(0, 500))
+      console.error("iPaymu returned non-JSON response:", responseText.substring(0, 500))
       return NextResponse.json({ error: "Payment gateway returned invalid response" }, { status: 400 })
     }
-    const redirectUrl = data.response?.payment?.url
 
-    if (!redirectUrl) {
-      console.error("DOKU response missing payment URL:", data)
-      return NextResponse.json({ error: "Payment gateway response invalid" }, { status: 400 })
+    if (data.Status !== 200 || !data.Data?.Url) {
+      console.error("iPaymu payment creation failed:", data)
+      return NextResponse.json({ error: data.Message || "Payment gateway response invalid" }, { status: 400 })
     }
+
+    const redirectUrl = data.Data.Url
 
     // Insert pending Supporter in database WITH payment_url
     const { error: dbError } = await supabase

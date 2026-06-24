@@ -144,7 +144,7 @@ export default function SupportUsPage() {
       toast.dismiss(toastId)
       toast.success("Redirecting to secure payment checkout...")
       
-      // Redirect to DOKU Checkout hosted page
+      // Redirect to iPaymu Checkout hosted page
       window.location.href = redirect_url
       return
 
@@ -320,7 +320,7 @@ export default function SupportUsPage() {
                   Billing & Refund Policy
                 </div>
                 <p>
-                  All payments are securely processed via DOKU payment gateway. By upgrading your account, you agree to our Terms of Service. Because supporter profile badges and wall listings are activated instantly, support payments are non-refundable. For billing queries, support, or tax invoice requests, please contact us at <span className="font-semibold text-foreground">support@anesthesiapp.my.id</span>.
+                  All payments are securely processed via iPaymu payment gateway. By upgrading your account, you agree to our Terms of Service. Because supporter profile badges and wall listings are activated instantly, support payments are non-refundable. For billing queries, support, or tax invoice requests, please contact us at <span className="font-semibold text-foreground">support@anesthesiapp.my.id</span>.
                 </p>
               </div>
             </Card>
