@@ -15,6 +15,9 @@ node_modules
 .next/
 .DS_Store
 
+# Test coverage
+coverage/
+
 # PWA service worker outputs
 public/sw.js
 public/sw.js.map
