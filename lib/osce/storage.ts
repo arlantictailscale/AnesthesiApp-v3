@@ -1,6 +1,8 @@
 "use client"
 
 import { createClient } from "@/lib/supabase/client"
+import { generateId, readLocalArray, writeLocalArray } from "@/lib/local-store"
+import { createCommunityHub, type CommunityComment, type CommunityRatingsSummary } from "@/lib/community"
 import { builtInOsceStations } from "./default-data"
 import type { OsceStation, OsceAttempt } from "./default-data"
 
@@ -8,43 +10,21 @@ const OSCE_CUSTOM_STATIONS_KEY = "anesthesiapp:osce_stations"
 const OSCE_ATTEMPTS_KEY = "anesthesiapp:osce_attempts"
 
 function getLocalCustomStations(): OsceStation[] {
-  if (typeof window === "undefined") return []
-  try {
-    const raw = localStorage.getItem(OSCE_CUSTOM_STATIONS_KEY)
-    return raw ? JSON.parse(raw) : []
-  } catch {
-    return []
-  }
+  return readLocalArray<OsceStation>(OSCE_CUSTOM_STATIONS_KEY)
 }
 
 function saveLocalCustomStations(stations: OsceStation[]) {
-  if (typeof window === "undefined") return
-  try {
-    localStorage.setItem(OSCE_CUSTOM_STATIONS_KEY, JSON.stringify(stations))
-  } catch (e) {
-    console.error("Failed to save OSCE custom stations locally:", e)
-  }
+  writeLocalArray(OSCE_CUSTOM_STATIONS_KEY, stations)
 }
 
 function getLocalAttempts(): OsceAttempt[] {
-  if (typeof window === "undefined") return []
-  try {
-    const raw = localStorage.getItem(OSCE_ATTEMPTS_KEY)
-    return raw ? JSON.parse(raw) : []
-  } catch {
-    return []
-  }
+  return readLocalArray<OsceAttempt>(OSCE_ATTEMPTS_KEY)
 }
 
 function saveLocalAttempt(attempt: OsceAttempt) {
-  if (typeof window === "undefined") return
-  try {
-    const local = getLocalAttempts()
-    local.unshift(attempt)
-    localStorage.setItem(OSCE_ATTEMPTS_KEY, JSON.stringify(local))
-  } catch (e) {
-    console.error("Failed to save OSCE attempt locally:", e)
-  }
+  const local = getLocalAttempts()
+  local.unshift(attempt)
+  writeLocalArray(OSCE_ATTEMPTS_KEY, local)
 }
 
 /**
@@ -140,13 +120,9 @@ export async function saveOsceAttempt(
     started_at: string
   }
 ): Promise<OsceAttempt> {
-  const attemptId = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-    ? crypto.randomUUID()
-    : Math.random().toString(36).substring(2, 15)
-
   const newAttempt: OsceAttempt = {
     ...attemptData,
-    id: attemptId,
+    id: generateId(),
     user_id: "",
     started_at: attemptData.started_at,
     completed_at: new Date().toISOString()
@@ -198,9 +174,7 @@ export async function createOsceStation(
 ): Promise<OsceStation> {
   const newStation: OsceStation = {
     ...station,
-    id: typeof crypto !== "undefined" && typeof crypto.randomUUID === "function" 
-      ? crypto.randomUUID() 
-      : Math.random().toString(36).substring(2, 15),
+    id: generateId(),
     user_id: isDefault ? null : "",
   }
 
@@ -366,137 +340,44 @@ export async function deleteOsceStation(id: string): Promise<void> {
 
 // --- Ratings and Comments for Community Hub ---
 
-export interface OSCEComment {
-  id: string
-  user_id: string
-  user_email: string
+export interface OSCEComment extends CommunityComment {
   station_id: string
-  comment: string
-  created_at: string
 }
 
-export interface OSCERatingsSummary {
-  average: number
-  count: number
-  userRating?: number
-}
+export type OSCERatingsSummary = CommunityRatingsSummary
+
+const osceHub = createCommunityHub<OSCEComment>({
+  ratingsTable: "osce_ratings",
+  commentsTable: "osce_comments",
+  foreignKey: "station_id",
+  rateAuthError: "Anda harus masuk log untuk memberikan rating.",
+  commentAuthError: "Anda harus masuk log untuk berkomentar.",
+})
 
 /**
  * Submits or updates a rating (1-5) for an OSCE station
  */
-export async function rateStation(stationId: string, rating: number): Promise<void> {
-  try {
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      throw new Error("Anda harus masuk log untuk memberikan rating.")
-    }
-
-    const { error } = await supabase
-      .from("osce_ratings")
-      .upsert({
-        user_id: user.id,
-        station_id: stationId,
-        rating,
-      }, {
-        onConflict: "user_id,station_id"
-      })
-
-    if (error) throw new Error(error.message)
-  } catch (err) {
-    console.error("Failed to rate station:", err)
-    throw err
-  }
+export function rateStation(stationId: string, rating: number): Promise<void> {
+  return osceHub.rate(stationId, rating)
 }
 
 /**
  * Gets the average rating and review count for an OSCE station
  */
-export async function getStationRatings(stationId: string): Promise<OSCERatingsSummary> {
-  const defaultSummary: OSCERatingsSummary = { average: 0, count: 0 }
-  try {
-    const supabase = createClient()
-    const { data, error } = await supabase
-      .from("osce_ratings")
-      .select("rating, user_id")
-      .eq("station_id", stationId)
-
-    if (error) throw new Error(error.message)
-    if (!data || data.length === 0) return defaultSummary
-
-    const count = data.length
-    const total = data.reduce((acc: number, curr: any) => acc + curr.rating, 0)
-    const average = Number((total / count).toFixed(1))
-
-    let userRating: number | undefined = undefined
-    const { data: { user } } = await supabase.auth.getUser()
-    if (user) {
-      const found = data.find((r: any) => r.user_id === user.id)
-      if (found) userRating = found.rating
-    }
-
-    return { average, count, userRating }
-  } catch (err) {
-    console.warn("Failed to get station ratings, returning default:", err)
-    return defaultSummary
-  }
+export function getStationRatings(stationId: string): Promise<OSCERatingsSummary> {
+  return osceHub.getRatings(stationId)
 }
 
 /**
  * Adds a new comment to an OSCE station discussion
  */
-export async function addStationComment(stationId: string, comment: string): Promise<OSCEComment> {
-  try {
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      throw new Error("Anda harus masuk log untuk berkomentar.")
-    }
-
-    const payload = {
-      user_id: user.id,
-      user_email: user.email || "Anonim",
-      station_id: stationId,
-      comment,
-    }
-
-    const { data, error } = await supabase
-      .from("osce_comments")
-      .insert(payload)
-      .select("*")
-      .single()
-
-    if (error) throw new Error(error.message)
-    return {
-      id: data.id,
-      user_id: data.user_id,
-      user_email: data.user_email,
-      station_id: data.station_id,
-      comment: data.comment,
-      created_at: data.created_at,
-    }
-  } catch (err) {
-    console.error("Failed to add comment:", err)
-    throw err
-  }
+export function addStationComment(stationId: string, comment: string): Promise<OSCEComment> {
+  return osceHub.addComment(stationId, comment)
 }
 
 /**
  * Gets all comments for an OSCE station discussion
  */
-export async function getStationComments(stationId: string): Promise<OSCEComment[]> {
-  try {
-    const supabase = createClient()
-    const { data, error } = await supabase
-      .from("osce_comments")
-      .select("*")
-      .eq("station_id", stationId)
-      .order("created_at", { ascending: false })
-
-    if (error) throw new Error(error.message)
-    return (data || []) as OSCEComment[]
-  } catch (err) {
-    console.warn("Failed to get comments, returning empty array:", err)
-    return []
-  }
+export function getStationComments(stationId: string): Promise<OSCEComment[]> {
+  return osceHub.getComments(stationId)
 }
