@@ -148,7 +148,8 @@ export default function CaseDetailPage() {
       .then((row) => {
         if (active) setC(row)
       })
-      .catch(() => {
+      .catch((err) => {
+        console.error("Failed to load case:", err)
         if (active) setC(null)
       })
     return () => {

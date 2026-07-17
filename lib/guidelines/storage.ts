@@ -225,7 +225,10 @@ export async function updateGuideline(id: string, data: GuidelineData): Promise<
 export async function deleteGuideline(id: string): Promise<void> {
   try {
     const supabase = createClient()
-    await supabase.from("anesthesia_guidelines").delete().eq("id", id)
+    const { error } = await supabase.from("anesthesia_guidelines").delete().eq("id", id)
+    if (error) {
+      console.error("Supabase deleteGuideline error:", error)
+    }
   } catch (err) {
     console.warn("Supabase deleteGuideline failed:", err)
   }
