@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { DEFAULT_AI_MODEL } from "@/lib/ai-models"
 import { callAiModel } from "@/lib/ai"
+import { createClient } from "@/lib/supabase/server"
 
 export const runtime = "nodejs"
 export const maxDuration = 60
@@ -55,6 +56,12 @@ export async function POST(req: Request) {
   let body: {
     chatHistory: { role: "user" | "assistant" | "system"; content: string }[]
     rubric: any[]
+  }
+
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
   try {

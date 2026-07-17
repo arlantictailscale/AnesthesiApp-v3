@@ -40,6 +40,7 @@ object AiClient {
         val request = Request.Builder()
             .url(url)
             .post(requestBodyJson.toRequestBody(jsonMediaType))
+            .addHeader("Authorization", SupabaseClient.getAuthHeader())
             .build()
 
         client.newCall(request).execute().use { response ->
@@ -65,6 +66,7 @@ object AiClient {
         val request = Request.Builder()
             .url(url)
             .post(requestBodyJson.toRequestBody(jsonMediaType))
+            .addHeader("Authorization", SupabaseClient.getAuthHeader())
             .build()
 
         client.newCall(request).execute().use { response ->

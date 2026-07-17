@@ -797,7 +797,10 @@ export default function App() {
     try {
       const res = await fetch('https://anesthesiapp.my.id/api/ai/osce-chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
         body: JSON.stringify({
           messages: nextMessages,
           scenario: activeOsce.scenario,
@@ -825,7 +828,10 @@ export default function App() {
     try {
       const res = await fetch('https://anesthesiapp.my.id/api/ai/osce-score', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
         body: JSON.stringify({
           chatHistory: osceMessages,
           rubric: activeOsce.rubric,
