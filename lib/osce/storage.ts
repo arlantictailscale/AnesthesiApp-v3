@@ -353,7 +353,10 @@ export async function updateOsceStation(
 export async function deleteOsceStation(id: string): Promise<void> {
   try {
     const supabase = createClient()
-    await supabase.from("osce_stations").delete().eq("id", id)
+    const { error } = await supabase.from("osce_stations").delete().eq("id", id)
+    if (error) {
+      console.error("Supabase deleteOsceStation error:", error)
+    }
   } catch (err) {
     console.warn("Supabase deleteOsceStation failed:", err)
   }

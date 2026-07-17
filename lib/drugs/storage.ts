@@ -193,7 +193,10 @@ export async function updateDrug(id: string, data: DrugData): Promise<Anesthesia
 export async function deleteDrug(id: string): Promise<void> {
   try {
     const supabase = createClient()
-    await supabase.from("anesthesia_drugs").delete().eq("id", id)
+    const { error } = await supabase.from("anesthesia_drugs").delete().eq("id", id)
+    if (error) {
+      console.error("Supabase deleteDrug error:", error)
+    }
   } catch (err) {
     console.warn("Supabase deleteDrug failed:", err)
   }

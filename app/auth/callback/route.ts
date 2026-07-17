@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
     if (!error) {
       return NextResponse.redirect(`${trueOrigin}${next}`)
     }
+    console.error("Failed to exchange auth code for session:", error)
   }
 
   return NextResponse.redirect(`${trueOrigin}/auth/error`)

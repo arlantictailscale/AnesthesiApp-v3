@@ -277,7 +277,10 @@ export async function deletePackage(id: string): Promise<void> {
   // Try deleting from database first
   try {
     const supabase = createClient()
-    await supabase.from("cbt_packages").delete().eq("id", id)
+    const { error } = await supabase.from("cbt_packages").delete().eq("id", id)
+    if (error) {
+      console.error("Supabase deletePackage error:", error)
+    }
   } catch (err) {
     console.warn("Supabase deletePackage failed:", err)
   }
@@ -405,7 +408,10 @@ export async function saveAttempt(attempt: Omit<CBTAttempt, "id" | "created_at">
 export async function deleteAttempt(id: string): Promise<void> {
   try {
     const supabase = createClient()
-    await supabase.from("cbt_attempts").delete().eq("id", id)
+    const { error } = await supabase.from("cbt_attempts").delete().eq("id", id)
+    if (error) {
+      console.error("Supabase deleteAttempt error:", error)
+    }
   } catch (err) {
     console.warn("Supabase deleteAttempt failed:", err)
   }
