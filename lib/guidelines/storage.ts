@@ -1,37 +1,18 @@
 "use client"
 
 import { createClient } from "@/lib/supabase/client"
+import { generateId, readLocalArray, writeLocalArray } from "@/lib/local-store"
 import { builtInGuidelines } from "./default-data"
 import type { AnesthesiaGuideline, GuidelineData } from "./schema"
 
 const CUSTOM_GUIDELINES_KEY = "anesthesiapp:custom_guidelines"
 
-function generateId(): string {
-  if (typeof window !== "undefined" && typeof window.crypto !== "undefined") {
-    if (typeof window.crypto.randomUUID === "function") {
-      return window.crypto.randomUUID()
-    }
-  }
-  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
-}
-
 function getLocalCustomGuidelines(): AnesthesiaGuideline[] {
-  if (typeof window === "undefined") return []
-  try {
-    const raw = localStorage.getItem(CUSTOM_GUIDELINES_KEY)
-    return raw ? JSON.parse(raw) : []
-  } catch {
-    return []
-  }
+  return readLocalArray<AnesthesiaGuideline>(CUSTOM_GUIDELINES_KEY)
 }
 
 function saveLocalCustomGuidelines(guidelines: AnesthesiaGuideline[]) {
-  if (typeof window === "undefined") return
-  try {
-    localStorage.setItem(CUSTOM_GUIDELINES_KEY, JSON.stringify(guidelines))
-  } catch (e) {
-    console.error("Failed to save custom guidelines locally:", e)
-  }
+  writeLocalArray(CUSTOM_GUIDELINES_KEY, guidelines)
 }
 
 /**

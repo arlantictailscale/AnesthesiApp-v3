@@ -1,37 +1,18 @@
 "use client"
 
 import { createClient } from "@/lib/supabase/client"
+import { generateId, readLocalArray, writeLocalArray } from "@/lib/local-store"
 import { builtInDrugs } from "./default-data"
 import type { AnesthesiaDrug, DrugData } from "./schema"
 
 const CUSTOM_DRUGS_KEY = "anesthesiapp:custom_drugs"
 
-function generateId(): string {
-  if (typeof window !== "undefined" && typeof window.crypto !== "undefined") {
-    if (typeof window.crypto.randomUUID === "function") {
-      return window.crypto.randomUUID()
-    }
-  }
-  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
-}
-
 function getLocalCustomDrugs(): AnesthesiaDrug[] {
-  if (typeof window === "undefined") return []
-  try {
-    const raw = localStorage.getItem(CUSTOM_DRUGS_KEY)
-    return raw ? JSON.parse(raw) : []
-  } catch {
-    return []
-  }
+  return readLocalArray<AnesthesiaDrug>(CUSTOM_DRUGS_KEY)
 }
 
 function saveLocalCustomDrugs(drugs: AnesthesiaDrug[]) {
-  if (typeof window === "undefined") return
-  try {
-    localStorage.setItem(CUSTOM_DRUGS_KEY, JSON.stringify(drugs))
-  } catch (e) {
-    console.error("Failed to save custom drugs locally:", e)
-  }
+  writeLocalArray(CUSTOM_DRUGS_KEY, drugs)
 }
 
 /**
